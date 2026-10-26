@@ -6,7 +6,7 @@
 | Référent produit | Explicite le besoin et tranche les arbitrages |
 | Référent agilité | Challenge découpage et critères d'acceptation |
 | Pilote | Manipule Copilot dans VS Code |
-| Référent technique | Configure fichiers, hook, outils |
+| Référent technique | Configure fichiers et outils |
 | Responsable qualité | Garde les preuves, prépare la restitution |
 
 Composition conseillée : chaque groupe mélange PO/PM, Scrum, Dev, DevOps.
@@ -48,15 +48,50 @@ Structure de `PLAN.md` : 1 Objectif et périmètre · 2 Sources · 3 Résultats 
 
 Critère de réussite : vous savez dire ce que les agents feront, ne décideront pas, et comment ils seront évalués.
 
-## Partie 2 — Acter (14h30–16h10)
-Compléter les `TODO` des squelettes fournis :
-1. 14h30 `.github/copilot-instructions.md`
-2. 14h40 deux agents dans `.github/agents/`
-3. 15h00 deux skills dans `.github/skills/`
-4. 15h35 vérifier le hook `.github/hooks/verifier-backlog.json` (script fourni)
-5. 15h45 exécuter : Reviewer → décisions du groupe → Rédacteur → contrôle → relecture humaine
+Contrôle avant de passer à la partie 2 (un autre membre relit) :
+- [ ] Les 12 sections de `PLAN.md` sont remplies.
+- [ ] Chaque ND-xx concernée par le lot figure en question ouverte, pas en hypothèse.
+- [ ] Les rôles (section 8) et les skills (section 9) sont assez précis pour être transcrits en fichiers.
+- [ ] Les critères de réussite (section 11) se jugent par oui/non.
+- [ ] Les points de validation humaine précèdent toute décision métier et toute publication.
+
+## Partie 2 — Acter (14h30–16h10, pause 15h25–15h35)
+Mission : transformer `PLAN.md` en dispositif réutilisable, puis l'utiliser sur vos 5 US. Compléter les `TODO` des squelettes fournis ; le contenu vient de **votre plan** (sections 4, 6, 8, 9, 10), pas d'une page blanche. Les rôles tournent par rapport à la partie 1.
+
+| Horaire | Travail | Fichier |
+|---|---|---|
+| 14h30–14h40 | Instructions communes (guide `docs/01-instructions.md`) | `.github/copilot-instructions.md` |
+| 14h40–15h00 | Deux agents : Reviewer, Rédacteur (`docs/04-agents.md`) | `.github/agents/*.agent.md` |
+| 15h00–15h25 | Deux skills : `formater-us`, `revue-agilite` (`docs/05-skills.md`) | `.github/skills/*/SKILL.md` |
+| 15h35–16h10 | Exécution sur les 5 US et validation | voir workflow |
+
+Les agents définissent les **rôles**, les skills portent les **méthodes**, les instructions fixent le **cadre commun** : ne pas recopier les détails de format et de revue dans les agents, les citer.
+
+### Workflow d'exécution (passage manuel d'un agent à l'autre)
+```
+PLAN.md validé
+   ↓
+Reviewer + skill revue-agilite   → resultats/revue.md
+   ↓
+Décisions métier du groupe       (référent produit tranche, les ND-xx non tranchées restent ouvertes)
+   ↓
+Rédacteur + skill formater-us    → backlog/sortie/lot<N>/ + resultats/synthese-actions.md
+   ↓
+Contrôle de structure            (checklist ci-dessous)
+   ↓
+Revue finale et validation humaine → backlog prêt à intégrer
+```
+
+Contrôle de structure à faire sur chaque fichier de sortie :
+- [ ] Titre `# US-XXX — Titre`, identifiant unique et traçable vers l'US d'origine.
+- [ ] Les 5 sections du modèle sont présentes (Besoin, Règles métier, Critères d'acceptation, Dépendances, Questions ouvertes).
+- [ ] Au moins un critère d'acceptation vérifiable.
+- [ ] Aucune règle absente de `regles-metier.md` ; chaque ND-xx apparaît en question ouverte.
+- [ ] L'US correcte est inchangée.
 
 Sorties : `sprintdesk/backlog/sortie/lot<N>/`, `sprintdesk/resultats/revue.md`, `synthese-actions.md`.
+
+Critère de réussite : 2 agents, 2 skills, instructions complétées et les 5 US traitées avec traçabilité. Gardez les traces (revue, synthèse, sorties) : elles alimentent la partie 3.
 
 ## Partie 3 (option) — Analyser (16h10–16h30)
 Remplir la grille pour chaque US, puis la boucle : 1 défaut → 1 cause → 1 seule modification (plan, instructions, agent ou skill) → rejouer → vérifier l'absence de régression. Livrable : `sprintdesk/resultats/ANALYSE.md`.

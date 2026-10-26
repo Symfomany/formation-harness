@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Créer des instructions</title><style>
+:root{--bg:#f6f7fb;--panel:#fff;--text:#1f2433;--muted:#667085;--line:#e4e7ee;--accent:#5b5bd6;--accent-soft:#eceafd;
+--code-bg:#14172b;--code-text:#e6e8f5;--inline:#eef0f6;--warn-bg:#fff7e6;--warn:#b54708;--shadow:0 1px 3px rgba(20,23,43,.08),0 8px 24px rgba(20,23,43,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1220;--panel:#171a2c;--text:#e6e8f5;--muted:#9aa2c0;--line:#272b45;--accent:#8b8bff;--accent-soft:#242850;
+--code-bg:#0a0c18;--code-text:#e6e8f5;--inline:#242848;--warn-bg:#2b2310;--warn:#fbbf24;--shadow:0 1px 3px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+nav.side{position:sticky;top:0;height:100vh;overflow:auto;padding:24px 16px;background:var(--panel);border-right:1px solid var(--line)}
+.brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:15px;margin:0 8px 20px}
+.brand i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#5b5bd6,#a78bfa);color:#fff;font-style:normal}
+nav.side a{display:block;padding:8px 12px;margin:2px 0;border-radius:8px;color:var(--text);text-decoration:none;font-size:14.5px}
+nav.side a:hover{background:var(--accent-soft)}
+nav.side a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.side .grp{margin:18px 12px 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+main{padding:32px clamp(16px,4vw,56px) 64px;max-width:980px;width:100%;margin:0 auto}
+.hero{margin:0 -4px 28px;padding:40px clamp(20px,4vw,40px);border-radius:20px;color:#fff;background:linear-gradient(135deg,#4338ca,#7c3aed 60%,#c084fc);box-shadow:var(--shadow)}
+.hero h1{margin:0;font-size:clamp(26px,4vw,38px);line-height:1.2}
+.hero p{margin:12px 0 0;opacity:.92}
+.hero a{color:#fff}
+h2{margin:44px 0 14px;font-size:24px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h3{margin:30px 0 10px;font-size:19px}
+h2 .a,h3 .a{margin-left:8px;color:var(--muted);text-decoration:none;opacity:0;font-weight:400}
+h2:hover .a,h3:hover .a{opacity:1}
+p,ul,ol{margin:12px 0}li{margin:5px 0}
+a{color:var(--accent)}
+code{font:0.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--inline);padding:2px 6px;border-radius:6px}
+.code{position:relative;margin:16px 0;border-radius:14px;overflow:hidden;background:var(--code-bg);box-shadow:var(--shadow)}
+.code .lang{display:block;padding:8px 16px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9aa2c0;border-bottom:1px solid #272b45}
+.code pre{margin:0;padding:16px;overflow:auto;color:var(--code-text)}
+.code pre code{background:none;padding:0;color:inherit;font-size:13.5px;line-height:1.5;display:block}
+.code button{position:absolute;top:6px;right:8px;border:0;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;background:#272b45;color:#cfd3ea}
+.code button:hover{background:var(--accent);color:#fff}
+.tablewrap{overflow-x:auto;margin:18px 0;border-radius:14px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{background:var(--accent-soft);text-align:left;font-weight:600}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--accent-soft)}
+ul.check{list-style:none;padding-left:4px}
+blockquote{margin:18px 0;padding:12px 18px;border-left:4px solid var(--warn);background:var(--warn-bg);border-radius:0 12px 12px 0}
+blockquote p{margin:4px 0}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:56px}
+.pager a{flex:1;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-decoration:none;color:var(--text);box-shadow:var(--shadow)}
+.pager a:hover{border-color:var(--accent)}.pager small{display:block;color:var(--muted)}.pager .n{text-align:right}
+footer{margin-top:32px;color:var(--muted);font-size:13px;text-align:center}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px;border-right:0;border-bottom:1px solid var(--line)}
+nav.side .brand,nav.side .grp{width:100%}nav.side a{margin:0}}
+</style></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Harness Copilot</div><a href="../index.html">Accueil</a><a href="../docs/index.html">Vue d'ensemble</a><div class="grp">Atelier 1 · Planifier</div><a class="on" href="../docs/01-instructions.html">1 · Instructions</a><a href="../docs/02-plan.html">2 · Prompter le plan</a><div class="grp">Atelier 2 · Acter</div><a href="../docs/03-architecture-agents.html">3 · Architecture & SDLC</a><a href="../docs/04-agents.html">4 · Agents</a><a href="../docs/05-skills.html">5 · Skills</a><a href="../docs/06-prompts.html">6 · Prompts (annexe)</a><div class="grp">Bonus · Analyser</div><a href="../docs/07-evaluation.html">7 · Évaluer & ajuster</a><div class="grp">Ressources</div><a href="../docs/Aide_Memoire_Participant.pdf">Aide-mémoire (PDF)</a></nav>
+<main><header class="hero"><h1>Créer des instructions</h1></header>
+<h2 id="à-quoi-ça-sert">À quoi ça sert<a class="a" href="#à-quoi-ça-sert">#</a></h2>
+<p>Les instructions sont du contexte ajouté <strong>automatiquement</strong> à chaque requête Copilot. Elles portent les règles communes à tous les agents : sources de référence, interdits, conventions de sortie.</p>
+<h2 id="dans-latelier-1-exprimer-clairement-le-contexte-du-projet">Dans l'atelier 1 : exprimer clairement le contexte du projet<a class="a" href="#dans-latelier-1-exprimer-clairement-le-contexte-du-projet">#</a></h2>
+<p>Le premier exercice n'est pas technique : c'est de <strong>dire clairement</strong> à Copilot où il travaille. Des instructions claires répondent à quatre questions :</p>
+<div class="tablewrap"><table><thead><tr><th>Question</th><th>Exemple SprintDesk</th></tr></thead><tbody><tr><td>Quel est le projet et son but ?</td><td>Centraliser, qualifier, prioriser et suivre les demandes métier</td></tr><tr><td>Quelles sont les sources de vérité ?</td><td><code>produit.md</code>, <code>regles-metier.md</code></td></tr><tr><td>Qu'est-ce qui est interdit ?</td><td>Inventer une décision (<code>ND-xx</code>), publier sans validation</td></tr><tr><td>Quelle forme doivent avoir les réponses ?</td><td>Faits / propositions / questions ouvertes ; identifiants US conservés</td></tr></tbody></table></div>
+<p>Ces instructions servent ensuite de base à <strong>tous</strong> les prompts et à tous les agents : <a href="../docs/02-plan.html">02-plan.md</a> s'appuie dessus.</p>
+<h2 id="deux-niveaux">Deux niveaux<a class="a" href="#deux-niveaux">#</a></h2>
+<div class="tablewrap"><table><thead><tr><th>Fichier</th><th>Portée</th></tr></thead><tbody><tr><td><code>.github/copilot-instructions.md</code></td><td>Tout le dépôt, toutes les conversations</td></tr><tr><td><code>.github/instructions/&lt;nom&gt;.instructions.md</code></td><td>Seulement les fichiers correspondant au motif <code>applyTo</code></td></tr></tbody></table></div>
+<p>Activer si besoin dans VS Code : paramètre <code>github.copilot.chat.codeGeneration.useInstructionFiles</code> (activé par défaut).</p>
+<h2 id="étapes">Étapes<a class="a" href="#étapes">#</a></h2>
+<ol><li>Ouvrir <code>.github/copilot-instructions.md</code> (ou le créer).</li><li>Lister les <strong>références</strong> : fichiers de contexte à lire.</li><li>Écrire des <strong>règles courtes, impératives et vérifiables</strong> (une par ligne).</li><li>Renvoyer vers les skills pour le détail (ne pas tout recopier ici).</li><li>Tester : poser une question à Copilot et vérifier dans « Références » que le fichier est bien utilisé.</li></ol>
+<h2 id="exemple-sprintdesk">Exemple SprintDesk<a class="a" href="#exemple-sprintdesk">#</a></h2>
+<div class="code"><span class="lang">markdown</span><button type="button">Copier</button><pre><code># Instructions communes — SprintDesk
+
+## Références
+- Contexte produit : `sprintdesk/contexte/produit.md`
+- Règles métier : `sprintdesk/contexte/regles-metier.md`
+
+## Règles
+- N&#x27;invente aucune règle ni décision métier : une décision ND-xx reste une question ouverte.
+- Conserve l&#x27;identifiant US-xxx et cite l&#x27;US d&#x27;origine.
+- Distingue explicitement : Faits / Propositions / Questions ouvertes.
+- Si une US est correcte, laisse-la inchangée et dis-le.
+- Ne publie rien vers un service externe sans validation humaine.
+- Indique les contrôles réellement exécutés (et ceux qui ne l&#x27;ont pas été).
+
+## Où trouver les détails
+- Format d&#x27;une US : skill `formater-us`.
+- Méthode de revue : skill `revue-agilite`.</code></pre></div>
+<h2 id="instructions-ciblées-optionnel">Instructions ciblées (optionnel)<a class="a" href="#instructions-ciblées-optionnel">#</a></h2>
+<div class="code"><span class="lang">markdown</span><button type="button">Copier</button><pre><code>---
+applyTo: &quot;sprintdesk/backlog/sortie/**/*.md&quot;
+---
+Chaque US produite respecte le modèle de la skill `formater-us`.
+Les critères d&#x27;acceptation sont au format Given / When / Then.</code></pre></div>
+<h2 id="bonnes-pratiques">Bonnes pratiques<a class="a" href="#bonnes-pratiques">#</a></h2>
+<ul><li><strong>Court</strong> : ce fichier est envoyé à chaque requête ; au-delà d'une page, déplacer dans une skill.</li><li><strong>Positif et précis</strong> : « cite la règle RM-xx » plutôt que « sois rigoureux ».</li><li><strong>Pas de procédure longue</strong> : c'est le rôle d'une skill.</li><li><strong>Pas de garantie</strong> : une instruction peut être ignorée ; ce qui doit être vérifié se contrôle lors de la relecture humaine.</li></ul>
+<h2 id="pièges">Pièges<a class="a" href="#pièges">#</a></h2>
+<ul><li>Contradiction entre instructions et agent → le modèle arbitre au hasard. Garder une seule source de vérité.</li><li>Règles vagues (« fais de bonnes US ») → aucun effet mesurable.</li></ul><div class="pager"><a href="../docs/index.html"><small>← Précédent</small>Vue d'ensemble</a><a class="n" href="../docs/02-plan.html"><small>Suivant →</small>2 · Prompter le plan</a></div><footer>SprintDesk · HabiOuest (cas fictif)</footer></main></div>
+<script>document.querySelectorAll('.code button').forEach(function(b){b.addEventListener('click',function(){
+var t=b.parentElement.querySelector('code').innerText;
+(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier'},1500)}).catch(function(){});
+})});</script></body></html>

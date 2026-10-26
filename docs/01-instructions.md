@@ -3,6 +3,17 @@
 ## À quoi ça sert
 Les instructions sont du contexte ajouté **automatiquement** à chaque requête Copilot. Elles portent les règles communes à tous les agents : sources de référence, interdits, conventions de sortie.
 
+## Dans l'atelier 1 : exprimer clairement le contexte du projet
+Le premier exercice n'est pas technique : c'est de **dire clairement** à Copilot où il travaille. Des instructions claires répondent à quatre questions :
+| Question | Exemple SprintDesk |
+|---|---|
+| Quel est le projet et son but ? | Centraliser, qualifier, prioriser et suivre les demandes métier |
+| Quelles sont les sources de vérité ? | `produit.md`, `regles-metier.md` |
+| Qu'est-ce qui est interdit ? | Inventer une décision (`ND-xx`), publier sans validation |
+| Quelle forme doivent avoir les réponses ? | Faits / propositions / questions ouvertes ; identifiants US conservés |
+
+Ces instructions servent ensuite de base à **tous** les prompts et à tous les agents : [02-plan.md](02-plan.md) s'appuie dessus.
+
 ## Deux niveaux
 
 | Fichier | Portée |
@@ -53,7 +64,7 @@ Les critères d'acceptation sont au format Given / When / Then.
 - **Court** : ce fichier est envoyé à chaque requête ; au-delà d'une page, déplacer dans une skill.
 - **Positif et précis** : « cite la règle RM-xx » plutôt que « sois rigoureux ».
 - **Pas de procédure longue** : c'est le rôle d'une skill.
-- **Pas de garantie** : une instruction peut être ignorée ; ce qui doit être garanti va dans un hook.
+- **Pas de garantie** : une instruction peut être ignorée ; ce qui doit être vérifié se contrôle lors de la relecture humaine.
 
 ## Pièges
 - Contradiction entre instructions et agent → le modèle arbitre au hasard. Garder une seule source de vérité.

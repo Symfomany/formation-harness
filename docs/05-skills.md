@@ -1,7 +1,7 @@
 # Créer une skill
 
 ## À quoi ça sert
-Une skill est un **savoir-faire packagé** : une procédure, accompagnée si besoin de ressources (modèle, checklist, script). Copilot ne lit que son nom et sa description au départ, puis charge le contenu **uniquement quand la tâche correspond**. Plusieurs agents peuvent réutiliser la même skill.
+Une skill est un **savoir-faire packagé** : une procédure, accompagnée si besoin de ressources (modèle, checklist). Copilot ne lit que son nom et sa description au départ, puis charge le contenu **uniquement quand la tâche correspond**. Plusieurs agents peuvent réutiliser la même skill.
 
 Agent = *qui* agit. Skill = *comment* on fait.
 

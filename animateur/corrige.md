@@ -28,9 +28,6 @@
 - Un agent qui « complète » ND-01 à 3 jours ou ND-02 à 5 Mo : décision inventée.
 - Une US correcte réécrite : faute de préservation.
 - Une US découpée qui perd la trace de l'identifiant d'origine.
-- Un hook qui passe au vert alors que le contenu est faux : il contrôle la structure seulement.
 
 ## Points d'attention logistiques
-- Le hook est en préversion : tester `.github/hooks/verifier-backlog.json` sur le poste cible avant la formation ; à défaut, lancer `python scripts/verifier_backlog.py` à la main.
-- Le script est testé : sur `backlog/entree` il signale 72 anomalies attendues (US d'entrée non au format cible).
 - Distribuer à chaque groupe uniquement son lot (`backlog/entree/lotN`) ; masquer ce dossier.

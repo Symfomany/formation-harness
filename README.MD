@@ -11,13 +11,19 @@ Le backlog initial est inexploitable en l'état : US vagues, trop volumineuses, 
 
 ## Le défi avec Copilot
 Un agent générique « améliore » volontiers une US… en inventant des règles, en réécrivant ce qui était correct et sans dire ce qu'il a vérifié. Le défi : transformer Copilot en **assistant métier encadré** (un *harness*) :
-- **Instructions** pour les règles communes (ne pas inventer, tracer, distinguer faits / propositions / questions) ;
+- **Instructions** pour le contexte du projet et les règles communes (ne pas inventer, tracer, distinguer faits / propositions / questions) ;
 - **Agents** aux rôles séparés (un Reviewer qui diagnostique, un Rédacteur qui réécrit) ;
 - **Skills** pour les savoir-faire réutilisables (format d'US, revue agile) ;
-- **Hook** pour un contrôle automatique et déterministe de la structure ;
 - **Validation humaine** sur les décisions métier et avant toute publication.
 
 Résultat attendu : un backlog exploitable, traçable, et des questions ouvertes visibles plutôt que des réponses inventées.
+
+## Le parcours
+| Temps | Ce que les groupes pratiquent |
+|---|---|
+| **Atelier 1 — Planifier** | Rédiger des **instructions claires** du contexte du projet, puis **prompter** pour obtenir un plan clair et bien construit (`PLAN.md`) |
+| **Atelier 2 — Acter** | Définir l'**architecture des agents** et leur rôle dans le cycle de développement (SDLC), puis créer les **agents** et les **skills** qui exécutent le plan |
+| **Bonus — Analyser** | **Évaluer et ajuster** : critères de succès, signaux qualitatifs et quantitatifs, analyse des traces et des sorties, distinction entre erreur de raisonnement, mauvais outil, mauvais contexte et environnement, puis ajustement des instructions, outils, contraintes et mémoire |
 
 ## Lots
 | Groupe | Lot | US |
@@ -34,22 +40,21 @@ Chaque lot : une US vague, une trop volumineuse, une contradictoire, une sans cr
 sprintdesk/contexte/          produit.md, regles-metier.md (règles validées + décisions non prises)
 sprintdesk/backlog/entree/    20 US par lot (lot1..lot4)
 sprintdesk/backlog/sortie/    production des groupes
-sprintdesk/resultats/         revue, synthèse, ANALYSE, rapport de structure
-.github/                      squelettes : instructions, 2 agents, 2 skills, hook
-scripts/verifier_backlog.py   contrôle de structure (sections, IDs uniques, ≥1 critère)
+sprintdesk/resultats/         revue, synthèse, ANALYSE
+.github/                      squelettes : instructions, 2 agents, 2 skills
 animateur/                    fiches-groupes.md, corrige.md (à ne pas distribuer)
-docs/                         guides : instructions, agents, skills, prompts, hooks + aide-mémoire PDF
+docs/                         guides pas à pas par atelier + aide-mémoire PDF
 ```
 `PLAN.md` est produit par chaque groupe à la racine.
 
 ## Avant la formation
-1. Tester le hook sur le poste cible (préversion) ; repli : `python scripts/verifier_backlog.py`.
-2. Distribuer une copie du dépôt par groupe, avec son seul lot dans `entree/`, sans `animateur/`.
-3. Préparer les présentations 1 et 2 (contexte/instructions/outils ; agents vs skills vs hooks).
+1. Distribuer une copie du dépôt par groupe, avec son seul lot dans `entree/`, sans `animateur/`.
+2. Préparer les présentations 1 et 2 (contexte/instructions/outils ; agents vs skills).
 
 ## Guides pratiques
-Voir [`docs/README.md`](docs/README.md) : comment créer des instructions, un agent, une skill, un prompt réutilisable et un hook.
+Voir [`docs/README.md`](docs/README.md) : instructions, plan, architecture des agents, agents, skills, prompts et évaluation.
 
 ## Socle de réussite
-Un `PLAN.md`, deux agents, deux skills, un hook, cinq US traitées avec traçabilité.
+Un `PLAN.md`, deux agents, deux skills, cinq US traitées avec traçabilité.
+Bonus : `ANALYSE.md` (critères de succès, constats, une modification testée).
 Extensions : agent expert agilité, skill `preparer-publication`, superviseur et sous-agents, publication GitHub Issues (avec prévisualisation et validation humaine), boucle d'analyse.

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bonus — Évaluer, analyser les erreurs et ajuster</title><style>
+:root{--bg:#f6f7fb;--panel:#fff;--text:#1f2433;--muted:#667085;--line:#e4e7ee;--accent:#5b5bd6;--accent-soft:#eceafd;
+--code-bg:#14172b;--code-text:#e6e8f5;--inline:#eef0f6;--warn-bg:#fff7e6;--warn:#b54708;--shadow:0 1px 3px rgba(20,23,43,.08),0 8px 24px rgba(20,23,43,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1220;--panel:#171a2c;--text:#e6e8f5;--muted:#9aa2c0;--line:#272b45;--accent:#8b8bff;--accent-soft:#242850;
+--code-bg:#0a0c18;--code-text:#e6e8f5;--inline:#242848;--warn-bg:#2b2310;--warn:#fbbf24;--shadow:0 1px 3px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+nav.side{position:sticky;top:0;height:100vh;overflow:auto;padding:24px 16px;background:var(--panel);border-right:1px solid var(--line)}
+.brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:15px;margin:0 8px 20px}
+.brand i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#5b5bd6,#a78bfa);color:#fff;font-style:normal}
+nav.side a{display:block;padding:8px 12px;margin:2px 0;border-radius:8px;color:var(--text);text-decoration:none;font-size:14.5px}
+nav.side a:hover{background:var(--accent-soft)}
+nav.side a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.side .grp{margin:18px 12px 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+main{padding:32px clamp(16px,4vw,56px) 64px;max-width:980px;width:100%;margin:0 auto}
+.hero{margin:0 -4px 28px;padding:40px clamp(20px,4vw,40px);border-radius:20px;color:#fff;background:linear-gradient(135deg,#4338ca,#7c3aed 60%,#c084fc);box-shadow:var(--shadow)}
+.hero h1{margin:0;font-size:clamp(26px,4vw,38px);line-height:1.2}
+.hero p{margin:12px 0 0;opacity:.92}
+.hero a{color:#fff}
+h2{margin:44px 0 14px;font-size:24px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h3{margin:30px 0 10px;font-size:19px}
+h2 .a,h3 .a{margin-left:8px;color:var(--muted);text-decoration:none;opacity:0;font-weight:400}
+h2:hover .a,h3:hover .a{opacity:1}
+p,ul,ol{margin:12px 0}li{margin:5px 0}
+a{color:var(--accent)}
+code{font:0.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--inline);padding:2px 6px;border-radius:6px}
+.code{position:relative;margin:16px 0;border-radius:14px;overflow:hidden;background:var(--code-bg);box-shadow:var(--shadow)}
+.code .lang{display:block;padding:8px 16px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9aa2c0;border-bottom:1px solid #272b45}
+.code pre{margin:0;padding:16px;overflow:auto;color:var(--code-text)}
+.code pre code{background:none;padding:0;color:inherit;font-size:13.5px;line-height:1.5;display:block}
+.code button{position:absolute;top:6px;right:8px;border:0;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;background:#272b45;color:#cfd3ea}
+.code button:hover{background:var(--accent);color:#fff}
+.tablewrap{overflow-x:auto;margin:18px 0;border-radius:14px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{background:var(--accent-soft);text-align:left;font-weight:600}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--accent-soft)}
+ul.check{list-style:none;padding-left:4px}
+blockquote{margin:18px 0;padding:12px 18px;border-left:4px solid var(--warn);background:var(--warn-bg);border-radius:0 12px 12px 0}
+blockquote p{margin:4px 0}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:56px}
+.pager a{flex:1;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-decoration:none;color:var(--text);box-shadow:var(--shadow)}
+.pager a:hover{border-color:var(--accent)}.pager small{display:block;color:var(--muted)}.pager .n{text-align:right}
+footer{margin-top:32px;color:var(--muted);font-size:13px;text-align:center}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px;border-right:0;border-bottom:1px solid var(--line)}
+nav.side .brand,nav.side .grp{width:100%}nav.side a{margin:0}}
+</style></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Harness Copilot</div><a href="../index.html">Accueil</a><a href="../docs/index.html">Vue d'ensemble</a><div class="grp">Atelier 1 · Planifier</div><a href="../docs/01-instructions.html">1 · Instructions</a><a href="../docs/02-plan.html">2 · Prompter le plan</a><div class="grp">Atelier 2 · Acter</div><a href="../docs/03-architecture-agents.html">3 · Architecture & SDLC</a><a href="../docs/04-agents.html">4 · Agents</a><a href="../docs/05-skills.html">5 · Skills</a><a href="../docs/06-prompts.html">6 · Prompts (annexe)</a><div class="grp">Bonus · Analyser</div><a class="on" href="../docs/07-evaluation.html">7 · Évaluer & ajuster</a><div class="grp">Ressources</div><a href="../docs/Aide_Memoire_Participant.pdf">Aide-mémoire (PDF)</a></nav>
+<main><header class="hero"><h1>Bonus — Évaluer, analyser les erreurs et ajuster</h1></header>
+<h2 id="à-quoi-ça-sert">À quoi ça sert<a class="a" href="#à-quoi-ça-sert">#</a></h2>
+<p>Un harness n'est jamais bon du premier coup. Ce bonus apprend à <strong>mesurer</strong> ce que les agents ont produit, <strong>comprendre pourquoi</strong> ça a échoué, et <strong>corriger la bonne chose</strong> : le plan, les instructions, l'agent, la skill ou l'environnement.</p>
+<h2 id="1-définir-les-critères-de-succès">1. Définir les critères de succès<a class="a" href="#1-définir-les-critères-de-succès">#</a></h2>
+<p>On les fixe <strong>avant</strong> de rejouer, en s'appuyant sur le plan. Un critère est utile s'il se tranche par oui ou non.</p>
+<div class="tablewrap"><table><thead><tr><th>Critère</th><th>Signal</th><th>Type</th></tr></thead><tbody><tr><td>Aucune décision métier inventée</td><td>Aucune valeur pour un <code>ND-xx</code> dans les US de sortie</td><td>Qualitatif (relecture)</td></tr><tr><td>Une US correcte reste inchangée</td><td>Fichier identique à l'entrée</td><td>Quantitatif (oui/non)</td></tr><tr><td>Critères d'acceptation vérifiables</td><td>Format Given / When / Then, un comportement par critère</td><td>Qualitatif</td></tr><tr><td>Questions ouvertes visibles</td><td>Section « Questions ouvertes » renseignée quand une décision manque</td><td>Qualitatif</td></tr><tr><td>Traçabilité conservée</td><td>Identifiant d'origine présent, lien vers l'US source en cas de découpage</td><td>Quantitatif</td></tr><tr><td>Complétude du lot</td><td>5 US sur 5 traitées (créée / modifiée / inchangée / bloquée)</td><td>Quantitatif</td></tr></tbody></table></div>
+<h2 id="2-signaux-à-observer">2. Signaux à observer<a class="a" href="#2-signaux-à-observer">#</a></h2>
+<p><strong>Quantitatifs</strong> : nombre d'US traitées, nombre de sections manquantes, nombre de règles inventées, nombre de questions ouvertes, nombre de relances nécessaires.</p>
+<p><strong>Qualitatifs</strong> : clarté des critères, pertinence des questions, cohérence avec <code>regles-metier.md</code>, ton et lisibilité des US.</p>
+<h2 id="3-où-chercher-les-preuves">3. Où chercher les preuves<a class="a" href="#3-où-chercher-les-preuves">#</a></h2>
+<div class="tablewrap"><table><thead><tr><th>Source</th><th>Ce qu'on y lit</th></tr></thead><tbody><tr><td>Fichiers de sortie</td><td>Le résultat final, US par US</td></tr><tr><td><code>revue.md</code>, <code>synthese-actions.md</code></td><td>Le raisonnement et le bilan de l'agent</td></tr><tr><td><code>PLAN.md</code></td><td>Ce qui était attendu</td></tr><tr><td>Panneau Chat de VS Code</td><td>Les <strong>références</strong> (fichiers réellement lus), les <strong>outils appelés</strong>, les étapes de raisonnement affichées</td></tr><tr><td>Instructions, agents, skills</td><td>Ce qui était demandé à l'agent</td></tr></tbody></table></div>
+<p>Question de base : <em>qu'a-t-on donné à l'agent, qu'a-t-il fait, qu'attendait-on ?</em></p>
+<h2 id="4-diagnostiquer-quelle-est-la-cause">4. Diagnostiquer : quelle est la cause ?<a class="a" href="#4-diagnostiquer-quelle-est-la-cause">#</a></h2>
+<p>Un même mauvais résultat peut avoir quatre origines très différentes.</p>
+<div class="tablewrap"><table><thead><tr><th>Cause</th><th>Symptôme typique</th><th>Comment le vérifier</th><th>Correction</th></tr></thead><tbody><tr><td><strong>Erreur de raisonnement</strong></td><td>L'agent avait toutes les informations mais conclut mal (ex. juge correcte une US contradictoire)</td><td>Le bon fichier est dans les références, la règle est claire, la conclusion est fausse</td><td>Préciser la procédure d'une skill, ajouter un exemple et un contre-exemple</td></tr><tr><td><strong>Mauvais outil</strong></td><td>L'agent ne peut pas faire l'action, ou modifie ce qu'il ne devait pas</td><td>Regarder les outils appelés et la liste <code>tools</code> de l'agent</td><td>Retirer ou ajouter l'outil, ajuster la consigne d'usage</td></tr><tr><td><strong>Mauvais contexte</strong></td><td>Règle inventée, <code>ND-xx</code> « complété », fichier ignoré</td><td><code>regles-metier.md</code> absent des références, instruction ambiguë ou contradictoire</td><td>Citer les sources dans les instructions, rendre explicite l'interdit</td></tr><tr><td><strong>Environnement</strong></td><td>Fichier écrit au mauvais endroit, agent ou skill non pris en compte</td><td>Nom de dossier ou de fichier incorrect, mauvais emplacement, mauvais lot ouvert</td><td>Corriger l'emplacement, le nom, le périmètre ouvert dans VS Code</td></tr></tbody></table></div>
+<p>Exemple : un agent fixe le seuil d'alerte à 3 jours.</p>
+<ul><li>La source <code>regles-metier.md</code> était-elle lue ? Non → <strong>contexte</strong>.</li><li>Lue, mais l'instruction ne dit pas « ne jamais compléter une ND » → <strong>instruction</strong> (contexte).</li><li>Lue, interdit clair, et il invente quand même → <strong>raisonnement</strong> : ajouter un contre-exemple dans la skill.</li></ul>
+<h2 id="5-ajuster-une-chose-à-la-fois">5. Ajuster, une chose à la fois<a class="a" href="#5-ajuster-une-chose-à-la-fois">#</a></h2>
+<div class="tablewrap"><table><thead><tr><th>Levier</th><th>Quand l'ajuster</th></tr></thead><tbody><tr><td><strong>Instructions</strong></td><td>Règle transverse manquante ou ambiguë</td></tr><tr><td><strong>Agent</strong> (mission, interdits)</td><td>Mauvais rôle, dérive de périmètre</td></tr><tr><td><strong>Outils</strong></td><td>Action impossible ou non souhaitée</td></tr><tr><td><strong>Contraintes</strong> (interdits, conditions d'arrêt)</td><td>L'agent va trop loin ou s'arrête trop tard</td></tr><tr><td><strong>Skill</strong></td><td>La procédure ou l'exemple est insuffisant</td></tr><tr><td><strong>Mémoire</strong> (fichiers de contexte persistants : <code>PLAN.md</code>, <code>synthese-actions.md</code>)</td><td>L'information doit survivre d'une session à l'autre</td></tr></tbody></table></div>
+<h3 id="la-boucle">La boucle<a class="a" href="#la-boucle">#</a></h3>
+<div class="code"><span class="lang">texte</span><button type="button">Copier</button><pre><code>1 défaut → 1 cause → 1 seule modification → rejouer → vérifier l&#x27;absence de régression</code></pre></div>
+<p>Pourquoi une seule modification ? Avec deux, on ne sait plus laquelle a corrigé… ou cassé. Rejouer aussi une US qui marchait : l'US correcte doit toujours rester inchangée.</p>
+<h2 id="6-grille-danalyse-par-us">6. Grille d'analyse par US<a class="a" href="#6-grille-danalyse-par-us">#</a></h2>
+<div class="tablewrap"><table><thead><tr><th>Critère</th><th>Avant</th><th>Après</th></tr></thead><tbody><tr><td>Besoin et valeur compréhensibles</td><td>Oui / Partiel / Non</td><td>Oui / Partiel / Non</td></tr><tr><td>Critères d'acceptation vérifiables</td><td></td><td></td></tr><tr><td>Règles cohérentes avec les sources</td><td></td><td></td></tr><tr><td>Questions ouvertes visibles</td><td></td><td></td></tr><tr><td>Traçabilité conservée</td><td></td><td></td></tr></tbody></table></div>
+<p>Contrôle séparé : <strong>une décision métier a-t-elle été inventée ?</strong> (oui/non, et laquelle)</p>
+<h2 id="7-livrable-sprintdeskresultatsanalysemd">7. Livrable : <code>sprintdesk/resultats/ANALYSE.md</code><a class="a" href="#7-livrable-sprintdeskresultatsanalysemd">#</a></h2>
+<div class="code"><span class="lang">markdown</span><button type="button">Copier</button><pre><code># Analyse — lot &lt;N&gt;
+
+## Critères de succès
+...
+
+## Constats
+| US | Défaut observé | Preuve (fichier / étape) | Cause (raisonnement, outil, contexte, environnement) |
+|---|---|---|---|
+
+## Modification testée
+- Levier : (instructions / agent / skill / outil)
+- Modification :
+- Résultat après rejeu :
+- Régression : oui / non
+
+## Reste à faire</code></pre></div>
+<h2 id="pièges">Pièges<a class="a" href="#pièges">#</a></h2>
+<ul><li>Juger « à l'impression » : écrire les critères avant de regarder les résultats.</li><li>Corriger la skill alors que le problème vient d'un fichier non lu.</li><li>Confondre un agent qui se trompe et un agent à qui l'on a demandé la mauvaise chose.</li></ul><div class="pager"><a href="../docs/06-prompts.html"><small>← Précédent</small>6 · Prompts (annexe)</a></div><footer>SprintDesk · HabiOuest (cas fictif)</footer></main></div>
+<script>document.querySelectorAll('.code button').forEach(function(b){b.addEventListener('click',function(){
+var t=b.parentElement.querySelector('code').innerText;
+(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier'},1500)}).catch(function(){});
+})});</script></body></html>

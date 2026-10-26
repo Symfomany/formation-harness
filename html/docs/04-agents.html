@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Créer un agent personnalisé</title><style>
+:root{--bg:#f6f7fb;--panel:#fff;--text:#1f2433;--muted:#667085;--line:#e4e7ee;--accent:#5b5bd6;--accent-soft:#eceafd;
+--code-bg:#14172b;--code-text:#e6e8f5;--inline:#eef0f6;--warn-bg:#fff7e6;--warn:#b54708;--shadow:0 1px 3px rgba(20,23,43,.08),0 8px 24px rgba(20,23,43,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1220;--panel:#171a2c;--text:#e6e8f5;--muted:#9aa2c0;--line:#272b45;--accent:#8b8bff;--accent-soft:#242850;
+--code-bg:#0a0c18;--code-text:#e6e8f5;--inline:#242848;--warn-bg:#2b2310;--warn:#fbbf24;--shadow:0 1px 3px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+nav.side{position:sticky;top:0;height:100vh;overflow:auto;padding:24px 16px;background:var(--panel);border-right:1px solid var(--line)}
+.brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:15px;margin:0 8px 20px}
+.brand i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#5b5bd6,#a78bfa);color:#fff;font-style:normal}
+nav.side a{display:block;padding:8px 12px;margin:2px 0;border-radius:8px;color:var(--text);text-decoration:none;font-size:14.5px}
+nav.side a:hover{background:var(--accent-soft)}
+nav.side a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.side .grp{margin:18px 12px 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+main{padding:32px clamp(16px,4vw,56px) 64px;max-width:980px;width:100%;margin:0 auto}
+.hero{margin:0 -4px 28px;padding:40px clamp(20px,4vw,40px);border-radius:20px;color:#fff;background:linear-gradient(135deg,#4338ca,#7c3aed 60%,#c084fc);box-shadow:var(--shadow)}
+.hero h1{margin:0;font-size:clamp(26px,4vw,38px);line-height:1.2}
+.hero p{margin:12px 0 0;opacity:.92}
+.hero a{color:#fff}
+h2{margin:44px 0 14px;font-size:24px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h3{margin:30px 0 10px;font-size:19px}
+h2 .a,h3 .a{margin-left:8px;color:var(--muted);text-decoration:none;opacity:0;font-weight:400}
+h2:hover .a,h3:hover .a{opacity:1}
+p,ul,ol{margin:12px 0}li{margin:5px 0}
+a{color:var(--accent)}
+code{font:0.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--inline);padding:2px 6px;border-radius:6px}
+.code{position:relative;margin:16px 0;border-radius:14px;overflow:hidden;background:var(--code-bg);box-shadow:var(--shadow)}
+.code .lang{display:block;padding:8px 16px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9aa2c0;border-bottom:1px solid #272b45}
+.code pre{margin:0;padding:16px;overflow:auto;color:var(--code-text)}
+.code pre code{background:none;padding:0;color:inherit;font-size:13.5px;line-height:1.5;display:block}
+.code button{position:absolute;top:6px;right:8px;border:0;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;background:#272b45;color:#cfd3ea}
+.code button:hover{background:var(--accent);color:#fff}
+.tablewrap{overflow-x:auto;margin:18px 0;border-radius:14px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{background:var(--accent-soft);text-align:left;font-weight:600}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--accent-soft)}
+ul.check{list-style:none;padding-left:4px}
+blockquote{margin:18px 0;padding:12px 18px;border-left:4px solid var(--warn);background:var(--warn-bg);border-radius:0 12px 12px 0}
+blockquote p{margin:4px 0}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:56px}
+.pager a{flex:1;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-decoration:none;color:var(--text);box-shadow:var(--shadow)}
+.pager a:hover{border-color:var(--accent)}.pager small{display:block;color:var(--muted)}.pager .n{text-align:right}
+footer{margin-top:32px;color:var(--muted);font-size:13px;text-align:center}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px;border-right:0;border-bottom:1px solid var(--line)}
+nav.side .brand,nav.side .grp{width:100%}nav.side a{margin:0}}
+</style></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Harness Copilot</div><a href="../index.html">Accueil</a><a href="../docs/index.html">Vue d'ensemble</a><div class="grp">Atelier 1 · Planifier</div><a href="../docs/01-instructions.html">1 · Instructions</a><a href="../docs/02-plan.html">2 · Prompter le plan</a><div class="grp">Atelier 2 · Acter</div><a href="../docs/03-architecture-agents.html">3 · Architecture & SDLC</a><a class="on" href="../docs/04-agents.html">4 · Agents</a><a href="../docs/05-skills.html">5 · Skills</a><a href="../docs/06-prompts.html">6 · Prompts (annexe)</a><div class="grp">Bonus · Analyser</div><a href="../docs/07-evaluation.html">7 · Évaluer & ajuster</a><div class="grp">Ressources</div><a href="../docs/Aide_Memoire_Participant.pdf">Aide-mémoire (PDF)</a></nav>
+<main><header class="hero"><h1>Créer un agent personnalisé</h1></header>
+<h2 id="à-quoi-ça-sert">À quoi ça sert<a class="a" href="#à-quoi-ça-sert">#</a></h2>
+<p>Un agent personnalisé est un <strong>rôle</strong> : une mission, des outils autorisés, des interdits et un format de sortie. On le sélectionne dans la liste des agents du chat Copilot (à côté de Ask / Edit / Agent / Plan).</p>
+<p>Séparer les rôles évite qu'un même agent diagnostique <em>et</em> corrige à sa façon : le Reviewer constate, l'humain décide, le Rédacteur applique.</p>
+<h2 id="emplacement">Emplacement<a class="a" href="#emplacement">#</a></h2>
+<p><code>.github/agents/&lt;nom&gt;.agent.md</code> — un fichier par agent. (Création rapide : palette de commandes → « Chat: New Custom Agent ».)</p>
+<h2 id="structure-du-fichier">Structure du fichier<a class="a" href="#structure-du-fichier">#</a></h2>
+<div class="code"><span class="lang">markdown</span><button type="button">Copier</button><pre><code>---
+description: &quot;Ce que fait l&#x27;agent et quand l&#x27;utiliser (une phrase).&quot;
+tools: [&#x27;read&#x27;, &#x27;search&#x27;, &#x27;edit&#x27;]
+# model: optionnel, modèle à utiliser
+# handoffs: optionnel, bouton pour passer la main à un autre agent
+---
+# Nom de l&#x27;agent
+
+## Mission
+## Entrées
+## Interdits
+## Sortie attendue</code></pre></div>
+<div class="tablewrap"><table><thead><tr><th>Champ</th><th>Rôle</th></tr></thead><tbody><tr><td><code>description</code></td><td>Affichée dans le sélecteur ; aide aussi à choisir l'agent comme sous-agent</td></tr><tr><td><code>tools</code></td><td>Liste <strong>limitative</strong> des outils. Moins d'outils = moins de dérives</td></tr><tr><td><code>model</code></td><td>(Optionnel) modèle imposé</td></tr><tr><td><code>handoffs</code></td><td>(Optionnel) enchaînement proposé vers un autre agent</td></tr></tbody></table></div>
+<h2 id="étapes">Étapes<a class="a" href="#étapes">#</a></h2>
+<ol><li>Définir la <strong>mission en une phrase</strong> (verbe + livrable).</li><li>Choisir les <strong>outils minimaux</strong> : un reviewer n'a pas besoin de <code>runCommands</code>, aucun agent n'a besoin d'un outil de publication sans validation.</li><li>Écrire les <strong>interdits</strong> explicites (ce que l'agent ne décide pas).</li><li>Fixer le <strong>format de sortie</strong> (gabarit) et le <strong>fichier de destination</strong>.</li><li>Citer les <strong>skills</strong> à appliquer plutôt que recopier leur contenu.</li><li>Tester sur une US connue (ex. US-105, déjà correcte) : l'agent doit répondre « aucune action ».</li></ol>
+<h2 id="exemple-reviewer">Exemple : Reviewer<a class="a" href="#exemple-reviewer">#</a></h2>
+<div class="code"><span class="lang">markdown</span><button type="button">Copier</button><pre><code>---
+description: &quot;Relit des user stories SprintDesk et produit une revue sans les réécrire.&quot;
+tools: [&#x27;read&#x27;, &#x27;search&#x27;, &#x27;edit&#x27;]
+handoffs:
+  - label: Passer au rédacteur
+    agent: redacteur-backlog
+    prompt: Réécris les US à partir de sprintdesk/resultats/revue.md et des décisions du groupe.
+---
+# Reviewer backlog
+
+## Mission
+Diagnostiquer les US de `sprintdesk/backlog/entree/lot&lt;N&gt;/` en appliquant la skill `revue-agilite`.
+
+## Interdits
+- Ne réécris aucune US.
+- Ne tranche aucune décision ND-xx : formule une question métier.
+
+## Sortie
+Un bloc par constat dans `sprintdesk/resultats/revue.md` :
+US concernée / Constat / Règle concernée / Gravité / Question métier / Recommandation.</code></pre></div>
+<h2 id="bonnes-pratiques">Bonnes pratiques<a class="a" href="#bonnes-pratiques">#</a></h2>
+<ul><li>Un agent = un livrable. S'il en produit trois, le découper.</li><li>Le <strong>point de validation humaine</strong> se place entre deux agents (handoff), pas à l'intérieur.</li><li>Écrire dans un fichier plutôt que dans le chat : le résultat devient traçable et relisible.</li></ul>
+<h2 id="pièges">Pièges<a class="a" href="#pièges">#</a></h2>
+<ul><li>Donner <code>edit</code> à un agent censé ne rien modifier dans le backlog → limiter par consigne <em>et</em> vérifier dans la revue.</li><li>Description trop générique → l'agent est mal choisi quand il est appelé comme sous-agent.</li></ul><div class="pager"><a href="../docs/03-architecture-agents.html"><small>← Précédent</small>3 · Architecture & SDLC</a><a class="n" href="../docs/05-skills.html"><small>Suivant →</small>5 · Skills</a></div><footer>SprintDesk · HabiOuest (cas fictif)</footer></main></div>
+<script>document.querySelectorAll('.code button').forEach(function(b){b.addEventListener('click',function(){
+var t=b.parentElement.querySelector('code').innerText;
+(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier'},1500)}).catch(function(){});
+})});</script></body></html>
