@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "python scripts/verifier_backlog.py --hook",
+        "windows": "python scripts\\verifier_backlog.py --hook",
+        "timeout": 20
+      }
+    ]
+  }
+}
