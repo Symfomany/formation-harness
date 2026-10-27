@@ -50,7 +50,8 @@ flowchart LR
  └─ 📁 resultats/         revue, synthèse, ANALYSE
 📁 .github/               squelettes : instructions, 2 agents, 2 skills
 📁 docs/                  guides pas à pas par atelier + aide-mémoire PDF
-📁 animateur/             fiches-groupes.md, corrige.md (🔒 à ne pas distribuer)
+📁 animateur/             fiches-groupes.md, corrige.md, correction-*.md (🔒 à ne pas distribuer)
+📁 .github/prompts/       un prompt par phase : /planifier-lot, /acter-reviewer, /acter-redacteur, /analyser-lot
 📄 PLAN.md                produit par chaque groupe à la racine
 ```
 
