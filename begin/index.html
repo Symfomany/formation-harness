@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Road tour — Atelier SprintDesk avec Copilot (parcours débutant)</title>
+<script>
+/* Thème appliqué avant l'affichage pour éviter un flash. */
+(function(){var t=null;try{t=localStorage.getItem('sd-theme')}catch(e){}if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;})();
+</script>
 <style>
   :root{
     --bg:#f4f6fb; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#d9dfec;
@@ -11,6 +15,30 @@
     --amber:#d97706; --amber-l:#fef3c7; --violet:#7c3aed; --red:#dc2626;
   }
   *{box-sizing:border-box}
+  /* thème sombre */
+  :root[data-theme=dark]{color-scheme:dark;--bg:#0b1120;--card:#111a2e;--ink:#e5e7eb;--muted:#9ca3af;--line:#2a3652;--blue:#60a5fa;--blue-l:#14264d;--green:#22c55e;--green-l:#06331a;--amber:#f59e0b;--amber-l:#3a2a06;--violet:#a78bfa;--red:#f87171}
+  [data-theme=dark] .stop:hover{background:#1a2540}
+  [data-theme=dark] .dot{background:var(--card)}
+  [data-theme=dark] .stop.cur .dot{box-shadow:0 0 0 4px #1e3a8a}
+  [data-theme=dark] .step.open{box-shadow:0 4px 18px rgba(96,165,250,.15)}
+  [data-theme=dark] .more{border-color:#312e81;background:#161d3a}
+  [data-theme=dark] .more summary{color:#a5b4fc}
+  [data-theme=dark] code{background:#1e293b;color:#e2e8f0}
+  [data-theme=dark] kbd{background:#1e293b;border-color:#475569;color:#e2e8f0}
+  [data-theme=dark] .no{background:#3b1212}
+  [data-theme=dark] .copy{background:#17132b}
+  [data-theme=dark] .copy .ct{background:#2e1f5e;color:#ddd6fe}
+  [data-theme=dark] .copy pre{color:#e5e7eb}
+  [data-theme=dark] th{background:#1a2540}
+  [data-theme=dark] td.lotcur{background:#3a3210}
+  [data-theme=dark] th.lotcur{background:#6b5a12}
+  [data-theme=dark] .chk input:checked+span{color:#86efac}
+  [data-theme=dark] .btn.s{background:#334155;color:#e5e7eb}
+  [data-theme=dark] #tour-tip{background:#111a2e;color:var(--ink)}
+  [data-theme=dark] .tdots i{background:#475569}
+  [data-theme=dark] .tdots i.on{background:var(--blue)}
+  [data-theme=dark] .mock{background:#020617;border:1px solid var(--line)}
+  #theme{min-width:44px}
   body{margin:0;font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);overflow-x:hidden}
   header{position:sticky;top:0;z-index:10;background:#0f172a;color:#fff;padding:10px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
   header h1{font-size:18px;margin:0;flex:1;min-width:220px}
@@ -71,7 +99,8 @@
   .more summary:before{content:"▸ ";display:inline-block;transition:transform .2s}
   .more[open] summary:before{transform:rotate(90deg)}
   .mb{padding:0 14px 12px;animation:rise .3s both}
-  .mb a{color:var(--blue)}
+  .mb a,.pad td a{color:var(--blue)}
+  .pad td a{font-weight:600}
   .mb ul{margin:6px 0}
   .chk input:checked+span{color:#166534;font-weight:600}
   main.enter .step,main.enter h2,main.enter .goalbox{animation:rise .5s both;animation-delay:calc(var(--i,0)*70ms)}
@@ -122,6 +151,8 @@
   table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14.5px}
   th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
   th{background:#eef2fb}
+  td.lotcur{background:#fff7d6}
+  th.lotcur{background:#fde68a}
   .chk label{display:flex;gap:10px;align-items:flex-start;padding:5px 0;cursor:pointer}
   .chk input{margin-top:5px;width:18px;height:18px}
   .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
@@ -200,6 +231,7 @@
     </select>
   </label>
   <div class="prog"><small id="ptxt"></small><div class="bar"><i id="pbar"></i></div></div>
+  <button id="theme" title="Basculer entre thème clair et sombre" aria-label="Basculer entre thème clair et sombre">🌙</button>
   <button id="tourbtn" title="Revoir la visite guidée">❓ Visite guidée</button>
   <button id="reset" title="Effacer ma progression">↺ Recommencer</button>
 </header>
@@ -545,10 +577,11 @@ const STAGES = [
   {t:"why",x:"<code>PLAN.md</code> est votre contrat : les agents de l'Atelier 2 vont le suivre, et c'est lui qui servira à juger leur travail."}]},
  {t:"Exemples de PLAN.md d'autres lots",b:[
   {t:"p",x:"Voici des plans <b>résumés</b> rédigés pour d'autres lots, et un contre-exemple. Lisez-les pour voir la <b>forme</b> d'un bon plan."},
-  {t:"warn",x:"Ne copiez pas un plan : le vôtre doit venir de <b>vos</b> US et de <b>vos</b> échanges avec Copilot. Si l'exemple correspond à votre propre lot, passez au suivant pour ne pas vous laisser influencer."},
-  {t:"ex",l:"Exemple — PLAN du lot 2 (Qualification et priorisation)",x:"# PLAN — SprintDesk, lot 2\n\n## 1. Objectif et périmètre\nRendre exploitables les US 201 à 205 sans inventer de règle.\nHors périmètre : code, paramétrage de SLA, suggestion par IA.\n\n## 2. Sources\nproduit.md · regles-metier.md · sprintdesk/backlog/entree/lot2/\n\n## 3. Résultats attendus\nUS dans backlog/sortie/lot2/ · revue.md · synthese-actions.md\n\n## 4. Règles métier validées utilisées\nRM-03 (impact et urgence) · RM-04 (calcul de la priorité) · RM-05 (seul un Qualificateur fixe impact et urgence)\n\n## 5. Questions ouvertes\n| ID | Question | Qui tranche |\n| ND-05 | Tri par défaut de la liste des demandes | Référent produit |\n| (hors règles) | Matrice paramétrable, SLA, escalade, suggestion par IA : aucune règle validée | Référent produit |\n\n## 6. Format cible d'une US\nTitre · Besoin · Règles métier · Critères (Étant donné / quand / alors) · Dépendances · Questions ouvertes\n\n## 7. Étapes\n1. Diagnostic de chaque US (Reviewer)\n2. Validation humaine du diagnostic\n3. Proposition de découpage de l'US volumineuse, validée par l'humain\n4. Réécriture (Rédacteur)\n5. Contrôle contre RM-03, RM-04, RM-05 (Contrôleur)\n6. Synthèse des actions\n\n## 8. Rôles des agents\nReviewer : constate, ne réécrit pas · Rédacteur : réécrit, ne tranche aucune ND · Contrôleur : lecture seule\n\n## 9. Skills\nrevue-agilite · formater-us · verifier-regles-metier\n\n## 10. Contrôles et validations humaines\nAvant réécriture · avant dépôt dans sortie/ · aucune publication externe\n\n## 11. Critères de réussite\n[ ] Aucune US ne permet au demandeur de fixer la priorité (RM-05)\n[ ] La priorité n'est jamais saisie à la main : elle est calculée (RM-04)\n[ ] Le tri par défaut est une question ouverte (ND-05), pas une valeur\n[ ] L'US déjà correcte est restée identique\n[ ] Chaque US a au moins 2 critères vérifiables\n\n## 12. Limites et conditions d'arrêt\nS'arrêter et demander si deux règles se contredisent, si une règle manque, ou si une décision métier est requise."},
-  {t:"ex",l:"Exemple — PLAN du lot 3 (Traitement des demandes)",x:"# PLAN — SprintDesk, lot 3\n\n## 1. Objectif et périmètre\nRendre exploitables les US 301 à 305. Hors périmètre : code, publication.\n\n## 2. Sources\nproduit.md · regles-metier.md · sprintdesk/backlog/entree/lot3/\n\n## 4. Règles métier validées utilisées\nRM-02 (statuts) · RM-06 (historisation des changements de statut) · RM-07 (un seul Traitant à la fois)\n\n## 5. Questions ouvertes\n| ND-03 | Notifications : lesquelles, à qui ? | Référent produit |\n| ND-04 | Réouverture d'une demande Terminée ou Refusée | Référent produit |\n\n## 7. Étapes\n1. Diagnostic · 2. Validation humaine · 3. Découpage de l'US volumineuse (validation) · 4. Réécriture · 5. Contrôle · 6. Synthèse\n\n## 11. Critères de réussite\n[ ] Toute affectation respecte RM-07 (un seul Traitant)\n[ ] Tout changement de statut cite RM-06 (auteur, date/heure, ancien et nouveau statut)\n[ ] Réouverture et notifications apparaissent en questions ouvertes (ND-04, ND-03)\n[ ] L'US déjà correcte est restée identique\n[ ] Chaque US a au moins 2 critères vérifiables\n\n## 12. Limites et conditions d'arrêt\nS'arrêter si une US contredit RM-07 ou RM-06 : demander quelle version est valide plutôt que choisir."},
-  {t:"ex",l:"Exemple — PLAN du lot 4 (Pilotage du backlog)",x:"# PLAN — SprintDesk, lot 4\n\n## 1. Objectif et périmètre\nRendre exploitables les US 401 à 405. Hors périmètre : code, mise en place réelle des alertes.\n\n## 4. Règles métier validées utilisées\nRM-02 (les six statuts) · RM-04 (priorités P1 à P4)\n\n## 5. Questions ouvertes\n| ND-01 | Seuil d'ancienneté d'une alerte : jours calendaires ou ouvrés, combien ? | Référent produit |\n| ND-03 | Notification par e-mail : laquelle, à qui ? | Référent produit |\n\n## 7. Étapes\n1. Diagnostic · 2. Validation humaine · 3. Découpage du tableau de bord complet · 4. Réécriture · 5. Contrôle · 6. Synthèse\n\n## 11. Critères de réussite\n[ ] Aucune valeur de seuil n'est écrite : le seuil reste la question ND-01\n[ ] Les compteurs listent les six statuts de RM-02\n[ ] Les filtres et alertes ont des critères vérifiables\n[ ] L'US déjà correcte est restée identique\n\n## 12. Limites et conditions d'arrêt\nS'arrêter si une US propose elle-même une valeur pour une décision non prise."},
+  {t:"warn",x:"Ne copiez pas un plan : le vôtre doit venir de <b>vos</b> US et de <b>vos</b> échanges avec Copilot. Les exemples affichés excluent automatiquement <b>votre</b> lot ({n}), pour ne pas vous influencer."},
+  {t:"ex",lot:1,l:"Exemple — PLAN du lot 1 (Dépôt des demandes)",x:"# PLAN — SprintDesk, lot 1\n\n## 1. Objectif et périmètre\nRendre exploitables les US 101 à 105. Hors périmètre : code, import Excel réel.\n\n## 2. Sources\nproduit.md · regles-metier.md · sprintdesk/backlog/entree/lot1/\n\n## 4. Règles métier validées utilisées\nRM-01 (titre, description et service obligatoires) · RM-08 (création au statut Nouvelle)\n\n## 5. Questions ouvertes\n| ND-02 | Pièces jointes : autorisées ? formats ? taille ? | Référent produit |\n| ND-03 | Notifications : lesquelles, à qui ? | Référent produit |\n\n## 7. Étapes\n1. Diagnostic · 2. Validation humaine · 3. Découpage de l'US volumineuse (validation) · 4. Réécriture · 5. Contrôle · 6. Synthèse\n\n## 11. Critères de réussite\n[ ] Aucune US n'autorise l'envoi sans titre (RM-01)\n[ ] Pièces jointes et notifications apparaissent en questions ouvertes (ND-02, ND-03)\n[ ] L'US déjà correcte est restée identique\n[ ] Chaque US a au moins 2 critères vérifiables\n\n## 12. Limites et conditions d'arrêt\nS'arrêter si une US contredit RM-01 : demander quelle version est valide plutôt que choisir."},
+  {t:"ex",lot:2,l:"Exemple — PLAN du lot 2 (Qualification et priorisation)",x:"# PLAN — SprintDesk, lot 2\n\n## 1. Objectif et périmètre\nRendre exploitables les US 201 à 205 sans inventer de règle.\nHors périmètre : code, paramétrage de SLA, suggestion par IA.\n\n## 2. Sources\nproduit.md · regles-metier.md · sprintdesk/backlog/entree/lot2/\n\n## 3. Résultats attendus\nUS dans backlog/sortie/lot2/ · revue.md · synthese-actions.md\n\n## 4. Règles métier validées utilisées\nRM-03 (impact et urgence) · RM-04 (calcul de la priorité) · RM-05 (seul un Qualificateur fixe impact et urgence)\n\n## 5. Questions ouvertes\n| ID | Question | Qui tranche |\n| ND-05 | Tri par défaut de la liste des demandes | Référent produit |\n| (hors règles) | Matrice paramétrable, SLA, escalade, suggestion par IA : aucune règle validée | Référent produit |\n\n## 6. Format cible d'une US\nTitre · Besoin · Règles métier · Critères (Étant donné / quand / alors) · Dépendances · Questions ouvertes\n\n## 7. Étapes\n1. Diagnostic de chaque US (Reviewer)\n2. Validation humaine du diagnostic\n3. Proposition de découpage de l'US volumineuse, validée par l'humain\n4. Réécriture (Rédacteur)\n5. Contrôle contre RM-03, RM-04, RM-05 (Contrôleur)\n6. Synthèse des actions\n\n## 8. Rôles des agents\nReviewer : constate, ne réécrit pas · Rédacteur : réécrit, ne tranche aucune ND · Contrôleur : lecture seule\n\n## 9. Skills\nrevue-agilite · formater-us · verifier-regles-metier\n\n## 10. Contrôles et validations humaines\nAvant réécriture · avant dépôt dans sortie/ · aucune publication externe\n\n## 11. Critères de réussite\n[ ] Aucune US ne permet au demandeur de fixer la priorité (RM-05)\n[ ] La priorité n'est jamais saisie à la main : elle est calculée (RM-04)\n[ ] Le tri par défaut est une question ouverte (ND-05), pas une valeur\n[ ] L'US déjà correcte est restée identique\n[ ] Chaque US a au moins 2 critères vérifiables\n\n## 12. Limites et conditions d'arrêt\nS'arrêter et demander si deux règles se contredisent, si une règle manque, ou si une décision métier est requise."},
+  {t:"ex",lot:3,l:"Exemple — PLAN du lot 3 (Traitement des demandes)",x:"# PLAN — SprintDesk, lot 3\n\n## 1. Objectif et périmètre\nRendre exploitables les US 301 à 305. Hors périmètre : code, publication.\n\n## 2. Sources\nproduit.md · regles-metier.md · sprintdesk/backlog/entree/lot3/\n\n## 4. Règles métier validées utilisées\nRM-02 (statuts) · RM-06 (historisation des changements de statut) · RM-07 (un seul Traitant à la fois)\n\n## 5. Questions ouvertes\n| ND-03 | Notifications : lesquelles, à qui ? | Référent produit |\n| ND-04 | Réouverture d'une demande Terminée ou Refusée | Référent produit |\n\n## 7. Étapes\n1. Diagnostic · 2. Validation humaine · 3. Découpage de l'US volumineuse (validation) · 4. Réécriture · 5. Contrôle · 6. Synthèse\n\n## 11. Critères de réussite\n[ ] Toute affectation respecte RM-07 (un seul Traitant)\n[ ] Tout changement de statut cite RM-06 (auteur, date/heure, ancien et nouveau statut)\n[ ] Réouverture et notifications apparaissent en questions ouvertes (ND-04, ND-03)\n[ ] L'US déjà correcte est restée identique\n[ ] Chaque US a au moins 2 critères vérifiables\n\n## 12. Limites et conditions d'arrêt\nS'arrêter si une US contredit RM-07 ou RM-06 : demander quelle version est valide plutôt que choisir."},
+  {t:"ex",lot:4,l:"Exemple — PLAN du lot 4 (Pilotage du backlog)",x:"# PLAN — SprintDesk, lot 4\n\n## 1. Objectif et périmètre\nRendre exploitables les US 401 à 405. Hors périmètre : code, mise en place réelle des alertes.\n\n## 4. Règles métier validées utilisées\nRM-02 (les six statuts) · RM-04 (priorités P1 à P4)\n\n## 5. Questions ouvertes\n| ND-01 | Seuil d'ancienneté d'une alerte : jours calendaires ou ouvrés, combien ? | Référent produit |\n| ND-03 | Notification par e-mail : laquelle, à qui ? | Référent produit |\n\n## 7. Étapes\n1. Diagnostic · 2. Validation humaine · 3. Découpage du tableau de bord complet · 4. Réécriture · 5. Contrôle · 6. Synthèse\n\n## 11. Critères de réussite\n[ ] Aucune valeur de seuil n'est écrite : le seuil reste la question ND-01\n[ ] Les compteurs listent les six statuts de RM-02\n[ ] Les filtres et alertes ont des critères vérifiables\n[ ] L'US déjà correcte est restée identique\n\n## 12. Limites et conditions d'arrêt\nS'arrêter si une US propose elle-même une valeur pour une décision non prise."},
   {t:"table",h:["À repérer dans ces plans","Où le trouver"],r:[["Une décision non prise est une <b>question avec un responsable</b>, jamais une valeur","Section 5 de chaque plan"],["Les critères se répondent par <b>oui ou non</b>","Section 11"],["Chaque étape sépare diagnostic, validation humaine et réécriture","Section 7"],["Le plan dit quand s'arrêter","Section 12"],["Chaque règle citée existe réellement (RM-xx)","Section 4"]]},
   {t:"ex",l:"Contre-exemple — un mauvais plan",x:"# Plan\n1. Lire les US\n2. Les améliorer\n3. Les enregistrer\n4. Vérifier que c'est bien"},
   {t:"table",h:["Défaut du mauvais plan","Pourquoi c'est un problème"],r:[["Aucune source citée","Copilot choisit lui-même ce qu'il lit"],["« Améliorer » : verbe vague","Autorise toutes les inventions et modifie même l'US correcte"],["Aucune question ni décision à prendre","Les ND-xx seront devinées"],["« Vérifier que c'est bien » : critère flou","Impossible de répondre oui ou non"],["Aucune validation humaine","Rien ne s'arrête avant l'écriture des fichiers"],["Aucune condition d'arrêt","Copilot continue même s'il manque une règle"]]},
@@ -653,7 +686,7 @@ const STAGES = [
   {t:"warn",x:"Deux règles qui piègent : (1) le <code>name</code> dans l'en-tête doit être <b>identique au nom du dossier</b> ; (2) la <code>description</code> est ce qui permet à Copilot de choisir la skill : elle doit dire <b>quand</b> l'utiliser."}]},
  {t:"Compléter la skill formater-us",b:[
   {t:"ol",x:["Explorateur : <code>.github</code> > <code>skills</code> > <code>formater-us</code>.","Ouvrez d'abord <code>modele-us.md</code> et lisez le modèle cible (c'est lui que la skill va faire respecter).","Ouvrez <code>SKILL.md</code> : <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez le contenu ci-dessous, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
-  {t:"copy",l:"À COPIER dans .github/skills/formater-us/SKILL.md",x:"---\nname: formater-us\ndescription: \"Formate une user story SprintDesk selon le modèle cible : champs obligatoires, critères d'acceptation Given/When/Then, questions ouvertes. Utiliser pour réécrire ou contrôler le format d'une US.\"\n---\n# Skill formater-us\n\n## Quand l'utiliser\nPour réécrire une US au format cible, ou vérifier qu'une US respecte ce format.\n\n## Procédure\n1. Utiliser le modèle de ¤modele-us.md¤ : Titre, Besoin (En tant que / Je souhaite / Afin de), Règles métier, Critères d'acceptation, Dépendances, Questions ouvertes. Toutes les sections sont présentes, même vides (\"Aucune\").\n2. Conserver l'identifiant d'origine dans le titre (US-XXX). En cas de découpage, dériver les identifiants (US-XXX-A, US-XXX-B) et citer l'US d'origine.\n3. Rédiger les critères d'acceptation sous la forme \"Étant donné ..., quand ..., alors ...\". Un critère = un seul comportement, observable et vérifiable (oui/non). Au moins 2 critères par US.\n4. Citer en \"Règles métier\" uniquement des règles qui existent dans regles-metier.md (RM-xx).\n5. Information manquante ou décision non prise (ND-xx) : l'écrire dans \"Questions ouvertes\". Ne jamais inventer une valeur, un seuil, un format ou une règle.\n6. US déjà conforme : la recopier à l'identique et le signaler. Ne rien \"améliorer\".\n\n## Exemple conforme / contre-exemple\n- Conforme : sprintdesk/backlog/entree/lot1/US-105.md (toutes sections, critères Étant donné/Quand/Alors, RM-01 citée, questions ouvertes \"Aucune\").\n- Contre-exemple : sprintdesk/backlog/entree/lot1/US-104.md (aucun critère d'acceptation, aucune règle, aucune section)."},
+  {t:"copy",l:"À COPIER dans .github/skills/formater-us/SKILL.md",x:"---\nname: formater-us\ndescription: \"Formate une user story SprintDesk selon le modèle cible : champs obligatoires, critères d'acceptation Given/When/Then, questions ouvertes. Utiliser pour réécrire ou contrôler le format d'une US.\"\n---\n# Skill formater-us\n\n## Quand l'utiliser\nPour réécrire une US au format cible, ou vérifier qu'une US respecte ce format.\n\n## Procédure\n1. Utiliser le modèle de ¤modele-us.md¤ : Titre, Besoin (En tant que / Je souhaite / Afin de), Règles métier, Critères d'acceptation, Dépendances, Questions ouvertes. Toutes les sections sont présentes, même vides (\"Aucune\").\n2. Conserver l'identifiant d'origine dans le titre (US-XXX). En cas de découpage, dériver les identifiants (US-XXX-A, US-XXX-B) et citer l'US d'origine.\n3. Rédiger les critères d'acceptation sous la forme \"Étant donné ..., quand ..., alors ...\". Un critère = un seul comportement, observable et vérifiable (oui/non). Au moins 2 critères par US.\n4. Citer en \"Règles métier\" uniquement des règles qui existent dans regles-metier.md (RM-xx).\n5. Information manquante ou décision non prise (ND-xx) : l'écrire dans \"Questions ouvertes\". Ne jamais inventer une valeur, un seuil, un format ou une règle.\n6. US déjà conforme : la recopier à l'identique et le signaler. Ne rien \"améliorer\".\n\n## Exemple conforme / contre-exemple\n- Conforme : sprintdesk/backlog/entree/lot{n}/US-{n}05.md (toutes sections, critères Étant donné/Quand/Alors, règles RM-xx citées, questions ouvertes \"Aucune\").\n- Contre-exemple : sprintdesk/backlog/entree/lot{n}/US-{n}04.md (aucun critère d'acceptation, aucune règle, aucune section)."},
   {t:"why",x:"L'étape 5 est le garde-fou central : l'information manquante devient une question, jamais une invention. L'étape 6 protège l'US déjà correcte."}]},
  {t:"Compléter la skill revue-agilite",b:[
   {t:"ol",x:["Dans <code>.github/skills/revue-agilite</code>, ouvrez <code>checklist.md</code> (7 questions de revue) pour la lire.","Ouvrez <code>SKILL.md</code> : <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
@@ -765,7 +798,7 @@ const STAGES = [
   {t:"warn",x:"Un agent ou une skill manque ? Terminez d'abord les Ateliers 2 et 3. Orchestrer des agents qui fonctionnent mal ne fait qu'enchaîner leurs erreurs plus vite."}]},
  {t:"Créer la skill compte-rendu-html",b:[
   {t:"ol",x:["Clic droit sur le dossier <code>.github/skills/compte-rendu-html</code> > <code>Nouveau fichier</code> > tapez exactement <code>SKILL.md</code>.","Collez le contenu ci-dessous, puis <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
-  {t:"copy",l:"À COPIER dans .github/skills/compte-rendu-html/SKILL.md",x:"---\nname: compte-rendu-html\ndescription: \"Produit le compte rendu HTML (tableau de bord) du traitement d'un lot SprintDesk : ce qui a été fait, ce qui n'allait pas, US nettoyées, contrôles, questions ouvertes, validations humaines. Utiliser en fin d'orchestration d'un lot.\"\n---\n# Skill compte-rendu-html\n\n## Quand l'utiliser\nEn fin d'orchestration, ou pour faire le bilan d'un lot déjà traité.\n\n## Sources (lire, ne rien inventer)\n- sprintdesk/resultats/revue.md : défauts (ce qui n'allait pas).\n- sprintdesk/resultats/synthese-actions.md : statut de chaque US.\n- sprintdesk/backlog/sortie/lot<N>/*.md : US nettoyées (besoin, critères, règles, questions).\n- Tableau du Contrôleur : contrôles.\n- Décisions prises aux points de validation : journal des validations.\n\n## Procédure\n1. Copier ¤gabarit-dashboard.html¤ (même dossier que cette skill) vers sprintdesk/resultats/compte-rendu-lot<N>.html.\n2. Remplacer uniquement le JSON situé entre les marqueurs DONNEES:DEBUT et DONNEES:FIN. Ne pas toucher au style ni au script.\n3. Garder exactement les clés du JSON du gabarit. Mettre \"exemple\": false.\n4. Valeurs autorisées. Statut d'une US d'entrée : modifiée, découpée, inchangée, bloquée, créée. Statut d'une étape : ok, ko, attente, bloque. Gravité : bloquant, recommandation. Contrôle : OK, KO. Décision : Validé, Corrigé, Rejeté.\n5. Une US inchangée a \"defauts\" vide et un seul résultat identique à l'entrée. Une US bloquée a \"resultats\" vide.\n6. Chaque ND-xx encore ouverte apparaît dans \"questions\", avec qui tranche (référent produit sauf mention contraire dans PLAN.md).\n7. Les chemins sont écrits depuis la racine du dépôt (ex. sprintdesk/backlog/sortie/lot1/US-101.md).\n\n## Règles\n- Chaque valeur vient d'un fichier source ou d'une décision humaine notée. Rien n'est inventé ni embelli.\n- Texte brut uniquement : aucune balise HTML dans les valeurs.\n- Ne pas écrire de compteurs : le gabarit les calcule.\n- \"controlesExecutes\" ne liste que les contrôles réellement faits.\n\n## Vérification avant de rendre la main\n- Le JSON est valide (guillemets doubles, aucune virgule finale).\n- Le nombre d'US dans \"us\" est égal au nombre d'US d'entrée du lot.\n- Chaque US a un chemin \"source\"."},
+  {t:"copy",l:"À COPIER dans .github/skills/compte-rendu-html/SKILL.md",x:"---\nname: compte-rendu-html\ndescription: \"Produit le compte rendu HTML (tableau de bord) du traitement d'un lot SprintDesk : ce qui a été fait, ce qui n'allait pas, US nettoyées, contrôles, questions ouvertes, validations humaines. Utiliser en fin d'orchestration d'un lot.\"\n---\n# Skill compte-rendu-html\n\n## Quand l'utiliser\nEn fin d'orchestration, ou pour faire le bilan d'un lot déjà traité.\n\n## Sources (lire, ne rien inventer)\n- sprintdesk/resultats/revue.md : défauts (ce qui n'allait pas).\n- sprintdesk/resultats/synthese-actions.md : statut de chaque US.\n- sprintdesk/backlog/sortie/lot<N>/*.md : US nettoyées (besoin, critères, règles, questions).\n- Tableau du Contrôleur : contrôles.\n- Décisions prises aux points de validation : journal des validations.\n\n## Procédure\n1. Copier ¤gabarit-dashboard.html¤ (même dossier que cette skill) vers sprintdesk/resultats/compte-rendu-lot<N>.html.\n2. Remplacer uniquement le JSON situé entre les marqueurs DONNEES:DEBUT et DONNEES:FIN. Ne pas toucher au style ni au script.\n3. Garder exactement les clés du JSON du gabarit. Mettre \"exemple\": false.\n4. Valeurs autorisées. Statut d'une US d'entrée : modifiée, découpée, inchangée, bloquée, créée. Statut d'une étape : ok, ko, attente, bloque. Gravité : bloquant, recommandation. Contrôle : OK, KO. Décision : Validé, Corrigé, Rejeté.\n5. Une US inchangée a \"defauts\" vide et un seul résultat identique à l'entrée. Une US bloquée a \"resultats\" vide.\n6. Chaque ND-xx encore ouverte apparaît dans \"questions\", avec qui tranche (référent produit sauf mention contraire dans PLAN.md).\n7. Les chemins sont écrits depuis la racine du dépôt (ex. sprintdesk/backlog/sortie/lot{n}/US-{n}01.md).\n\n## Règles\n- Chaque valeur vient d'un fichier source ou d'une décision humaine notée. Rien n'est inventé ni embelli.\n- Texte brut uniquement : aucune balise HTML dans les valeurs.\n- Ne pas écrire de compteurs : le gabarit les calcule.\n- \"controlesExecutes\" ne liste que les contrôles réellement faits.\n\n## Vérification avant de rendre la main\n- Le JSON est valide (guillemets doubles, aucune virgule finale).\n- Le nombre d'US dans \"us\" est égal au nombre d'US d'entrée du lot.\n- Chaque US a un chemin \"source\"."},
   {t:"see",x:"Dans le dossier <code>compte-rendu-html</code> : <code>SKILL.md</code> et <code>gabarit-dashboard.html</code>."},
   {t:"why",x:"Même principe que <code>formater-us</code> avec <code>modele-us.md</code> : la skill décrit la <b>méthode</b>, le fichier annexe porte le <b>modèle</b>. La règle « chaque valeur vient d'un fichier » empêche un compte rendu enjolivé."}]},
  {t:"Créer l'agent orchestrateur-us",b:[
@@ -999,7 +1032,8 @@ const STAGES = [
  {t:"Jeu d'évaluation : mesurer au lieu de supposer",b:[
   {t:"p",x:"Un <b>jeu d'évaluation</b> est un ensemble <b>fixe</b> de cas dont on connaît à l'avance la bonne réponse. <b>Analogie :</b> une copie d'examen avec son corrigé. Vous faites passer l'examen à votre agent avant et après chaque modification, et vous comparez les notes."},
   {t:"p",x:"SprintDesk en a déjà un : les <b>20 US des lots 1 à 4</b>. Chaque lot contient les <b>mêmes 5 types</b> de défauts. Cela prolonge la méthode de <code>docs/07-evaluation.md</code> : critères de succès, puis « un défaut, une cause, une modification »."},
-  {t:"table",h:["Type","Lot 1","Lot 2","Lot 3","Lot 4"],r:[
+  {t:"p",x:"La colonne de <b>votre lot ({n})</b> est surlignée en jaune. Les autres colonnes servent à comparer avec vos collègues."},
+  {t:"table",lotcols:true,h:["Type","Lot 1","Lot 2","Lot 3","Lot 4"],r:[
    ["<b>x01 — trop vague</b>","US-101 : besoin non précisé, champs non listés (cf. RM-01)","US-201 : « bien priorisée » non défini (le calcul existe : RM-03, RM-04)","US-301 : « rapidement » non mesurable","US-401 : « utile » non défini, indicateurs non choisis"],
    ["<b>x02 — trop volumineuse</b>","US-102 : au moins 5 besoins (pièces jointes ND-02, notifications ND-03...) : à découper","US-202 : au moins 5 besoins (matrice, SLA, escalade, reporting, suggestion IA) : à découper ; la matrice paramétrable est à confronter à RM-04","US-302 : 7 besoins (réouverture ND-04, notifications ND-03, historique RM-06...) : à découper","US-402 : 6 besoins (alertes ND-01, abonnement e-mail ND-03...) : à découper"],
    ["<b>x03 — contradictoire</b>","US-103 : titre obligatoire <b>et</b> envoi sans titre (RM-01)","US-203 : le demandeur fixe la priorité (RM-05) ; « non modifiable » et « ajustable » dans la même US","US-303 : plusieurs traitants (RM-07)","US-403 : 5 jours calendaires <b>et</b> 3 jours ouvrés ; seuil = ND-01, à ne pas trancher"],
@@ -1049,6 +1083,103 @@ const STAGES = [
   {t:"check",id:"c6",x:["Node.js répond à <code>node --version</code> sur mon poste","Le journal <code>tool-use.log</code> m'a montré les noms d'outils utilisés","Le hook <code>protege-sources</code> a <b>refusé</b> la modification de <code>US-{n}01.md</code>","Le même hook a <b>autorisé</b> la lecture et l'écriture dans <code>resultats/</code>","J'ai constaté ce que devient une décision absente du journal dans un nouveau chat","J'ai fait un <code>/compact</code> avec consigne et vérifié ce qui avait été conservé","J'ai comparé deux modèles sur la même US avec le même prompt","J'ai rempli le jeu d'évaluation pour au moins deux versions, v1 et v2","Aucune ND-xx n'a été tranchée pendant mes tests"]},
   {t:"p",x:"<b>Pistes non traitées ici</b> (à explorer ensuite) : instructions ciblées par type de fichier, outils externes connectés (MCP), exécution en bac à sable, sécurité des outils. Aucune n'est nécessaire pour terminer SprintDesk."},
   {t:"why",x:"Vous disposez maintenant d'un système complet : des <b>règles écrites</b> pour guider Copilot, des <b>garde-fous appliqués</b> pour l'empêcher de mal faire, une <b>mémoire</b> maîtrisée pour les longs lots, un <b>modèle choisi par la mesure</b>, et un <b>banc d'essai</b> pour prouver chaque amélioration. Les décisions métier restent, plus que jamais, entre vos mains."}]}
+ ]},
+/* ====================================================== Récap */
+{icon:"🏁",title:"Récap et ouverture",sub:"Tout ce que vous avez vu, et la suite",
+ goal:"Faire le point sur tout le parcours, retenir les règles d'or, et savoir où continuer à apprendre.",
+ steps:[
+ {t:"Récap : tout le parcours en un tableau",b:[
+  {t:"p",x:"Chaque partie a ajouté <b>une brique</b> au cadre de travail de Copilot (le harness). Le tableau se lit de haut en bas : chaque ligne s'appuie sur les précédentes."},
+  {t:"table",h:["Partie","Ce que vous avez appris","Ce que vous avez produit","Réflexe à retenir"],r:[
+   ["🚪 Démarrer","Ouvrir le projet, lire le Markdown, ouvrir le chat, choisir Ask / Plan / Agent, joindre un fichier avec <code>#</code>, conserver ou annuler","Aucun fichier : la prise en main","Lire le diff avant de cliquer sur <code>Conserver</code>"],
+   ["💬 Premiers prompts","Les 5 types de défauts d'US, le prompt en 6 blocs, 5 techniques de prompt, critiquer au lieu de relancer","Commandes <code>/diagnostiquer-us</code>, <code>/questions-po</code>, <code>/verifier-reponse</code>","Sources, interdits et format écrits dans le prompt"],
+   ["📜 Atelier 1 · A — Instructions","Les règles lues automatiquement dans chaque conversation","<code>.github/copilot-instructions.md</code>","Une règle courte, concrète, vérifiable"],
+   ["🧭 Atelier 1 · B — Planification","Le mode Plan, répondre sans trancher les ND-xx, critères oui/non, conditions d'arrêt","<code>PLAN.md</code>","Valider le plan avant toute écriture"],
+   ["🧑‍💼 Atelier 2 — Agents","Un rôle par agent, outils restreints, validation humaine entre diagnostic et réécriture","Agents Reviewer, Rédacteur, Contrôleur ; <code>revue.md</code> ; US dans <code>sortie/lot{n}</code>","Celui qui produit ne se contrôle pas lui-même"],
+   ["🧰 Atelier 3 — Skills","La procédure réutilisable, chargée selon sa description","Skills <code>formater-us</code>, <code>revue-agilite</code>, <code>verifier-regles-metier</code>","Le « comment » s'écrit une seule fois"],
+   ["🎼 Bonus — Orchestration","Un agent qui délègue à des sous-agents, avec arrêts obligatoires","Agent <code>orchestrateur-us</code>, skill <code>compte-rendu-html</code>, <code>compte-rendu-lot{n}.html</code>","Une validation sans lecture n'est pas une validation"],
+   ["🚀 Hooks","Un garde-fou exécuté à chaque action, qui peut refuser","Hook d'audit et hook <code>protege-sources</code>","Ce qui doit être impossible se met dans un mécanisme"],
+   ["🚀 Gestion du contexte","Compacter, repartir à zéro, tenir un journal","<code>journal-decisions-lot{n}.md</code>","Une décision absente du journal est à revérifier"],
+   ["🚀 Choix du modèle","Équilibrer qualité, vitesse et coût","Une règle de choix fondée sur une comparaison","Le modèle le moins coûteux qui réussit tous les critères"],
+   ["🚀 Jeu d'évaluation","Mesurer une modification : mêmes cas, même grille, v1 contre v2","<code>jeu-evaluation.md</code>","Une seule modification à la fois"]]},
+  {t:"mock",x:"formation-harness/\n├── .github/\n│   ├── copilot-instructions.md   règles permanentes\n│   ├── prompts/*.prompt.md       commandes /\n│   ├── agents/*.agent.md         rôles (qui)\n│   ├── skills/*/SKILL.md         méthodes (comment)\n│   └── hooks/                    garde-fous appliqués\n├── PLAN.md                       contrat validé\n└── sprintdesk/\n    ├── backlog/sortie/lot{n}/    US réécrites\n    └── resultats/                revue, journal, évaluation, compte rendu"},
+  {t:"why",x:"Aucune brique ne suffit seule. Les instructions disent <b>quoi respecter</b>, le plan <b>quoi faire</b>, les agents <b>qui le fait</b>, les skills <b>comment</b>, les hooks <b>ce qui est impossible</b>, et l'évaluation <b>si c'est mieux</b>."}]},
+ {t:"Les notions clés en une phrase",b:[
+  {t:"table",h:["Notion","En une phrase","Où vous l'avez pratiquée"],r:[
+   ["Prompt en 6 blocs","Contexte, sources, interdits, tâche, exigences, format","Premiers prompts"],
+   ["Hallucination","Réponse plausible mais non fondée sur vos sources","Premiers prompts"],
+   ["Few-shot","Montrer un exemple pour imposer une forme","Premiers prompts, skill <code>formater-us</code>"],
+   ["Raisonnement pas à pas","Exiger les étapes avant la conclusion, pour pouvoir les vérifier","Premiers prompts"],
+   ["Fichier de prompt","Prompt enregistré, lancé à la demande avec <code>/nom</code>","Premiers prompts"],
+   ["Instructions","Règles lues automatiquement dans chaque conversation","Atelier 1 · A"],
+   ["Plan","Contrat relu et validé avant toute exécution","Atelier 1 · B"],
+   ["Agent","Rôle défini par une mission, des outils et des interdits","Atelier 2"],
+   ["Moindre privilège","Ne donner à un agent que les outils nécessaires","Atelier 2, Bonus"],
+   ["Skill","Procédure chargée à la demande selon sa description","Atelier 3"],
+   ["Sous-agent","Agent appelé par un autre, dans un contexte isolé","Bonus"],
+   ["Human in the loop","L'IA propose, l'humain valide","Tout le parcours"],
+   ["Hook","Commande lancée à un événement, qui peut refuser une action","Pour aller bien plus loin"],
+   ["Fenêtre de contexte","Mémoire de travail limitée d'une conversation","Pour aller bien plus loin"],
+   ["Jeu d'évaluation","Cas fixes à réponse connue pour mesurer une modification","Pour aller bien plus loin"],
+   ["Harness","L'ensemble du cadre qui guide et limite l'IA","Tout le parcours"]]},
+  {t:"p",x:"Pour les mots de base (prompt, US, RM-xx, ND-xx), voir aussi le <b>Glossaire</b> dans la partie Aide."}]},
+ {t:"Conclusion : les règles d'or à garder",b:[
+  {t:"ol",x:[
+   "<b>Donner des sources, pas des intentions.</b> Citez les fichiers avec <code>#</code> ; ce qui n'est pas fourni sera deviné.",
+   "<b>Écrire les interdits.</b> Ce que Copilot ne doit pas faire compte autant que la tâche.",
+   "<b>Une ND-xx reste une question ouverte</b>, avec un responsable. Jamais une hypothèse cachée dans un livrable.",
+   "<b>Planifier avant d'agir, valider avant d'écrire.</b> Corriger un plan coûte une phrase.",
+   "<b>Séparer les rôles</b> : préparer, contrôler, décider. Celui qui produit ne se contrôle pas.",
+   "<b>Rendre impossible plutôt qu'interdire.</b> Outils restreints et hooks valent mieux qu'une phrase.",
+   "<b>Mesurer avant de conclure.</b> Un défaut, une cause, une modification, puis on rejoue."]},
+  {t:"why",x:"L'IA accélère la préparation : lecture, diagnostic, mise en forme. La <b>décision métier</b>, la <b>validation</b> et la <b>responsabilité</b> restent humaines. Tout le parcours sert à rendre cette répartition explicite et vérifiable."},
+  {t:"check",id:"c7",x:["Je sais expliquer la différence entre instructions, plan, agent, skill et commande <code>/</code>","Je sais dire quand utiliser le mode Plan plutôt qu'un simple prompt","Je sais transformer une ND-xx en question ouverte avec un responsable","Je sais citer un mécanisme qui rend une action impossible (outils restreints, hook)","Je sais comparer deux versions avec le jeu d'évaluation","J'ai choisi une première action pour les 30 prochains jours"]}]},
+ {t:"Continuer avec Copilot et VS Code",b:[
+  {t:"warn",x:"Les ressources de cette partie et de la suivante sont <b>en anglais</b> pour la plupart. Les fonctionnalités évoluent vite : en cas d'écart avec la formation, la documentation officielle fait foi."},
+  {t:"table",h:["Ressource","Pourquoi la lire","Lien avec la formation"],r:[
+   ["{L:vsCustom}","Vue d'ensemble de toutes les personnalisations : instructions, agents, skills, prompts, hooks","Ateliers 1 à 3, Bonus"],
+   ["{L:ghTutos}","Tutoriels pas à pas, du premier prompt au déploiement en équipe","Tout le parcours"],
+   ["{L:ghLib}","Exemples commentés : premières instructions, premier fichier de prompt, premier agent","Atelier 1 · A, Atelier 2, commandes <code>/</code>"],
+   ["{L:ghAwesome}","Collection communautaire d'agents, skills, instructions et hooks. À relire avant toute installation","Aller plus loin : d'autres agents et skills"],
+   ["{L:pe}","Bonnes pratiques de prompt propres à Copilot","Premiers prompts"],
+   ["{L:optimize}","Réduire la consommation sans perdre en qualité","Choix du modèle et coût"],
+   ["{L:hooks}","Événements, format et limites des hooks","Hooks"],
+   ["{L:subagents}","Fonctionnement détaillé des sous-agents","Bonus — Orchestration"]]},
+  {t:"why",x:"Commencez par la vue d'ensemble, puis par la bibliothèque d'exemples : vous y retrouverez les mêmes briques que dans SprintDesk, appliquées à d'autres métiers."}]},
+ {t:"Continuer avec Anthropic et OpenAI",b:[
+  {t:"p",x:"Anthropic (Claude) et OpenAI (GPT) publient des guides indépendants de Copilot. Les idées sont les mêmes : elles s'appliquent quel que soit l'outil."},
+  {t:"table",h:["Ressource Anthropic","Pourquoi la lire","Lien avec la formation"],r:[
+   ["{L:antAgents}","Commencer simple ; quand un enchaînement fixe suffit, quand un agent se justifie ; schémas d'orchestration","Bonus — Orchestration"],
+   ["{L:antContext}","Le contexte est une ressource limitée : compactage, notes durables, sous-agents","Gestion du contexte"],
+   ["{L:antSkills}","D'où viennent les skills et pourquoi elles se chargent à la demande","Atelier 3 — Skills"],
+   ["{L:antTools}","Concevoir des outils clairs pour un agent, puis les évaluer","Hooks, Jeu d'évaluation"],
+   ["{L:antTuto}","Exercices progressifs, du prompt simple aux techniques avancées","Premiers prompts"],
+   ["{L:antLearn}","Cours en ligne gratuits, dont des parcours non techniques","Tout le parcours"]]},
+  {t:"table",h:["Ressource OpenAI","Pourquoi la lire","Lien avec la formation"],r:[
+   ["{L:oaiAgents}","Modèle, outils, instructions, orchestration, garde-fous et intervention humaine, en un seul guide","Agents, Orchestration, Hooks"],
+   ["{L:oaiPrompt}","Rôles des messages, structure en Markdown, exemples (few-shot), contexte","Premiers prompts, Instructions"],
+   ["{L:oaiCookbook}","Exemples concrets, dont la gestion du contexte et l'évaluation d'agents","Contexte, Jeu d'évaluation"],
+   ["{L:oaiAcademy}","Parcours de formation, dont un parcours pour les métiers non techniques","Tout le parcours"]]},
+  {t:"table",h:["Idée commune aux trois éditeurs","Où vous l'avez appliquée"],r:[
+   ["Commencer par la solution la plus simple","Un agent avant l'orchestration"],
+   ["Instructions claires, avec cas limites et arrêts","<code>copilot-instructions.md</code>, <code>PLAN.md</code>"],
+   ["Contexte limité et choisi","<code>#</code>, journal, <code>/compact</code>, sous-agents"],
+   ["Garde-fous en couches et intervention humaine","Outils restreints, hooks, points de validation"],
+   ["Mesurer pour améliorer","Jeu d'évaluation v1 contre v2"]]},
+  {t:"warn",x:"Ces guides contiennent parfois du code ou des exemples d'interface de programmation (API). Vous pouvez les ignorer : les principes se comprennent sans eux."}]},
+ {t:"Rester à jour : blogs et plan des 30 prochains jours",b:[
+  {t:"table",h:["Source","Ce que vous y trouvez","Rythme conseillé"],r:[
+   ["{L:vsUpdates}","Les nouveautés de chaque version, dont Copilot et les agents","Une fois par mois"],
+   ["{L:ghBlog}","Annonces, retours d'expérience, guides pour débutants","Une fois par mois"],
+   ["{L:antBlog}","Articles de fond sur les agents, le contexte et l'évaluation","Quand un article paraît"],
+   ["{L:oaiCookbook}","Nouveaux exemples pratiques","Au besoin"]]},
+  {t:"table",h:["Semaine","Action","Ressource"],r:[
+   ["1","Rejouer un atelier sur un autre lot, sans regarder le corrigé","{L:antAgents}"],
+   ["2","Écrire un fichier d'instructions pour un vrai projet de votre équipe, sans donnée sensible","{L:ghLib}"],
+   ["3","Transformer une tâche récurrente en skill ou en commande <code>/</code>","{L:antSkills}"],
+   ["4","Construire un jeu d'évaluation de 5 cas et comparer deux versions","{L:antTools}"]]},
+  {t:"no",x:"Dans vos essais réels : ne publiez rien vers un outil externe, ne fixez aucune priorité et ne tranchez aucune décision métier sans validation humaine. Les règles de SprintDesk restent valables partout."},
+  {t:"why",x:"On retient ce que l'on pratique. Une action par semaine, appliquée à votre propre travail, ancre davantage que la lecture de dix articles."}]}
  ]},
 /* ====================================================== 5 */
 {icon:"🆘",title:"Aide",sub:"Glossaire et dépannage",
@@ -1111,7 +1242,24 @@ const L={
  models:["Modèles de langage dans VS Code","https://code.visualstudio.com/docs/agent-customization/language-models"],
  optimize:["Optimiser l'usage et les coûts","https://code.visualstudio.com/docs/agents/guides/optimize-usage"],
  security:["Sécurité des agents dans VS Code","https://code.visualstudio.com/docs/agents/run/security"],
- agentref:["Référence du fichier d'agent (.agent.md)","https://code.visualstudio.com/docs/agents/reference/custom-agent-file-reference"]
+ agentref:["Référence du fichier d'agent (.agent.md)","https://code.visualstudio.com/docs/agents/reference/custom-agent-file-reference"],
+ vsCustom:["VS Code : vue d'ensemble des personnalisations","https://code.visualstudio.com/docs/agent-customization/overview"],
+ vsUpdates:["Notes de version de VS Code","https://code.visualstudio.com/updates"],
+ ghTutos:["Tutoriels GitHub Copilot","https://docs.github.com/en/copilot/tutorials"],
+ ghLib:["GitHub : bibliothèque de personnalisations","https://docs.github.com/en/copilot/tutorials/customization-library"],
+ ghAwesome:["Awesome GitHub Copilot (collection communautaire)","https://github.com/github/awesome-copilot"],
+ ghBlog:["Blog GitHub : rubrique Copilot","https://github.blog/ai-and-ml/github-copilot/"],
+ antAgents:["Anthropic : Building effective agents","https://www.anthropic.com/engineering/building-effective-agents"],
+ antContext:["Anthropic : Effective context engineering for AI agents","https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents"],
+ antSkills:["Anthropic : Equipping agents for the real world with Agent Skills","https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills"],
+ antTools:["Anthropic : Writing effective tools for agents","https://www.anthropic.com/engineering/writing-tools-for-agents"],
+ antTuto:["Anthropic : tutoriel interactif de prompt engineering","https://github.com/anthropics/prompt-eng-interactive-tutorial"],
+ antLearn:["Anthropic Academy (cours en ligne)","https://www.anthropic.com/learn"],
+ antBlog:["Anthropic : blog Engineering","https://www.anthropic.com/engineering"],
+ oaiAgents:["OpenAI : A practical guide to building agents","https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/"],
+ oaiPrompt:["OpenAI : guide de prompt engineering","https://developers.openai.com/api/docs/guides/prompt-engineering"],
+ oaiCookbook:["OpenAI Cookbook (exemples commentés)","https://developers.openai.com/cookbook"],
+ oaiAcademy:["OpenAI Academy (parcours de formation)","https://academy.openai.com/"]
 };
 const EXTRA={
 "Les techniques de prompt les plus connues":{o:"Connaître les 5 techniques de prompt les plus courantes et ce que chacune apporte à SprintDesk.",c:"Les techniques (few-shot, chain-of-thought, rôle, questions inversées, auto-vérification) se <b>combinent</b>. Aucune ne remplace des sources fiables et des interdits clairs.",l:[L.pe,L.best]},
@@ -1187,6 +1335,12 @@ const EXTRA={
 "Jeu d'évaluation : mesurer au lieu de supposer":{o:"Comprendre ce qu'est un jeu d'évaluation et pourquoi les 20 US des lots en forment déjà un.",c:"Un jeu d'évaluation est un ensemble fixe de cas à réponse connue. Critères figés avant le test, même prompt, une seule modification à la fois, et vérification que l'US correcte reste inchangée.",l:[L.best,L.tips]},
 "Jeu d'évaluation en pratique : noter, modifier, rejouer":{o:"Noter une version, faire une modification, rejouer et interpréter l'écart.",c:"Chaque défaut observé conduit à une cause, puis à une seule modification. Comparez les totaux de v1 et v2, cherchez les régressions, et rejouez en cas de doute.",l:[L.best,L.tips]},
 "Bilan et pistes suivantes":{o:"Relier les quatre mécanismes au reste du harness et cocher la checklist finale.",c:"Règles écrites, garde-fous appliqués, mémoire maîtrisée, modèle choisi par la mesure et banc d'essai forment un système complet. La décision métier reste humaine.",l:[L.hooks,L.models,L.sessions]},
+"Récap : tout le parcours en un tableau":{o:"Revoir en un coup d'œil chaque partie, ce qu'elle vous a appris et ce que vous avez produit.",c:"Un harness se construit <b>par couches</b> : chaque brique répond à une question différente, et aucune ne remplace les autres.",l:[L.vsCustom,L.over]},
+"Les notions clés en une phrase":{o:"Pouvoir définir chaque notion de la formation en une phrase.",c:"Savoir expliquer une notion simplement est le meilleur test de compréhension. Si une définition vous échappe, rouvrez la partie indiquée.",l:[L.vsCustom,L.best]},
+"Conclusion : les règles d'or à garder":{o:"Retenir les sept règles qui rendent le travail avec Copilot fiable.",c:"Ces règles ne dépendent ni de l'outil ni du modèle. Elles valent pour Copilot comme pour tout assistant d'IA.",l:[L.best,L.oaiAgents]},
+"Continuer avec Copilot et VS Code":{o:"Choisir les prochaines lectures dans la documentation officielle de Copilot et de VS Code.",c:"La documentation officielle évolue à chaque version. Elle prime sur toute formation, celle-ci comprise.",l:[L.vsCustom,L.ghTutos]},
+"Continuer avec Anthropic et OpenAI":{o:"Relier les notions de la formation aux guides de référence d'Anthropic et d'OpenAI.",c:"Les éditeurs de modèles convergent sur les mêmes principes : simplicité, contexte maîtrisé, rôles séparés, garde-fous, mesure.",l:[L.antAgents,L.oaiAgents]},
+"Rester à jour : blogs et plan des 30 prochains jours":{o:"Savoir où suivre les nouveautés et planifier quatre actions concrètes.",c:"Une veille courte et régulière vaut mieux qu'une lecture massive et ponctuelle. Appliquez chaque idée à un cas réel avant de passer à la suivante.",l:[L.vsUpdates,L.ghBlog]},
 "Glossaire":{o:"Retrouver le sens d'un mot de l'atelier.",c:"Le vocabulaire de l'IA évolue vite. Les documentations officielles ci-dessous restent la référence en cas de doute.",l:[L.over,L.chat]},
 "Dépannage":{o:"Débloquer rapidement une situation courante.",c:"Face à un comportement inattendu : <b>1)</b> relisez le fichier concerné, <b>2)</b> vérifiez qu'il est enregistré, <b>3)</b> ouvrez un nouveau chat, <b>4)</b> demandez à l'animateur.",l:[L.tips,L.chat]}
 };
@@ -1200,8 +1354,10 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
 const shiftStages=(from,to)=>{const mv=o=>{for(const k of Object.keys(o)) if(k.startsWith(from+'-')){o[to+'-'+k.slice(String(from).length+1)]=o[k];delete o[k];}};mv(st.done);mv(st.open);if(st.stage===from)st.stage=to;};
 if(!st.v){shiftStages(6,7);st.v=4;save();}
 if(st.v<5){shiftStages(7,8);st.v=5;save();}
+/* v6 : « Récap et ouverture » est insérée avant l'Aide (8 -> 9). */
+if(st.v<6){shiftStages(8,9);st.v=6;save();}
 const $=s=>document.querySelector(s);
-const fill=s=>s.replaceAll('{n}',st.lot);
+const fill=s=>s.replaceAll('{n}',st.lot).replace(/\{L:(\w+)\}/g,(m,k)=>L[k]?'<a href="'+L[k][1]+'" target="_blank" rel="noopener noreferrer">'+L[k][0]+' ↗</a>':m);
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const sid=(i,j)=>i+'-'+j;
 let copies=[];
@@ -1216,8 +1372,8 @@ function block(b,i,j,k){
     case 'why': return '<div class="co why"><b class="l">💡 Pourquoi</b><p>'+fill(b.x)+'</p></div>';
     case 'no': return '<div class="co no"><b class="l">⛔ Règle</b><p>'+fill(b.x)+'</p></div>';
     case 'mock': return '<div class="mock">'+esc(fill(b.x))+'</div>';
-    case 'ex': return '<details class="more"><summary>📄 '+b.l+'</summary><div class="mb"><div class="mock" style="white-space:pre-wrap">'+esc(fill(b.x))+'</div></div></details>';
-    case 'table': return '<table><tr>'+b.h.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+b.r.map(r=>'<tr>'+r.map(c=>'<td>'+fill(c)+'</td>').join('')+'</tr>').join('')+'</table>';
+    case 'ex': if(b.lot===st.lot) return ''; return '<details class="more"><summary>📄 '+fill(b.l)+'</summary><div class="mb"><div class="mock" style="white-space:pre-wrap">'+esc(fill(b.x))+'</div></div></details>';
+    case 'table': { const cur=x=>b.lotcols&&x===st.lot?' class="lotcur"':''; return '<table><tr>'+b.h.map((h,x)=>'<th'+cur(x)+'>'+fill(h)+'</th>').join('')+'</tr>'+b.r.map(r=>'<tr>'+r.map((c,x)=>'<td'+cur(x)+'>'+fill(c)+'</td>').join('')+'</tr>').join('')+'</table>'; }
     case 'copy': {
       const text=fill(b.x).replaceAll('¤','`'); copies.push(text);
       return '<div class="copy"><div class="ct"><span>📋 '+fill(b.l)+'</span><button data-copy="'+(copies.length-1)+'">Copier</button></div><pre>'+esc(text)+'</pre></div>';}
@@ -1332,20 +1488,20 @@ document.addEventListener('change',e=>{
   if(e.target.dataset.chk){st.chk[e.target.dataset.chk]=e.target.checked;save();}
 });
 $('#lot').addEventListener('change',e=>{st.lot=+e.target.value;save();render();});
-$('#reset').addEventListener('click',()=>{if(confirm('Effacer toute votre progression ?')){st={lot:st.lot,stage:0,done:{},chk:{},open:{'0-0':true},v:5};save();render();}});
+$('#reset').addEventListener('click',()=>{if(confirm('Effacer toute votre progression ?')){st={lot:st.lot,stage:0,done:{},chk:{},open:{'0-0':true},v:6};save();render();}});
 
 /* ---------- visite guidée (premier usage) */
 const TOUR=[
  {c:1,t:'Bienvenue sur votre road tour 👋',x:'Ce parcours vous guide <b>pas à pas</b> : chaque étape dit quoi faire, quoi copier et ce que vous devez voir. Cette courte visite (1 minute) montre comment tout fonctionne.'},
  {s:'#lot',t:'1. Choisissez votre lot',x:'Votre animateur vous attribue un lot (1 à 4). Le choix adapte automatiquement tous les noms de dossiers et de fichiers dans les textes à copier.'},
  {s:'.prog',t:'2. Votre progression',x:'La barre se remplit à chaque étape validée. Elle est <b>sauvegardée</b> dans votre navigateur : vous pouvez fermer la page et reprendre plus tard.'},
- {s:'nav.road',t:'3. La route : le menu',x:'Neuf arrêts, du début à la fin, dont un bonus et une partie « bien plus loin ». Cliquez sur un arrêt pour y aller ; la coche ✔ indique qu\'il est terminé, et le compteur (ex. 3/7) montre l\'avancée.'},
+ {s:'nav.road',t:'3. La route : le menu',x:'Dix arrêts, du début à la fin, dont un bonus, une partie « bien plus loin » et un récap. Cliquez sur un arrêt pour y aller ; la coche ✔ indique qu\'il est terminé, et le compteur (ex. 3/7) montre l\'avancée.'},
  {s:'.step .sh',t:'4. Les étapes',x:'Chaque arrêt contient des étapes numérotées. Cliquez sur le titre d\'une étape pour l\'ouvrir ou la fermer. Faites-les <b>dans l\'ordre</b>.'},
  {s:'.step.open .obj',t:'5. L\'objectif',x:'En haut de chaque étape, le bandeau violet rappelle <b>ce que vous devez avoir obtenu</b> à la fin. Si vous êtes perdu, relisez-le.'},
  {s:'.step.open .co',t:'6. Les encadrés',x:'<b>Vert</b> : ce que vous devez voir. <b>Jaune</b> : que faire si ça ne marche pas. <b>Bleu</b> : pourquoi on fait cela. Plus loin, les blocs violets contiennent des textes à <b>copier d\'un clic</b> avec le bouton Copier.'},
  {s:'.step.open .more',t:'7. Pour aller plus loin',x:'Facultatif : un concept expliqué simplement et des liens officiels pour approfondir. À lire quand vous voulez comprendre le « pourquoi ».'},
  {s:'.step.open [data-done]',t:'8. Valider l\'étape',x:'Quand l\'étape est faite, cliquez ici : elle se ferme, la suivante s\'ouvre et un petit feu d\'artifice vous félicite 🎉. Cliquer de nouveau annule.'},
- {s:'#tourbtn',t:'9. Revoir cette visite',x:'Ce bouton relance la visite à tout moment. « Recommencer » efface votre progression.'},
+ {s:'#tourbtn',t:'9. Revoir cette visite',x:'Ce bouton relance la visite à tout moment. « Recommencer » efface votre progression. Le bouton ☀️ / 🌙 bascule entre thème clair et sombre.'},
  {c:1,t:'C\'est parti ! 🚀',x:'Commencez par la première étape : <b>Ouvrir le dossier du projet</b>.'}
 ];
 let ti=0;
@@ -1400,6 +1556,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape') endTour(); else if(e.key==='ArrowRight') showTour(ti+1,1); else if(e.key==='ArrowLeft') showTour(ti-1,-1);
 });
 $('#tourbtn').addEventListener('click',startTour);
+const applyTheme=t=>{document.documentElement.dataset.theme=t;$('#theme').textContent=t==='dark'?'☀️':'🌙';$('#theme').title=t==='dark'?'Passer au thème clair':'Passer au thème sombre';};
+applyTheme(document.documentElement.dataset.theme);
+$('#theme').addEventListener('click',()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(t);try{localStorage.setItem('sd-theme',t)}catch(e){}});
 
 if(!Object.keys(st.open).length) st.open[sid(st.stage,0)]=true;
 render();
