@@ -116,12 +116,38 @@ Titre · En tant que / Je veux / Afin de · Critères d'acceptation (Given/When/
 L'agent s'arrête et demande si une règle manque, si deux sources se contredisent, ou si une décision métier est requise.
 ```
 
+## L'humain dans la boucle : valider avant d'exécuter
+Le mode Plan ne modifie aucun fichier : il **propose**. `PLAN.md` n'est qu'un brouillon tant qu'un humain n'a pas décidé de le valider. Passer à l'exécution (mode Agent) est un choix explicite du groupe, jamais une suite automatique du plan.
+
+### Pourquoi c'est important
+- Une décision non prise (`ND-xx`) ne doit jamais être tranchée silencieusement par l'IA : si le plan contient une hypothèse déguisée en fait, c'est à l'humain de la repérer et de la refuser avant exécution.
+- Une erreur dans le plan se propage à toutes les US traitées ensuite. La corriger avant l'exécution prend quelques minutes ; la corriger après, c'est tout reprendre.
+- Valider rend le travail traçable : on sait qui a accepté le plan, et sur quelle base (quelles règles, quelles questions tranchées).
+
+### Trois choix possibles face à un plan proposé
+| Choix | Quand l'utiliser | Ce que fait le groupe |
+|---|---|---|
+| **Valider tel quel** | Le plan couvre les 7 points demandés, aucune règle n'est inventée | Sauvegarder `PLAN.md`, puis passer en mode Agent |
+| **Corriger** | Un critère est flou, une question métier manque, une étape tranche à la place du métier | Répondre dans le chat Plan (« ce critère n'est pas vérifiable », « qui tranche ND-03 ? ») et régénérer |
+| **Rejeter et recadrer** | Le plan part hors périmètre ou invente des règles métier | Reformuler le prompt de départ plutôt que corriger un plan déjà hors sujet |
+
+Ce choix appartient au groupe, pas à Copilot : lui seul propose, l'humain décide.
+
+### La validation ne s'arrête pas au plan
+Chaque **handoff** entre agents (Reviewer → Rédacteur, Rédacteur → Contrôle) est un nouveau point où l'humain peut valider, corriger ou arrêter l'exécution. Passer en mode Agent ne veut pas dire laisser tourner sans regarder : les points de validation listés en section 10 du plan (ex. « validation de chaque US réécrite avant dépôt dans sortie/ ») s'appliquent **pendant** l'exécution, pas seulement avant qu'elle démarre.
+
+### Dans SprintDesk, concrètement
+- Avant toute écriture dans `sprintdesk/backlog/sortie/` : un humain relit la user story reformulée.
+- Avant toute réponse à une question `ND-xx` : la décision revient au référent produit, jamais à l'agent.
+- Avant toute publication externe (ticketing, messagerie) : accord humain explicite, sans exception.
+
 ## Checklist : mon plan est-il bon ?
 - [ ] Je sais dire ce que chaque agent **fera**, et ce qu'il **ne décidera pas**.
 - [ ] Chaque décision non prise (`ND-xx`) apparaît en question ouverte, pas en hypothèse cachée.
 - [ ] Les critères de réussite sont **vérifiables** (on peut répondre oui/non).
 - [ ] Les points de validation humaine sont placés avant toute décision métier et toute publication.
 - [ ] Une condition d'arrêt est définie (quand l'agent doit s'arrêter et demander).
+- [ ] Le groupe sait, face à un plan proposé, lequel des trois choix il applique (valider / corriger / rejeter).
 
 ## Pièges
 - Plan trop long et trop détaillé : personne ne le relit. Viser ce que le groupe peut valider en 10 minutes.
