@@ -11,6 +11,7 @@ Ces fiches accompagnent l'atelier. Elles expliquent comment créer chaque brique
 | **Atelier 1 — Planifier** | Poser le contexte du projet dans des instructions claires, puis prompter pour obtenir un plan clair et bien construit | [01-instructions.md](01-instructions.md) · [02-plan.md](02-plan.md) |
 | **Atelier 2 — Acter** | Architecturer les agents dans le cycle de développement, créer agents et skills | [03-architecture-agents.md](03-architecture-agents.md) · [04-agents.md](04-agents.md) · [05-skills.md](05-skills.md) · [06-prompts.md](06-prompts.md) (annexe) |
 | **Bonus — Analyser** | Évaluer, analyser les erreurs et ajuster | [07-evaluation.md](07-evaluation.md) |
+| **Bonus — Orchestrer** | Un agent orchestrateur pilote les agents et produit un compte rendu HTML | [09-orchestration.md](09-orchestration.md) |
 
 ## Les briques
 | Brique | Fichier(s) | Chargée quand ? |

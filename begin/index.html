@@ -369,7 +369,70 @@ const STAGES = [
  {t:"Critiquer au lieu de tout relancer",b:[
   {t:"table",h:["Problème constaté","Phrase à écrire"],r:[["Réponse trop longue","« Résume en 5 lignes maximum. »"],["Affirmation sans source","« Sur quelle règle RM-xx ou quel fichier t'appuies-tu ? »"],["Invention","« Tu as inventé ce point. Retire-le et transforme-le en question ouverte. »"],["Décision à la place du métier","« Ne décide pas. Présente les options et laisse-moi trancher. »"]]},
   {t:"p",x:"Entraînement : demandez les défauts de l'US contradictoire de votre lot avec le prompt à 6 blocs, puis utilisez une phrase du tableau. Copilot a-t-il cité la bonne règle <code>RM-xx</code> tout seul ?"},
-  {t:"check",id:"c1",x:["J'ai vu la différence entre « Améliore » et un prompt à 6 blocs","Je sais nommer les 6 blocs : contexte, sources, interdits, tâche, exigences, format","J'ai vu Copilot poser des questions plutôt qu'inventer","Je sais critiquer une réponse au lieu de tout relancer","Je sais expliquer few-shot, chain-of-thought, rôle, questions inversées et auto-vérification, et à quoi elles servent dans SprintDesk"]}]}
+  {t:"check",id:"c1",x:["J'ai vu la différence entre « Améliore » et un prompt à 6 blocs","Je sais nommer les 6 blocs : contexte, sources, interdits, tâche, exigences, format","J'ai vu Copilot poser des questions plutôt qu'inventer","Je sais critiquer une réponse au lieu de tout relancer","Je sais expliquer few-shot, chain-of-thought, rôle, questions inversées et auto-vérification, et à quoi elles servent dans SprintDesk"]}]},
+ {t:"Pour aller plus loin : vos propres commandes « / »",b:[
+  {t:"p",x:"Vous venez de taper plusieurs fois le même prompt à 6 blocs. Dans un vrai projet, toute l'équipe le retaperait, chacun à sa façon. Un <b>fichier de prompt</b> enregistre ce prompt une fois pour toutes. Vous le relancez ensuite en tapant <code>/</code> suivi de son nom dans le chat : c'est une <b>commande slash</b>."},
+  {t:"p",x:"<b>Analogie :</b> c'est un modèle de courrier. Le texte est écrit et relu une fois. Chacun l'utilise ensuite en ajoutant seulement ce qui change (ici, l'US à analyser)."},
+  {t:"mock",x:"formation-harness/\n└─ .github/\n   ├─ copilot-instructions.md        (Atelier 1 : règles permanentes)\n   ├─ agents/                        (Atelier 2 : qui fait quoi)\n   ├─ skills/                        (Atelier 3 : comment faire)\n   └─ prompts/                       <- ce que vous créez ici\n      ├─ diagnostiquer-us.prompt.md  ->  /diagnostiquer-us\n      ├─ questions-po.prompt.md      ->  /questions-po\n      └─ verifier-reponse.prompt.md  ->  /verifier-reponse"},
+  {t:"table",h:["Partie du fichier","Rôle","Exemple SprintDesk"],r:[
+   ["Nom du fichier","Donne le nom de la commande","<code>diagnostiquer-us.prompt.md</code> devient <code>/diagnostiquer-us</code>"],
+   ["En-tête <code>---</code> : <code>description</code>","Texte affiché dans la liste des commandes","« Diagnostique une user story sans la réécrire »"],
+   ["En-tête : <code>argument-hint</code>","Aide affichée dans la zone de saisie après la commande","« Ajoutez l'US avec # »"],
+   ["En-tête : <code>agent</code>","Mode utilisé : <code>ask</code>, <code>plan</code>, <code>agent</code> ou un agent personnalisé","<code>ask</code> : la commande ne pourra jamais modifier un fichier"],
+   ["Corps du fichier","Le prompt lui-même, en Markdown","Votre prompt à 6 blocs"],
+   ["Liens Markdown","Joignent automatiquement des fichiers","<code>[regles-metier.md](../../sprintdesk/contexte/regles-metier.md)</code>"],
+   ["<code>${input:nom:aide}</code>","Une valeur que l'utilisateur précise au lancement","<code>/questions-po nombre=3</code>"]]},
+  {t:"table",h:["Outil","Qui le déclenche ?","Quand l'utiliser"],r:[
+   ["<b>Instructions</b>","Automatique, dans chaque conversation","Règles toujours vraies (ton, interdits)"],
+   ["<b>Fichier de prompt</b> (commande <code>/</code>)","<b>Vous</b>, quand vous tapez <code>/nom</code>","Une demande ponctuelle que l'on répète souvent"],
+   ["<b>Agent</b>","Vous, en le choisissant dans le sélecteur","Un rôle qui dure toute une conversation"],
+   ["<b>Skill</b>","Copilot, s'il la juge utile pour la tâche","Une méthode réutilisée par plusieurs agents"]]},
+  {t:"why",x:"Une commande <code>/</code> garantit que <b>tout le monde envoie le même prompt</b>, déjà relu et testé. Placée dans <code>.github/prompts</code>, elle est partagée avec le projet : un nouveau venu dispose tout de suite des bons prompts."}]},
+ {t:"Créer la commande /diagnostiquer-us",b:[
+  {t:"p",x:"Vous transformez le prompt à 6 blocs en commande réutilisable. Copilot ne crée rien : c'est vous qui écrivez le fichier."},
+  {t:"ol",x:[
+   "<kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>P</kbd>, tapez <code>Chat: New Prompt File</code>, puis <kbd>Entrée</kbd>.",
+   "Emplacement : choisissez <code>.github/prompts</code> (le dossier du projet, pas votre profil utilisateur).",
+   "Nom : tapez <code>diagnostiquer-us</code>, puis <kbd>Entrée</kbd>. Le fichier <code>.github/prompts/diagnostiquer-us.prompt.md</code> s'ouvre avec un modèle.",
+   "<kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez le contenu ci-dessous, puis <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans .github/prompts/diagnostiquer-us.prompt.md",x:"---\ndescription: \"Diagnostique une user story SprintDesk sans la réécrire : constats, règles RM/ND citées, questions au métier.\"\nargument-hint: \"Ajoutez l'US à analyser avec # (ex. #US-{n}01.md)\"\nagent: ask\n---\nContexte : projet SprintDesk. Sources du projet : [produit.md](../../sprintdesk/contexte/produit.md) et [regles-metier.md](../../sprintdesk/contexte/regles-metier.md).\n\nSource à analyser : la user story jointe au message avec #.\nSi aucune user story n'est jointe, demande-la et arrête-toi.\n\nInterdits :\n- Ne réécris pas l'US.\n- N'invente aucune règle métier.\n- Ne modifie aucun fichier.\n\nTâche : indique si cette US est exploitable en l'état.\n\nExigences :\n- Cite les règles RM-xx ou les décisions ND-xx concernées.\n- Si une information manque, pose la question au lieu de la deviner.\n- Si l'US est déjà correcte, dis-le simplement et ne propose aucune amélioration.\n\nFormat : un tableau avec les colonnes \"Constat\", \"Règle (RM/ND)\", \"Question à poser au métier\", puis une conclusion en une phrase."},
+  {t:"table",h:["Ligne","Pourquoi elle est là"],r:[
+   ["<code>agent: ask</code>","Garde-fou : même lancée depuis le mode Agent, la commande reste en lecture seule"],
+   ["Les deux liens Markdown","<code>produit.md</code> et <code>regles-metier.md</code> sont joints <b>automatiquement</b>. Vous n'ajoutez plus que l'US"],
+   ["« Si aucune user story n'est jointe… arrête-toi »","Évite que Copilot analyse une US au hasard"],
+   ["« Si l'US est déjà correcte… »","La leçon de l'étape « Tester sur l'US correcte » est désormais intégrée à la commande"]]},
+  {t:"see",x:"Dans l'explorateur : un dossier <code>.github/prompts</code> contenant <code>diagnostiquer-us.prompt.md</code>. Dans l'éditeur, les clés de l'en-tête sont colorées."},
+  {t:"warn",x:"La commande <code>Chat: New Prompt File</code> n'apparaît pas ? Créez le fichier à la main : clic droit sur <code>.github</code> > <code>Nouveau dossier</code> > <code>prompts</code>, puis clic droit sur <code>prompts</code> > <code>Nouveau fichier</code> > <code>diagnostiquer-us.prompt.md</code>. Le nom doit finir exactement par <code>.prompt.md</code>."}]},
+ {t:"Lancer et tester la commande",b:[
+  {t:"ol",x:[
+   "Nouveau chat (<code>+</code>). Le mode n'a pas d'importance : la commande impose <code>Ask</code>.",
+   "Tapez <code>/</code> : une liste apparaît. Repérez <code>diagnostiquer-us</code> et sa description.",
+   "Choisissez-la, puis ajoutez la pastille <kbd>#</kbd> <code>US-{n}01.md</code>. Envoyez.",
+   "Nouveau chat. Relancez la commande avec <code>#US-{n}05.md</code> (l'US correcte)."]},
+  {t:"copy",l:"À TAPER dans le chat (puis choisir le fichier après #)",x:"/diagnostiquer-us #US-{n}01.md"},
+  {t:"see",x:"Pour l'US-{n}01 : un tableau Constat / Règle / Question, comme avec le prompt à 6 blocs, mais en tapant une seule ligne. Pour l'US-{n}05 : Copilot dit qu'elle est correcte et ne propose rien."},
+  {t:"table",h:["Autre façon de lancer","Comment"],r:[
+   ["Depuis le fichier","Ouvrez <code>diagnostiquer-us.prompt.md</code> et cliquez sur le bouton ▷ (lecture) en haut à droite de l'éditeur. Pratique pour tester après une modification"],
+   ["Depuis la palette","<kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>P</kbd> > <code>Chat: Run Prompt</code>, puis choisissez la commande"],
+   ["Voir toutes vos commandes","Tapez <code>/prompts</code> dans le chat : le menu de gestion des fichiers de prompt s'ouvre"]]},
+  {t:"p",x:"<b>Améliorer la commande :</b> si une réponse ne vous convient pas, ne corrigez pas dans le chat. Modifiez le fichier, enregistrez, relancez. La correction profite alors à tout le monde."},
+  {t:"warn",x:"La commande n'apparaît pas après <code>/</code> ? (1) Le fichier est-il dans <code>.github/prompts</code> ? (2) Finit-il par <code>.prompt.md</code> ? (3) Est-il enregistré ? (4) L'en-tête commence-t-il par <code>---</code> en 1<sup>re</sup> ligne ? (5) Si le chat propose de choisir un environnement de session, choisissez <code>Local</code> : les fichiers de prompt ne fonctionnent que là. (6) Sinon : <code>Developer: Reload Window</code>."},
+  {t:"why",x:"Comparez avec l'étape « Le bon prompt en 6 blocs » : même qualité, mais plus rien à recopier ni à oublier. Le prompt devient un <b>outil du projet</b>, relu et versionné comme un document."}]},
+ {t:"Ajouter deux commandes : /questions-po et /verifier-reponse",b:[
+  {t:"p",x:"Mêmes gestes que pour <code>/diagnostiquer-us</code> (palette > <code>Chat: New Prompt File</code> > <code>.github/prompts</code>). La première utilise une <b>variable</b>, la seconde s'utilise <b>dans une conversation déjà commencée</b>."},
+  {t:"copy",l:"À COPIER dans .github/prompts/questions-po.prompt.md",x:"---\ndescription: \"Joue le Product Owner : liste les questions à poser au demandeur avant d'accepter une US SprintDesk.\"\nargument-hint: \"nombre=3 puis l'US avec #\"\nagent: ask\n---\nAgis comme un Product Owner expérimenté qui prépare le raffinement d'une user story SprintDesk.\nContexte : [produit.md](../../sprintdesk/contexte/produit.md) et [regles-metier.md](../../sprintdesk/contexte/regles-metier.md).\n\nRelis la user story jointe avec #.\nListe les ${input:nombre:nombre de questions, par exemple 3} questions les plus importantes que tu poserais au demandeur avant de l'accepter dans un sprint.\n\nRègles :\n- Pose des questions, ne propose aucune réponse.\n- Si une question touche une décision non prise (ND-xx), cite-la.\n- Pas de vocabulaire technique. Ne modifie aucun fichier."},
+  {t:"copy",l:"À TAPER dans un nouveau chat",x:"/questions-po nombre=3 #US-{n}01.md"},
+  {t:"see",x:"Exactement 3 questions orientées besoin et valeur, sans solution, avec une ND-xx citée si elle est concernée. Essayez <code>nombre=5</code> : la commande s'adapte sans être modifiée."},
+  {t:"copy",l:"À COPIER dans .github/prompts/verifier-reponse.prompt.md",x:"---\ndescription: \"Fait relire à Copilot sa réponse précédente : repère les affirmations sans source et les transforme en questions ouvertes.\"\nagent: ask\n---\nRelis ta réponse précédente dans cette conversation.\nRéférence : [regles-metier.md](../../sprintdesk/contexte/regles-metier.md).\n\nPour chaque affirmation, indique sa source (fichier et règle RM-xx ou ND-xx) ou écris « sans source ».\n\nRéponds avec :\n1. La liste des affirmations sans source.\n2. Une version corrigée où chaque affirmation sans source est retirée ou devenue une question ouverte.\n\nNe modifie aucun fichier. Ne tranche aucune décision non prise (ND-xx)."},
+  {t:"p",x:"Pour l'essayer : dans le chat de l'essai few-shot (ou toute réponse de Copilot sur une US), tapez simplement <code>/verifier-reponse</code> et envoyez."},
+  {t:"see",x:"Une liste d'affirmations « sans source » (délais, formats, champs inventés), puis une version corrigée. Relisez quand même : la commande aide, elle ne remplace pas votre contrôle."},
+  {t:"table",h:["Commande","Technique de prompt","Quand la lancer"],r:[
+   ["<code>/diagnostiquer-us</code>","6 blocs + ancrage dans les sources","Avant de discuter d'une US en atelier"],
+   ["<code>/questions-po</code>","Rôle + variable","Pour préparer un entretien avec le demandeur"],
+   ["<code>/verifier-reponse</code>","Auto-vérification","Après toute réponse de Copilot, avant de la réutiliser"]]},
+  {t:"no",x:"Une commande ne doit jamais trancher une décision non prise (ND-xx) ni publier quoi que ce soit. Écrivez ces interdits <b>dans le fichier</b> : ainsi personne ne peut les oublier."},
+  {t:"check",id:"c1p",x:["J'ai créé <code>.github/prompts/diagnostiquer-us.prompt.md</code>","La commande <code>/diagnostiquer-us</code> apparaît quand je tape <code>/</code>","Elle laisse l'US correcte inchangée","J'ai utilisé une variable avec <code>/questions-po nombre=3</code>","Je sais expliquer la différence entre instructions, commande <code>/</code>, agent et skill"]},
+  {t:"why",x:"Vous retrouverez cette idée à l'Atelier 1 : le prompt de planification peut lui aussi devenir une commande (<code>/preparer-plan</code>). Guide complet : <code>docs/06-prompts.md</code>."}]}
  ]},
 /* ====================================================== 2 */
 {icon:"📜",title:"Atelier 1 · Partie A — Instructions",sub:"Les règles permanentes de Copilot",
@@ -642,6 +705,121 @@ const STAGES = [
   {t:"why",x:"Vous avez construit un <b>harness</b> : instructions (règles permanentes) + plan (contrat) + agents (rôles) + skills (savoir-faire) + validation humaine. Copilot travaille désormais dans un cadre, et non plus au hasard."},
   {t:"table",h:["Brique","Fichier","Question à laquelle elle répond"],r:[["Instructions","<code>.github/copilot-instructions.md</code>","Quelles règles sont <b>toujours</b> vraies ?"],["Plan","<code>PLAN.md</code>","Que fait-on, et comment jugera-t-on ?"],["Agent","<code>.github/agents/*.agent.md</code>","<b>Qui</b> fait quoi ?"],["Skill","<code>.github/skills/*/SKILL.md</code>","<b>Comment</b> le faire ?"]]}]}
  ]},
+/* ====================================================== Bonus */
+{icon:"🎼",title:"Bonus — Orchestration",sub:"Un agent qui pilote les agents",
+ goal:"Vous créez un agent orchestrateur qui déroule PLAN.md, délègue au Reviewer, au Rédacteur et au Contrôleur, s'arrête à chaque validation humaine, puis produit un compte rendu HTML de votre lot.",
+ steps:[
+ {t:"Comprendre l'orchestration agentique",b:[
+  {t:"p",x:"Dans l'Atelier 2, c'est <b>vous</b> qui passez la main d'un agent à l'autre : vous lancez le Reviewer, vous relisez, vous lancez le Rédacteur, puis le Contrôleur. L'<b>orchestration agentique</b> confie cet enchaînement à un agent coordinateur : l'<b>orchestrateur</b>."},
+  {t:"p",x:"<b>Analogie :</b> un chef d'orchestre ne joue d'aucun instrument. Il donne le départ, tient le tempo et s'assure que chaque musicien joue sa partition. L'orchestrateur ne diagnostique pas et ne réécrit pas : il <b>fait travailler</b> les agents spécialisés, dans le bon ordre."},
+  {t:"table",h:["Verbe","Ce que fait l'orchestrateur","Exemple SprintDesk"],r:[
+   ["<b>Planifier</b>","Traduit l'objectif en étapes ordonnées","Lit <code>PLAN.md</code> et annonce : diagnostic, réécriture, contrôle, compte rendu"],
+   ["<b>Déléguer</b>","Confie une étape à l'agent compétent, avec une consigne complète","Demande au Reviewer de produire <code>revue.md</code> pour le lot {n}"],
+   ["<b>Contrôler</b>","Vérifie que le livrable existe et respecte le contrat","<code>revue.md</code> couvre-t-il les 5 US ?"],
+   ["<b>S'arrêter</b>","Rend la main à l'humain aux points de validation","« Validez-vous le diagnostic ? »"],
+   ["<b>Rendre compte</b>","Produit un bilan lisible et traçable","Tableau de bord HTML du lot"]]},
+  {t:"mock",x:"                 VOUS (humain)\n          valider / corriger / arrêter\n                   ▲        │\n                   │        ▼\n          ┌──────────────────────────┐\n          │     orchestrateur-us      │  lit PLAN.md\n          │ (Planificateur-Contrôleur)│  écrit le compte rendu\n          └──────────────────────────┘\n             │          │          │   délègue\n             ▼          ▼          ▼\n        reviewer    redacteur   controleur\n      revue-agilite formater-us verifier-regles-metier\n             │          │          │\n             ▼          ▼          ▼\n         revue.md  sortie/lot{n}  tableau OK/KO\n                        │\n                        ▼\n      skill compte-rendu-html -> compte-rendu-lot{n}.html"},
+  {t:"table",h:["Notion","En clair"],r:[
+   ["<b>Sous-agent</b>","Un agent appelé par l'orchestrateur pour une tâche précise. Il rend un résultat, puis s'arrête."],
+   ["<b>Contexte isolé</b>","Un sous-agent <b>ne voit pas</b> votre conversation. Il ne connaît que la consigne que l'orchestrateur lui envoie."],
+   ["<b>Consigne de délégation</b>","Le message envoyé au sous-agent. Il doit être autonome : lot, fichiers à lire, fichier à écrire, décisions validées, interdits."],
+   ["<b>Point de validation</b>","Un arrêt obligatoire où l'humain décide : valider, corriger ou arrêter."],
+   ["<b>Boucle bornée</b>","Correction (Rédacteur puis Contrôleur) répétée au plus deux fois, puis remontée à l'humain."]]},
+  {t:"why",x:"L'orchestration n'ajoute pas d'intelligence : elle ajoute de la <b>discipline</b>. Les mêmes étapes, dans le même ordre, avec les mêmes consignes, à chaque lot. Elle n'est utile que si vos agents et vos skills fonctionnent déjà bien seuls."}]},
+ {t:"Manuel, handoff ou orchestration ?",b:[
+  {t:"table",h:["","Atelier 2 (passage manuel)","Bonus (orchestration)"],r:[
+   ["Qui enchaîne les agents ?","Vous, en changeant d'agent et en recollant un prompt","L'orchestrateur"],
+   ["Qui transmet le contexte ?","Vous, à chaque prompt","L'orchestrateur, dans chaque consigne de délégation"],
+   ["Qui vérifie que le livrable existe ?","Vous","L'orchestrateur, puis vous au point de validation"],
+   ["Qui décide (ND-xx, acceptation) ?","<b>Vous</b>","<b>Vous</b> : rien ne change"],
+   ["Bilan final","À rédiger","Compte rendu HTML généré"],
+   ["Risque principal","Oubli d'étape, prompts différents à chaque fois","Effet « boîte noire » si on valide sans relire"]]},
+  {t:"table",h:["","Handoff (bouton)","Sous-agent (délégation)"],r:[
+   ["Fonctionnement","La conversation <b>change</b> d'agent, avec un prompt pré-rempli","L'orchestrateur <b>reste</b> l'agent principal et appelle un autre agent"],
+   ["Qui déclenche ?","Vous, en cliquant","L'orchestrateur"],
+   ["Contexte","Le nouvel agent voit la conversation","Le sous-agent ne voit que sa consigne"],
+   ["Usage","Enchaînement manuel guidé","Orchestration (ce bonus)"]]},
+  {t:"table",h:["Schéma d'orchestration","Principe","Utilisé ici ?"],r:[
+   ["<b>Séquentiel</b> (pipeline)","Les agents travaillent l'un après l'autre, chacun sur la sortie du précédent","Oui : diagnostic, réécriture, contrôle"],
+   ["<b>Superviseur</b>","Un agent central décide quel agent appeler et quand","Oui : l'orchestrateur"],
+   ["<b>Producteur-critique</b>","Un agent produit, un autre critique, on boucle","Oui, borné à 2 boucles : Rédacteur puis Contrôleur"],
+   ["<b>Parallèle</b>","Plusieurs agents en même temps sur des parties indépendantes","Non : le lot est petit et l'ordre compte"]]},
+  {t:"why",x:"Le schéma retenu (séquentiel supervisé, avec une boucle bornée) est le plus simple à relire. Commencez toujours par le schéma le plus simple qui répond au besoin."}]},
+ {t:"Risques et garde-fous",b:[
+  {t:"table",h:["Risque","Ce qui peut arriver","Garde-fou de ce bonus"],r:[
+   ["Boîte noire","Tout s'enchaîne, personne ne relit","Points de validation obligatoires, ligne d'état à chaque réponse"],
+   ["Erreur en cascade","Un diagnostic faux produit 5 US fausses","Validation du diagnostic <b>avant</b> toute réécriture"],
+   ["Orchestrateur qui « fait tout »","Il réécrit lui-même une US au lieu de déléguer","Interdit explicite : il n'écrit qu'un seul fichier, le compte rendu"],
+   ["Perte de contexte","Le sous-agent ignore une décision prise avec vous","Consigne de délégation autonome, décisions recopiées"],
+   ["Boucle sans fin","Rédacteur et Contrôleur se renvoient la balle","Deux boucles maximum, puis escalade à l'humain"],
+   ["Dérive","L'orchestrateur appelle un agent non prévu","Liste fermée <code>agents:</code> dans l'en-tête"],
+   ["Coût","Chaque sous-agent consomme des requêtes","Un sous-agent par étape, aucune délégation inutile"]]},
+  {t:"no",x:"Un orchestrateur ne supprime jamais la validation humaine. S'il enchaîne deux étapes d'écriture sans vous demander, arrêtez-le et corrigez sa fiche."}]},
+ {t:"Vérifier les prérequis et voir le résultat attendu",b:[
+  {t:"ol",x:[
+   "Vérifiez dans l'explorateur : <code>PLAN.md</code> à la racine, les trois agents dans <code>.github/agents</code> (<code>reviewer-backlog</code>, <code>redacteur-backlog</code>, <code>controleur-backlog</code>) et les trois skills (<code>revue-agilite</code>, <code>formater-us</code>, <code>verifier-regles-metier</code>).",
+   "Dépliez <code>.github/skills/compte-rendu-html</code> : il contient un fichier fourni, <code>gabarit-dashboard.html</code>.",
+   "Clic droit sur ce fichier > <code>Révéler dans l'Explorateur de fichiers</code> (<code>Reveal in File Explorer</code>), puis double-cliquez pour l'ouvrir dans le navigateur."]},
+  {t:"see",x:"Un tableau de bord coloré avec un bandeau jaune « EXEMPLE FICTIF » : indicateurs, déroulé de l'orchestration, ce qui n'allait pas, US nettoyées avant / après avec filtres, contrôles, questions ouvertes, journal des validations."},
+  {t:"why",x:"Le gabarit contient toute la mise en page. L'orchestrateur n'aura qu'à remplacer le <b>bloc de données</b> (JSON) par celles de votre lot. Le rendu reste identique d'un lot à l'autre, et une erreur de l'agent ne peut pas casser le style ni injecter de code."},
+  {t:"warn",x:"Un agent ou une skill manque ? Terminez d'abord les Ateliers 2 et 3. Orchestrer des agents qui fonctionnent mal ne fait qu'enchaîner leurs erreurs plus vite."}]},
+ {t:"Créer la skill compte-rendu-html",b:[
+  {t:"ol",x:["Clic droit sur le dossier <code>.github/skills/compte-rendu-html</code> > <code>Nouveau fichier</code> > tapez exactement <code>SKILL.md</code>.","Collez le contenu ci-dessous, puis <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans .github/skills/compte-rendu-html/SKILL.md",x:"---\nname: compte-rendu-html\ndescription: \"Produit le compte rendu HTML (tableau de bord) du traitement d'un lot SprintDesk : ce qui a été fait, ce qui n'allait pas, US nettoyées, contrôles, questions ouvertes, validations humaines. Utiliser en fin d'orchestration d'un lot.\"\n---\n# Skill compte-rendu-html\n\n## Quand l'utiliser\nEn fin d'orchestration, ou pour faire le bilan d'un lot déjà traité.\n\n## Sources (lire, ne rien inventer)\n- sprintdesk/resultats/revue.md : défauts (ce qui n'allait pas).\n- sprintdesk/resultats/synthese-actions.md : statut de chaque US.\n- sprintdesk/backlog/sortie/lot<N>/*.md : US nettoyées (besoin, critères, règles, questions).\n- Tableau du Contrôleur : contrôles.\n- Décisions prises aux points de validation : journal des validations.\n\n## Procédure\n1. Copier ¤gabarit-dashboard.html¤ (même dossier que cette skill) vers sprintdesk/resultats/compte-rendu-lot<N>.html.\n2. Remplacer uniquement le JSON situé entre les marqueurs DONNEES:DEBUT et DONNEES:FIN. Ne pas toucher au style ni au script.\n3. Garder exactement les clés du JSON du gabarit. Mettre \"exemple\": false.\n4. Valeurs autorisées. Statut d'une US d'entrée : modifiée, découpée, inchangée, bloquée, créée. Statut d'une étape : ok, ko, attente, bloque. Gravité : bloquant, recommandation. Contrôle : OK, KO. Décision : Validé, Corrigé, Rejeté.\n5. Une US inchangée a \"defauts\" vide et un seul résultat identique à l'entrée. Une US bloquée a \"resultats\" vide.\n6. Chaque ND-xx encore ouverte apparaît dans \"questions\", avec qui tranche (référent produit sauf mention contraire dans PLAN.md).\n7. Les chemins sont écrits depuis la racine du dépôt (ex. sprintdesk/backlog/sortie/lot1/US-101.md).\n\n## Règles\n- Chaque valeur vient d'un fichier source ou d'une décision humaine notée. Rien n'est inventé ni embelli.\n- Texte brut uniquement : aucune balise HTML dans les valeurs.\n- Ne pas écrire de compteurs : le gabarit les calcule.\n- \"controlesExecutes\" ne liste que les contrôles réellement faits.\n\n## Vérification avant de rendre la main\n- Le JSON est valide (guillemets doubles, aucune virgule finale).\n- Le nombre d'US dans \"us\" est égal au nombre d'US d'entrée du lot.\n- Chaque US a un chemin \"source\"."},
+  {t:"see",x:"Dans le dossier <code>compte-rendu-html</code> : <code>SKILL.md</code> et <code>gabarit-dashboard.html</code>."},
+  {t:"why",x:"Même principe que <code>formater-us</code> avec <code>modele-us.md</code> : la skill décrit la <b>méthode</b>, le fichier annexe porte le <b>modèle</b>. La règle « chaque valeur vient d'un fichier » empêche un compte rendu enjolivé."}]},
+ {t:"Créer l'agent orchestrateur-us",b:[
+  {t:"ol",x:["<kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>P</kbd> > <code>Chat: New Custom Agent</code> > <code>.github/agents</code> > nom : <code>orchestrateur-us</code>.","<kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez le contenu ci-dessous, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans .github/agents/orchestrateur-us.agent.md",x:"---\ndescription: \"Orchestre le traitement d'un lot de user stories SprintDesk : planifie, délègue au Reviewer, au Rédacteur et au Contrôleur, s'arrête à chaque validation humaine, puis produit un compte rendu HTML. Utiliser pour dérouler PLAN.md de bout en bout.\"\ntools: ['agent', 'read', 'search', 'edit']\nagents: ['reviewer-backlog', 'redacteur-backlog', 'controleur-backlog']\n---\n# Orchestrateur US (Planificateur-Contrôleur)\n\n## Rôle\nChef d'orchestre du traitement d'un lot : tu planifies, tu délègues, tu contrôles, tu rends compte.\nTu ne fais jamais toi-même le travail d'un autre agent : tu ne diagnostiques pas, tu ne réécris pas, tu ne corriges aucune US.\n\n## Entrées\n- PLAN.md : le contrat. Il prime sur toute improvisation.\n- sprintdesk/contexte/produit.md et sprintdesk/contexte/regles-metier.md.\n- Les US du lot dans sprintdesk/backlog/entree/lot<N>/.\n\n## Équipe\n| Sous-agent | Skill | Livrable |\n|---|---|---|\n| reviewer-backlog | revue-agilite | sprintdesk/resultats/revue.md |\n| redacteur-backlog | formater-us | sprintdesk/backlog/sortie/lot<N>/ et sprintdesk/resultats/synthese-actions.md |\n| controleur-backlog | verifier-regles-metier | Tableau de contrôle dans sa réponse |\n| toi | compte-rendu-html | sprintdesk/resultats/compte-rendu-lot<N>.html |\n\n## Déroulé (une étape à la fois)\n0. Préparer : vérifier PLAN.md, les trois agents et les US du lot. Présenter le plan d'exécution (étape, agent, skill, livrable, arrêt). Puis POINT DE VALIDATION 0.\n1. Diagnostiquer : déléguer à reviewer-backlog. Vérifier que revue.md existe et couvre toutes les US. Résumer les constats et lister les ND-xx rencontrées. Puis POINT DE VALIDATION 1.\n2. Réécrire : déléguer à redacteur-backlog en recopiant les décisions validées au point 1. Vérifier que chaque US d'entrée a au moins un fichier de sortie ou le statut « bloquée ».\n3. Contrôler : déléguer à controleur-backlog (lecture seule). Récupérer son tableau. Puis POINT DE VALIDATION 2.\n4. Corriger, seulement si l'humain le demande : renvoyer au Rédacteur uniquement les lignes KO, puis recontrôler. Deux boucles maximum, ensuite escalader à l'humain.\n5. Rendre compte : appliquer la skill compte-rendu-html. Donner le chemin du fichier.\n\n## Points de validation humaine\nÀ chaque point, arrête-toi. Termine ta réponse par ce bloc, puis attends :\n¤¤¤\nPOINT DE VALIDATION n — <nom>\nFait : ...\nÀ vérifier par vous : ...\nDécisions à prendre (ND-xx) : ...\nRépondez : VALIDER | CORRIGER : <précision> | ARRÊTER\n¤¤¤\n- Sans « VALIDER » explicite, ne passe pas à l'étape suivante.\n- « CORRIGER » : refais seulement l'étape concernée, avec la précision donnée.\n- « ARRÊTER » : produis le compte rendu de ce qui a été fait, étapes restantes au statut « attente ».\n- Note chaque décision (étape, décision, par qui, commentaire) : elle alimente le journal du compte rendu.\n\n## Règles de délégation\n- Un sous-agent ne voit pas cette conversation. Chaque consigne est autonome : lot, fichiers à lire, fichier à écrire, décisions validées, interdits.\n- Rappelle toujours au sous-agent : ne trancher aucune ND-xx, ne pas modifier sprintdesk/backlog/entree/, ne rien publier.\n- Si un sous-agent échoue ou sort de son rôle, signale-le à l'humain. Ne compense jamais en faisant le travail toi-même.\n\n## Interdits\n- Ne trancher aucune décision non prise (ND-01 à ND-06).\n- N'écrire toi-même qu'un seul fichier : le compte rendu HTML.\n- Ne jamais lancer une étape d'écriture sans validation humaine de l'étape précédente.\n- Ne rien publier vers un service externe.\n\n## État d'avancement\nCommence chaque réponse par une ligne d'état : Étape x/5 · Agent en cours · Dernier livrable · Prochain point de validation.\n\n## Conditions d'arrêt\nArrête-toi et demande si : PLAN.md ou un agent manque, deux sources se contredisent, une décision métier est requise, deux boucles de correction n'ont pas suffi.\n\n## Fin de réponse\nIndiquer les contrôles réellement exécutés."},
+  {t:"table",h:["Élément de la fiche","Pourquoi il est là"],r:[
+   ["<code>tools: ['agent', ...]</code>","L'outil <code>agent</code> permet d'appeler un sous-agent. Sans lui, pas d'orchestration."],
+   ["<code>agents: [...]</code>","<b>Liste fermée</b> des sous-agents autorisés. Les noms doivent être identiques aux noms des fichiers, sans <code>.agent.md</code>."],
+   ["<code>edit</code>","Nécessaire pour écrire le compte rendu. L'interdit limite son usage à ce seul fichier."],
+   ["Déroulé numéroté","L'orchestrateur sait où il en est et vous aussi (ligne d'état)."],
+   ["Bloc POINT DE VALIDATION","Format fixe : vous savez toujours quoi vérifier et quoi répondre."],
+   ["Règles de délégation","Compensent le contexte isolé des sous-agents."]]},
+  {t:"warn",x:"L'agent n'apparaît pas ? Mêmes vérifications que pour le Contrôleur (dossier, extension <code>.agent.md</code>, <code>---</code> en première ligne, <code>Developer: Reload Window</code>). Clic droit dans le chat > <code>Diagnostics</code> affiche les erreurs de chargement des agents et des skills."}]},
+ {t:"Lancer l'orchestration",b:[
+  {t:"ol",x:["Nouveau chat (<code>+</code>).","Sélecteur d'agent : <code>orchestrateur-us</code>.","Collez le prompt ci-dessous."]},
+  {t:"copy",l:"À COPIER (mode orchestrateur-us)",x:"Orchestre le traitement du lot {n} en suivant PLAN.md.\nCommence par l'étape 0 et arrête-toi à chaque point de validation."},
+  {t:"see",x:"Une ligne d'état, un plan d'exécution en tableau (étape, agent, skill, livrable, arrêt), puis un bloc de validation comme celui-ci. <b>Aucun fichier n'est encore écrit.</b>"},
+  {t:"mock",x:"Étape 0/5 · Agent en cours : orchestrateur-us · Dernier livrable : aucun · Prochain point : validation 0\n\nPOINT DE VALIDATION 0 — Lancement\nFait : PLAN.md lu, 3 agents trouvés, 5 US dans le lot {n}.\nÀ vérifier par vous : l'ordre des étapes correspond à la section 7 de PLAN.md.\nDécisions à prendre (ND-xx) : aucune à ce stade.\nRépondez : VALIDER | CORRIGER : <précision> | ARRÊTER"},
+  {t:"p",x:"Pendant l'exécution, chaque sous-agent apparaît dans le chat comme un <b>appel d'outil repliable</b> portant son nom. Cliquez dessus : vous voyez la consigne qu'il a reçue et le résultat qu'il a rendu."},
+  {t:"warn",x:"L'orchestrateur fait le travail lui-même au lieu d'appeler un sous-agent ? Vérifiez que <code>'agent'</code> est bien dans <code>tools</code> et que les noms de <code>agents:</code> correspondent exactement à vos fichiers. Si l'outil reste introuvable, l'environnement d'exécution choisi pour la session ne le propose peut-être pas : demandez à l'animateur."}]},
+ {t:"Tenir votre rôle aux points de validation",b:[
+  {t:"p",x:"C'est l'étape la plus importante du bonus. L'orchestrateur propose, <b>vous décidez</b>. Ouvrez toujours le livrable avant de répondre."},
+  {t:"table",h:["Point","Ce que vous vérifiez","Réponse type"],r:[
+   ["<b>0 — Lancement</b>","Les étapes suivent <code>PLAN.md</code> ; les bons agents et skills sont annoncés","<code>VALIDER</code>"],
+   ["<b>1 — Diagnostic</b>","Ouvrez <code>sprintdesk/resultats/revue.md</code> : chaque constat cite une RM-xx ou ND-xx ; l'US-{n}05 est en « Aucune action » ; aucune règle inventée","<code>VALIDER</code> ou <code>CORRIGER : ...</code>"],
+   ["<b>2 — Résultat</b>","Ouvrez les US de <code>backlog/sortie/lot{n}/</code> ; lisez le tableau du Contrôleur ; aucune ND-xx tranchée","<code>VALIDER</code>, <code>CORRIGER : relancer le Rédacteur sur les KO</code> ou <code>ARRÊTER</code>"]]},
+  {t:"copy",l:"Exemple — corriger le diagnostic",x:"CORRIGER : le constat sur l'US-{n}03 cite une règle absente de regles-metier.md. Demande au Reviewer de le retirer ou de le transformer en question ouverte, puis présente de nouveau le point de validation 1."},
+  {t:"copy",l:"Exemple — transmettre une décision du groupe",x:"VALIDER. Décisions du groupe à transmettre au Rédacteur : l'US-{n}02 est découpée en deux US. Toutes les ND-xx restent en questions ouvertes, à trancher par le référent produit."},
+  {t:"copy",l:"Exemple — corriger après contrôle",x:"CORRIGER : relance le Rédacteur uniquement sur les lignes KO du tableau de contrôle, puis relance le Contrôleur. Ne touche pas aux US qui sont OK."},
+  {t:"no",x:"Ne répondez jamais <code>VALIDER</code> sans avoir ouvert le fichier concerné. Un point de validation non exercé transforme l'orchestrateur en boîte noire."},
+  {t:"why",x:"Vos réponses sont notées par l'orchestrateur : elles forment le <b>journal des validations</b> du compte rendu. On saura qui a décidé quoi, et à quelle étape."}]},
+ {t:"Ouvrir le compte rendu HTML",b:[
+  {t:"ol",x:["Après la dernière validation, l'orchestrateur annonce le chemin <code>sprintdesk/resultats/compte-rendu-lot{n}.html</code>.","Clic droit sur le fichier > <code>Révéler dans l'Explorateur de fichiers</code>, puis double-clic pour l'ouvrir dans le navigateur."]},
+  {t:"table",h:["Section","Ce qu'elle montre"],r:[
+   ["En-tête et indicateurs","Synthèse, US modifiées, découpées, inchangées, bloquées, défauts, questions ouvertes, KO restants"],
+   ["Déroulé de l'orchestration","Chaque étape, son agent, sa skill, son statut. Les validations humaines sont hachurées"],
+   ["Ce qui n'allait pas","Les constats du diagnostic, avec règle et gravité"],
+   ["US nettoyées","Pour chaque US d'origine : avant (défauts) et après (besoin, critères, règles, questions). Filtres par statut"],
+   ["Contrôles et questions ouvertes","Le tableau du Contrôleur et les ND-xx à trancher"],
+   ["Journal des validations","Qui a décidé quoi, à quelle étape"],
+   ["Contrôles réellement exécutés","Ce qui a été vérifié, et seulement cela"]]},
+  {t:"see",x:"Plus de bandeau « EXEMPLE FICTIF ». 5 US d'origine affichées, l'US-{n}05 au statut « inchangée », vos décisions dans le journal."},
+  {t:"warn",x:"Page blanche ? Le bloc de données est mal formé (souvent une virgule en trop). Demandez à l'orchestrateur : « Vérifie que le JSON du compte rendu est valide et corrige-le. » Un chiffre vous semble faux ? Comparez avec <code>synthese-actions.md</code> : le compte rendu ne doit rien embellir."}]},
+ {t:"Comparer et conclure",b:[
+  {t:"table",h:["Question","Manuel (Atelier 2)","Orchestré (bonus)"],r:[
+   ["Combien de prompts avez-vous écrits ?","",""],
+   ["Les mêmes défauts ont-ils été trouvés ?","",""],
+   ["L'US correcte est-elle restée inchangée ?","",""],
+   ["Une ND-xx a-t-elle été tranchée ?","",""],
+   ["Avez-vous relu autant qu'en manuel ?","",""]]},
+  {t:"p",x:"Si le résultat orchestré est moins bon, appliquez la méthode d'évaluation : <b>un défaut, une cause</b> (orchestrateur, sous-agent, skill, consigne de délégation), <b>une seule modification</b>, puis rejouez."},
+  {t:"check",id:"c5",x:["La skill <code>compte-rendu-html</code> est créée à côté du gabarit","L'agent <code>orchestrateur-us</code> est visible et n'autorise que trois sous-agents","Il s'est arrêté aux trois points de validation et n'a pas avancé sans <code>VALIDER</code>","Il n'a écrit lui-même que le compte rendu HTML","Aucune ND-xx n'est tranchée, ni dans les US ni dans le compte rendu","Le compte rendu affiche les 5 US du lot et mes décisions réelles"]},
+  {t:"why",x:"Vous avez construit un <b>système multi-agents supervisé</b> : chaque agent a un rôle, chaque skill une méthode, l'orchestrateur le tempo, et vous la décision. C'est ce schéma qui permet de passer d'un lot à dix sans perdre le contrôle."}]}
+ ]},
 /* ====================================================== 5 */
 {icon:"🆘",title:"Aide",sub:"Glossaire et dépannage",
  goal:"Un mot inconnu ? Un blocage ? C'est ici.",
@@ -663,6 +841,7 @@ const STAGES = [
   {t:"table",h:["Problème","Que faire"],r:[
    ["Copilot invente des règles","Critiquez : « Tu as inventé ce point, retire-le et mets-le en question ouverte ». Vérifiez les instructions."],
    ["Mon agent n'apparaît pas","Dossier <code>.github/agents</code>, nom en <code>.agent.md</code>, en-tête <code>---</code> en 1<sup>re</sup> ligne, puis <code>Developer: Reload Window</code>."],
+   ["Ma commande <code>/</code> n'apparaît pas","Dossier <code>.github/prompts</code>, nom en <code>.prompt.md</code>, fichier enregistré, session <code>Local</code>, puis <code>Developer: Reload Window</code>."],
    ["Ma skill n'est pas utilisée","<code>name</code> = nom du dossier, fichier <code>SKILL.md</code>, description claire. Sinon, nommez la skill dans le prompt."],
    ["Copilot a modifié un fichier que je ne voulais pas","Bouton <code>Annuler</code> du chat, ou <kbd>Ctrl</kbd>+<kbd>Z</kbd> dans le fichier."],
    ["Je ne trouve pas <code>.github</code>","Vérifiez que le dossier ouvert est <code>formation-harness</code> (nom en haut de l'explorateur)."],
@@ -693,7 +872,10 @@ const L={
  best:["GitHub : bonnes pratiques avec Copilot","https://docs.github.com/en/copilot/get-started/best-practices"],
  us:["Atlassian : les user stories","https://www.atlassian.com/agile/project-management/user-stories"],
  invest:["Le critère INVEST pour juger une US","https://agilealliance.org/glossary/invest/"],
- gwt:["Given / When / Then (Martin Fowler)","https://martinfowler.com/bliki/GivenWhenThen.html"]
+ gwt:["Given / When / Then (Martin Fowler)","https://martinfowler.com/bliki/GivenWhenThen.html"],
+ subagents:["Sous-agents dans VS Code","https://code.visualstudio.com/docs/agents/run/subagents"],
+ prompts:["Fichiers de prompt (commandes /) dans VS Code","https://code.visualstudio.com/docs/copilot/customization/prompt-files"],
+ agentref:["Référence du fichier d'agent (.agent.md)","https://code.visualstudio.com/docs/agents/reference/custom-agent-file-reference"]
 };
 const EXTRA={
 "Les techniques de prompt les plus connues":{o:"Connaître les 5 techniques de prompt les plus courantes et ce que chacune apporte à SprintDesk.",c:"Les techniques (few-shot, chain-of-thought, rôle, questions inversées, auto-vérification) se <b>combinent</b>. Aucune ne remplace des sources fiables et des interdits clairs.",l:[L.pe,L.best]},
@@ -744,6 +926,20 @@ const EXTRA={
 "Créer une nouvelle skill : verifier-regles-metier":{o:"Créer de zéro une skill avec le bon nom de dossier, le bon fichier SKILL.md et une description efficace.",c:"La <b>description</b> est le déclencheur : Copilot s'en sert pour décider d'utiliser la skill. Écrivez-la avec les mots que vous utiliseriez dans votre demande. Le <code>name</code> doit être identique au dossier.",l:[L.skills,L.skillsstd]},
 "Tester vos skills":{o:"Vérifier qu'une skill est bien chargée et utilisée par Copilot.",c:"Tester, c'est comparer <b>avant / après</b>. Si une skill n'est pas utilisée, la cause est presque toujours le nom, le fichier ou la description. Vous pouvez aussi la citer explicitement dans le prompt.",l:[L.skills,L.best]},
 "Bilan final":{o:"Contrôler que tout le harness est en place et savoir le décrire en une phrase.",c:"Un harness évolue par <b>cycles</b> : planifier, agir, analyser, ajuster <i>un seul élément</i> à la fois. C'est ainsi qu'on progresse sans casser ce qui marche.",l:[L.over,L.best]},
+"Comprendre l'orchestration agentique":{o:"Savoir expliquer ce qu'est un orchestrateur, ses 5 verbes, et ce qu'est un sous-agent.",c:"L'<b>orchestration agentique</b> confie l'enchaînement des agents à un agent coordinateur. Chaque sous-agent travaille dans un <b>contexte isolé</b> : il ne voit que la consigne reçue, ce qui évite de polluer la conversation principale.",l:[L.subagents,L.agents]},
+"Manuel, handoff ou orchestration ?":{o:"Choisir entre passage manuel, handoff et sous-agent, et connaître les schémas d'orchestration courants.",c:"Un <b>handoff</b> change l'agent de la conversation sur votre clic. Un <b>sous-agent</b> est appelé par l'agent principal, qui reprend la main ensuite. Commencez toujours par le schéma le plus simple.",l:[L.subagents,L.agentref]},
+"Risques et garde-fous":{o:"Connaître les risques d'un système multi-agents et les garde-fous qui les limitent.",c:"Plus un système est autonome, plus ses <b>arrêts obligatoires</b> comptent. Liste fermée d'agents, moindre privilège, boucles bornées et validation humaine sont les quatre garde-fous de base.",l:[L.subagents,L.best]},
+"Vérifier les prérequis et voir le résultat attendu":{o:"Confirmer que les agents et skills des Ateliers 2 et 3 sont en place, et voir le tableau de bord d'exemple.",c:"Séparer la <b>mise en page</b> (gabarit fixe) des <b>données</b> (JSON produit par l'agent) rend le résultat stable et sûr : l'agent ne génère jamais de code.",l:[L.skills,L.agents]},
+"Créer la skill compte-rendu-html":{o:"Créer la skill qui transforme les livrables du lot en tableau de bord HTML.",c:"Une skill peut embarquer des <b>fichiers annexes</b> (ici un gabarit HTML). L'agent les lit uniquement quand il applique la skill.",l:[L.skills,L.skillsstd]},
+"Créer l'agent orchestrateur-us":{o:"Créer un agent qui délègue à une liste fermée de sous-agents et s'arrête aux validations humaines.",c:"Les champs <code>tools: ['agent']</code> et <code>agents: [...]</code> autorisent l'appel de sous-agents et en limitent la liste. Le corps de la fiche décrit le déroulé, les arrêts et les interdits.",l:[L.agentref,L.subagents]},
+"Lancer l'orchestration":{o:"Démarrer l'orchestrateur sur votre lot et obtenir le premier point de validation.",c:"Chaque appel de sous-agent apparaît dans le chat comme un <b>appel d'outil</b> dépliable : vous pouvez lire la consigne envoyée et le résultat rendu. C'est votre moyen de contrôle.",l:[L.subagents,L.agentmode]},
+"Tenir votre rôle aux points de validation":{o:"Valider, corriger ou arrêter à chaque point, en ayant ouvert le livrable.",c:"Le <b>human in the loop</b> n'est efficace que s'il est exercé : relire, puis décider. Un point de validation approuvé sans lecture n'apporte aucune sécurité.",l:[L.best,L.plan]},
+"Ouvrir le compte rendu HTML":{o:"Lire le tableau de bord du lot et vérifier qu'il reflète fidèlement les livrables.",c:"Un compte rendu sert la <b>traçabilité</b> : ce qui a été fait, par quel agent, validé par qui. Il ne doit rien ajouter aux sources.",l:[L.skills,L.best]},
+"Comparer et conclure":{o:"Comparer le passage manuel et le passage orchestré, puis cocher la checklist du bonus.",c:"On améliore un système multi-agents comme un harness simple : <b>un défaut, une cause, une modification</b>, puis on rejoue.",l:[L.subagents,L.best]},
+"Pour aller plus loin : vos propres commandes « / »":{o:"Comprendre ce qu'est un fichier de prompt, où il se range et en quoi il diffère des instructions, agents et skills.",c:"Un <b>fichier de prompt</b> (<code>.prompt.md</code>) est un prompt enregistré que l'on lance à la demande avec <code>/nom</code>. Contrairement aux instructions, il n'est jamais appliqué automatiquement : c'est vous qui le déclenchez.",l:[L.prompts,L.pe]},
+"Créer la commande /diagnostiquer-us":{o:"Transformer le prompt à 6 blocs en commande réutilisable, en lecture seule.",c:"L'en-tête <b>YAML</b> (entre les deux lignes <code>---</code>) configure la commande : description, aide de saisie, mode. Les <b>liens Markdown</b> du corps joignent les fichiers du projet sans que l'utilisateur ait à y penser.",l:[L.prompts,L.mdvsc]},
+"Lancer et tester la commande":{o:"Lancer la commande avec /, lui joindre une US, et vérifier qu'elle respecte l'US correcte.",c:"Ce que vous tapez après la commande (pastille <code>#</code>, <code>nom=valeur</code>, texte libre) est ajouté au prompt. Une commande se teste et s'améliore comme un document : on modifie le fichier, puis on relance.",l:[L.prompts,L.ctx]},
+"Ajouter deux commandes : /questions-po et /verifier-reponse":{o:"Créer une commande avec variable et une commande qui s'applique à une conversation en cours.",c:"Une <b>variable</b> <code>${input:nom:aide}</code> rend une commande paramétrable. Une bibliothèque de quelques commandes bien testées vaut mieux que des dizaines de prompts jamais relus.",l:[L.prompts,L.best]},
 "Glossaire":{o:"Retrouver le sens d'un mot de l'atelier.",c:"Le vocabulaire de l'IA évolue vite. Les documentations officielles ci-dessous restent la référence en cas de doute.",l:[L.over,L.chat]},
 "Dépannage":{o:"Débloquer rapidement une situation courante.",c:"Face à un comportement inattendu : <b>1)</b> relisez le fichier concerné, <b>2)</b> vérifiez qu'il est enregistré, <b>3)</b> ouvrez un nouveau chat, <b>4)</b> demandez à l'animateur.",l:[L.tips,L.chat]}
 };
@@ -753,6 +949,8 @@ const KEY='sd-begin-v3';
 let st={lot:1,stage:0,done:{},chk:{},open:{},tour:false};
 try{Object.assign(st,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+/* v4 : l'étape Bonus est insérée avant l'Aide (index 6 -> 7). */
+if(!st.v){const mv=o=>{for(const k of Object.keys(o)) if(k.startsWith('6-')){o['7-'+k.slice(2)]=o[k];delete o[k];}};mv(st.done);mv(st.open);if(st.stage===6)st.stage=7;st.v=4;save();}
 const $=s=>document.querySelector(s);
 const fill=s=>s.replaceAll('{n}',st.lot);
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -768,7 +966,7 @@ function block(b,i,j,k){
     case 'warn': return '<div class="co warn"><b class="l">⚠️ Si ça ne marche pas / attention</b><p>'+fill(b.x)+'</p></div>';
     case 'why': return '<div class="co why"><b class="l">💡 Pourquoi</b><p>'+fill(b.x)+'</p></div>';
     case 'no': return '<div class="co no"><b class="l">⛔ Règle</b><p>'+fill(b.x)+'</p></div>';
-    case 'mock': return '<div class="mock">'+esc(b.x)+'</div>';
+    case 'mock': return '<div class="mock">'+esc(fill(b.x))+'</div>';
     case 'ex': return '<details class="more"><summary>📄 '+b.l+'</summary><div class="mb"><div class="mock" style="white-space:pre-wrap">'+esc(fill(b.x))+'</div></div></details>';
     case 'table': return '<table><tr>'+b.h.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+b.r.map(r=>'<tr>'+r.map(c=>'<td>'+fill(c)+'</td>').join('')+'</tr>').join('')+'</table>';
     case 'copy': {
@@ -885,14 +1083,14 @@ document.addEventListener('change',e=>{
   if(e.target.dataset.chk){st.chk[e.target.dataset.chk]=e.target.checked;save();}
 });
 $('#lot').addEventListener('change',e=>{st.lot=+e.target.value;save();render();});
-$('#reset').addEventListener('click',()=>{if(confirm('Effacer toute votre progression ?')){st={lot:st.lot,stage:0,done:{},chk:{},open:{'0-0':true}};save();render();}});
+$('#reset').addEventListener('click',()=>{if(confirm('Effacer toute votre progression ?')){st={lot:st.lot,stage:0,done:{},chk:{},open:{'0-0':true},v:4};save();render();}});
 
 /* ---------- visite guidée (premier usage) */
 const TOUR=[
  {c:1,t:'Bienvenue sur votre road tour 👋',x:'Ce parcours vous guide <b>pas à pas</b> : chaque étape dit quoi faire, quoi copier et ce que vous devez voir. Cette courte visite (1 minute) montre comment tout fonctionne.'},
  {s:'#lot',t:'1. Choisissez votre lot',x:'Votre animateur vous attribue un lot (1 à 4). Le choix adapte automatiquement tous les noms de dossiers et de fichiers dans les textes à copier.'},
  {s:'.prog',t:'2. Votre progression',x:'La barre se remplit à chaque étape validée. Elle est <b>sauvegardée</b> dans votre navigateur : vous pouvez fermer la page et reprendre plus tard.'},
- {s:'nav.road',t:'3. La route : le menu',x:'Six arrêts, du début à la fin. Cliquez sur un arrêt pour y aller ; la coche ✔ indique qu\'il est terminé, et le compteur (ex. 3/7) montre l\'avancée.'},
+ {s:'nav.road',t:'3. La route : le menu',x:'Huit arrêts, du début à la fin, dont un bonus. Cliquez sur un arrêt pour y aller ; la coche ✔ indique qu\'il est terminé, et le compteur (ex. 3/7) montre l\'avancée.'},
  {s:'.step .sh',t:'4. Les étapes',x:'Chaque arrêt contient des étapes numérotées. Cliquez sur le titre d\'une étape pour l\'ouvrir ou la fermer. Faites-les <b>dans l\'ordre</b>.'},
  {s:'.step.open .obj',t:'5. L\'objectif',x:'En haut de chaque étape, le bandeau violet rappelle <b>ce que vous devez avoir obtenu</b> à la fin. Si vous êtes perdu, relisez-le.'},
  {s:'.step.open .co',t:'6. Les encadrés',x:'<b>Vert</b> : ce que vous devez voir. <b>Jaune</b> : que faire si ça ne marche pas. <b>Bleu</b> : pourquoi on fait cela. Plus loin, les blocs violets contiennent des textes à <b>copier d\'un clic</b> avec le bouton Copier.'},

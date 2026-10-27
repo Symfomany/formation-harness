@@ -59,7 +59,7 @@ Les **instructions communes** s'appliquent à chaque étape.
 
 ## Aller plus loin (extensions)
 - **Agent expert agilité** : challenge le découpage et les critères d'acceptation.
-- **Superviseur et sous-agents** : un agent coordonne, les autres exécutent chacun leur étape.
+- **Superviseur et sous-agents** : un agent coordonne, les autres exécutent chacun leur étape. Mise en pratique : [09-orchestration.md](09-orchestration.md).
 - **Skill `preparer-publication`** : prépare les tickets, avec prévisualisation et validation humaine avant toute publication.
 
 Ensuite : [04-agents.md](04-agents.md) et [05-skills.md](05-skills.md) pour les créer.

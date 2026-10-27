@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Compte rendu d'orchestration — SprintDesk</title>
+<style>
+:root{--bg:#f5f6fb;--panel:#fff;--text:#1d2233;--muted:#667085;--line:#e3e6ef;--accent:#5b5bd6;--soft:#eceafd;
+--ok:#16a34a;--ok-bg:#e8f7ee;--ko:#dc2626;--ko-bg:#fdecec;--wait:#d97706;--wait-bg:#fff4e0;
+--mod:#2563eb;--mod-bg:#e8f0fe;--dec:#7c3aed;--dec-bg:#f1eafe;--inc:#16a34a;--inc-bg:#e8f7ee;--blo:#dc2626;--blo-bg:#fdecec;
+--shadow:0 1px 3px rgba(20,23,43,.08),0 8px 24px rgba(20,23,43,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1220;--panel:#171a2c;--text:#e6e8f5;--muted:#9aa2c0;--line:#272b45;--accent:#8b8bff;--soft:#242850;
+--ok-bg:#12301f;--ko-bg:#3a1517;--wait-bg:#3a2a10;--mod-bg:#14264a;--dec-bg:#2a1b4a;--inc-bg:#12301f;--blo-bg:#3a1517;--shadow:0 1px 3px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:28px clamp(14px,3vw,40px) 60px}
+.hero{padding:34px clamp(18px,3vw,36px);border-radius:20px;color:#fff;background:linear-gradient(135deg,#312e81,#6d28d9 60%,#c084fc);box-shadow:var(--shadow)}
+.hero h1{margin:0;font-size:clamp(24px,3.4vw,34px);line-height:1.2}
+.hero .meta{margin-top:8px;opacity:.9;font-size:14px}
+.hero .synth{margin:16px 0 0;font-size:17px;max-width:860px}
+.flag{display:inline-block;margin-top:14px;padding:4px 12px;border-radius:999px;background:#fbbf24;color:#3b2603;font-weight:700;font-size:12px;letter-spacing:.05em}
+h2{margin:40px 0 14px;font-size:21px;display:flex;align-items:center;gap:10px}
+h2 small{font-weight:400;color:var(--muted);font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:-26px;padding:0 12px}
+.kpi{background:var(--panel);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);border-top:4px solid var(--accent)}
+.kpi b{display:block;font-size:30px;line-height:1.1}
+.kpi span{color:var(--muted);font-size:13px}
+.pipe{display:flex;gap:0;overflow-x:auto;padding:6px 2px 12px}
+.stepc{flex:1 0 150px;position:relative;background:var(--panel);border-radius:14px;padding:14px;margin-right:22px;box-shadow:var(--shadow);border-left:5px solid var(--muted)}
+.stepc:not(:last-child)::after{content:"";position:absolute;right:-18px;top:50%;border:8px solid transparent;border-left-color:var(--muted);transform:translateY(-50%)}
+.stepc.human{background:repeating-linear-gradient(135deg,var(--panel),var(--panel) 10px,var(--soft) 10px,var(--soft) 20px)}
+.stepc h4{margin:0 0 6px;font-size:14px}
+.stepc .who{font-size:12.5px;color:var(--muted)}
+.stepc .liv{font-size:12px;margin-top:6px;word-break:break-all}
+.stepc.ok{border-left-color:var(--ok)}.stepc.ko{border-left-color:var(--ko)}.stepc.attente{border-left-color:var(--wait)}.stepc.bloque{border-left-color:var(--ko)}
+.card{background:var(--panel);border-radius:16px;box-shadow:var(--shadow);padding:18px 20px}
+.tablewrap{overflow-x:auto;border-radius:16px;background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:var(--soft);text-align:left;font-weight:600}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.b{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.b.ok,.b.Validé,.b.OK{background:var(--ok-bg);color:var(--ok)}
+.b.ko,.b.KO,.b.Rejeté,.b.bloquant{background:var(--ko-bg);color:var(--ko)}
+.b.attente,.b.Corrigé,.b.recommandation{background:var(--wait-bg);color:var(--wait)}
+.b.bloque{background:var(--ko-bg);color:var(--ko)}
+.b.modifiée{background:var(--mod-bg);color:var(--mod)}.b.découpée{background:var(--dec-bg);color:var(--dec)}
+.b.inchangée{background:var(--inc-bg);color:var(--inc)}.b.bloquée{background:var(--blo-bg);color:var(--blo)}.b.créée{background:var(--soft);color:var(--accent)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.filters button{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:6px 14px;cursor:pointer;font:inherit;font-size:13px}
+.filters button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.usgrid{display:grid;gap:18px}
+.us{background:var(--panel);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.us header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line)}
+.us header h3{margin:0;font-size:17px}
+.us .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}
+@media (max-width:820px){.us .cols{grid-template-columns:1fr}}
+.before{padding:16px 20px;background:var(--ko-bg)}
+.before.clean{background:var(--ok-bg)}
+.before h5,.after h5{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.before ul{margin:0;padding-left:18px}
+.before li{margin:6px 0}
+.after{padding:16px 20px}
+.clean-us{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.clean-us:last-child{margin-bottom:0}
+.clean-us h4{margin:0 0 8px;font-size:15px}
+.besoin{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:14px}
+.crit{margin:6px 0 10px;padding-left:20px}
+.crit li{margin:4px 0}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tag{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--soft);color:var(--accent);font-weight:600}
+.tag.q{background:var(--wait-bg);color:var(--wait)}
+.files{font-size:12.5px;color:var(--muted);margin-top:8px}
+.files a{color:var(--accent)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.checks li{margin:4px 0}
+footer{margin-top:46px;color:var(--muted);font-size:13px;text-align:center}
+.empty{color:var(--muted);font-style:italic}
+@media print{.filters{display:none}body{background:#fff}.us,.card,.tablewrap,.kpi,.stepc{box-shadow:none;border:1px solid #ddd}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<!-- DONNEES:DEBUT — l'orchestrateur remplace uniquement le JSON ci-dessous -->
+<script type="application/json" id="donnees">
+{
+  "exemple": true,
+  "projet": "SprintDesk",
+  "lot": "0",
+  "date": "2026-10-27",
+  "orchestrateur": "orchestrateur-us",
+  "synthese": "EXEMPLE FICTIF : 5 US traitées, 1 découpée, 1 inchangée, 0 bloquée. Deux décisions non prises restent à trancher par le référent produit.",
+  "etapes": [
+    {"nom": "Préparation", "acteur": "orchestrateur-us", "skill": "", "humain": false, "statut": "ok", "livrable": "PLAN.md", "commentaire": "Prérequis vérifiés : 3 agents, 3 skills, PLAN.md présent."},
+    {"nom": "Validation 0 — lancement", "acteur": "Humain", "skill": "", "humain": true, "statut": "ok", "livrable": "", "commentaire": "Plan d'exécution validé."},
+    {"nom": "Diagnostic", "acteur": "reviewer-backlog", "skill": "revue-agilite", "humain": false, "statut": "ok", "livrable": "sprintdesk/resultats/revue.md", "commentaire": "7 constats, dont 4 bloquants."},
+    {"nom": "Validation 1 — diagnostic", "acteur": "Humain", "skill": "", "humain": true, "statut": "ok", "livrable": "", "commentaire": "Diagnostic validé, ND-02 et ND-06 laissées ouvertes."},
+    {"nom": "Réécriture", "acteur": "redacteur-backlog", "skill": "formater-us", "humain": false, "statut": "ok", "livrable": "sprintdesk/backlog/sortie/lot0/", "commentaire": "6 fichiers produits (US-002 découpée)."},
+    {"nom": "Contrôle", "acteur": "controleur-backlog", "skill": "verifier-regles-metier", "humain": false, "statut": "ok", "livrable": "", "commentaire": "1 KO au premier passage, corrigé après une boucle."},
+    {"nom": "Validation 2 — résultat", "acteur": "Humain", "skill": "", "humain": true, "statut": "ok", "livrable": "", "commentaire": "Résultat accepté."},
+    {"nom": "Compte rendu", "acteur": "orchestrateur-us", "skill": "compte-rendu-html", "humain": false, "statut": "ok", "livrable": "sprintdesk/resultats/compte-rendu-lot0.html", "commentaire": ""}
+  ],
+  "us": [
+    {
+      "id": "US-001", "titre": "Déposer une demande", "statut": "modifiée",
+      "source": "sprintdesk/backlog/entree/lot0/US-001.md",
+      "defauts": [
+        {"constat": "Les champs de la demande ne sont pas précisés.", "regle": "RM-01", "gravite": "bloquant"},
+        {"constat": "Aucun critère d'acceptation.", "regle": "Checklist : critères vérifiables", "gravite": "bloquant"}
+      ],
+      "resultats": [
+        {"id": "US-001", "titre": "Déposer une demande", "fichier": "sprintdesk/backlog/sortie/lot0/US-001.md",
+         "besoin": {"role": "demandeur", "action": "déposer une demande avec un titre, une description et un service", "but": "que la DSI puisse la qualifier"},
+         "criteres": [
+           "Étant donné un formulaire sans titre, quand le demandeur valide, alors la demande n'est pas créée.",
+           "Étant donné un formulaire complet, quand le demandeur valide, alors la demande est créée au statut Nouvelle."
+         ],
+         "regles": ["RM-01", "RM-08"], "questions": ["ND-02 : pièces jointes autorisées ? formats ? taille ?"], "controle": "OK"}
+      ]
+    },
+    {
+      "id": "US-002", "titre": "Qualifier et prioriser une demande", "statut": "découpée",
+      "source": "sprintdesk/backlog/entree/lot0/US-002.md",
+      "defauts": [
+        {"constat": "Deux besoins distincts dans une seule US.", "regle": "Checklist : découpage", "gravite": "recommandation"}
+      ],
+      "resultats": [
+        {"id": "US-002-A", "titre": "Fixer l'impact et l'urgence", "fichier": "sprintdesk/backlog/sortie/lot0/US-002-A.md",
+         "besoin": {"role": "qualificateur", "action": "fixer l'impact et l'urgence d'une demande", "but": "permettre le calcul de sa priorité"},
+         "criteres": [
+           "Étant donné une demande Nouvelle, quand le qualificateur choisit l'impact Fort, alors l'impact est enregistré.",
+           "Étant donné un demandeur, quand il ouvre sa demande, alors il ne peut pas modifier l'impact ni l'urgence."
+         ],
+         "regles": ["RM-03", "RM-05"], "questions": [], "controle": "OK"},
+        {"id": "US-002-B", "titre": "Calculer la priorité", "fichier": "sprintdesk/backlog/sortie/lot0/US-002-B.md",
+         "besoin": {"role": "qualificateur", "action": "voir la priorité calculée automatiquement", "but": "traiter d'abord les demandes les plus importantes"},
+         "criteres": [
+           "Étant donné un impact Fort et une urgence Haute, quand la qualification est enregistrée, alors la priorité est P1.",
+           "Étant donné un impact Faible, quand la qualification est enregistrée, alors la priorité est P4."
+         ],
+         "regles": ["RM-04"], "questions": [], "controle": "OK"}
+      ]
+    },
+    {
+      "id": "US-003", "titre": "Choisir la priorité", "statut": "modifiée",
+      "source": "sprintdesk/backlog/entree/lot0/US-003.md",
+      "defauts": [
+        {"constat": "L'US laisse le demandeur choisir la priorité.", "regle": "RM-05", "gravite": "bloquant"}
+      ],
+      "resultats": [
+        {"id": "US-003", "titre": "Consulter la priorité de ma demande", "fichier": "sprintdesk/backlog/sortie/lot0/US-003.md",
+         "besoin": {"role": "demandeur", "action": "consulter la priorité attribuée à ma demande", "but": "savoir quand elle sera traitée"},
+         "criteres": [
+           "Étant donné une demande qualifiée, quand le demandeur l'ouvre, alors il voit sa priorité en lecture seule.",
+           "Étant donné une demande Nouvelle, quand le demandeur l'ouvre, alors aucune priorité n'est affichée."
+         ],
+         "regles": ["RM-04", "RM-05"], "questions": [], "controle": "OK"}
+      ]
+    },
+    {
+      "id": "US-004", "titre": "Refuser une demande", "statut": "modifiée",
+      "source": "sprintdesk/backlog/entree/lot0/US-004.md",
+      "defauts": [
+        {"constat": "Aucun critère d'acceptation.", "regle": "Checklist : critères vérifiables", "gravite": "bloquant"},
+        {"constat": "L'US impose un motif de refus alors que la décision n'est pas prise.", "regle": "ND-06", "gravite": "bloquant"}
+      ],
+      "resultats": [
+        {"id": "US-004", "titre": "Refuser une demande", "fichier": "sprintdesk/backlog/sortie/lot0/US-004.md",
+         "besoin": {"role": "qualificateur", "action": "refuser une demande", "but": "clore les demandes hors périmètre"},
+         "criteres": [
+           "Étant donné une demande Nouvelle, quand le qualificateur la refuse, alors son statut devient Refusée.",
+           "Étant donné un refus, quand il est enregistré, alors l'historique contient l'auteur, la date et les deux statuts."
+         ],
+         "regles": ["RM-02", "RM-06"], "questions": ["ND-06 : motif obligatoire lors d'un refus ?"], "controle": "OK"}
+      ]
+    },
+    {
+      "id": "US-005", "titre": "Consulter l'historique", "statut": "inchangée",
+      "source": "sprintdesk/backlog/entree/lot0/US-005.md",
+      "defauts": [],
+      "resultats": [
+        {"id": "US-005", "titre": "Consulter l'historique", "fichier": "sprintdesk/backlog/sortie/lot0/US-005.md",
+         "besoin": {"role": "manager", "action": "consulter l'historique des statuts d'une demande", "but": "suivre son traitement"},
+         "criteres": [
+           "Étant donné une demande modifiée deux fois, quand le manager ouvre l'historique, alors il voit deux lignes.",
+           "Étant donné une ligne d'historique, quand elle s'affiche, alors elle indique l'auteur, la date et les deux statuts."
+         ],
+         "regles": ["RM-06"], "questions": [], "controle": "OK"}
+      ]
+    }
+  ],
+  "controles": [
+    {"us": "US-001", "critere": "Aucune règle inventée", "resultat": "OK", "preuve": "Seules RM-01 et RM-08 sont citées."},
+    {"us": "US-003", "critere": "Respect de RM-05", "resultat": "OK", "preuve": "Priorité en lecture seule pour le demandeur."},
+    {"us": "US-004", "critere": "ND-06 en question ouverte", "resultat": "OK", "preuve": "Section Questions ouvertes : ND-06."},
+    {"us": "US-005", "critere": "US correcte inchangée", "resultat": "OK", "preuve": "Fichier identique à l'entrée."}
+  ],
+  "questions": [
+    {"id": "ND-02", "question": "Pièces jointes : autorisées ? formats ? taille ?", "qui": "Référent produit", "bloque": "US-001 (partiellement)"},
+    {"id": "ND-06", "question": "Motif obligatoire lors d'un refus ?", "qui": "Référent produit", "bloque": "US-004 (partiellement)"}
+  ],
+  "validations": [
+    {"etape": "Validation 0 — lancement", "decision": "Validé", "par": "Groupe", "commentaire": "Plan d'exécution accepté."},
+    {"etape": "Validation 1 — diagnostic", "decision": "Corrigé", "par": "Référent produit", "commentaire": "Un constat sans source retiré avant réécriture."},
+    {"etape": "Validation 2 — résultat", "decision": "Validé", "par": "Groupe", "commentaire": "Contrôle sans KO restant."}
+  ],
+  "controlesExecutes": [
+    "Présence des 5 US d'entrée dans le résultat (comptage des fichiers).",
+    "Comparaison de chaque US de sortie avec regles-metier.md (contrôleur).",
+    "Vérification que US-005 est identique à l'entrée."
+  ]
+}
+</script>
+<!-- DONNEES:FIN -->
+
+<script>
+(function(){
+  const D = JSON.parse(document.getElementById('donnees').textContent);
+  const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  // Les chemins sont relatifs à la racine du dépôt ; le rapport vit dans sprintdesk/resultats/.
+  const href = p => /^[\w\-./]+$/.test(p || '') ? '../../' + p : '#';
+  const badge = (v, cls) => '<span class="b ' + esc(cls || v) + '">' + esc(v) + '</span>';
+  const list = (a, fn) => (a && a.length) ? a.map(fn).join('') : '';
+
+  const us = D.us || [];
+  const results = us.flatMap(u => u.resultats || []);
+  const count = s => us.filter(u => u.statut === s).length;
+  const defauts = us.flatMap(u => (u.defauts || []).map(d => Object.assign({us: u.id}, d)));
+  const ko = (D.controles || []).filter(c => c.resultat === 'KO').length;
+
+  let h = '<section class="hero"><h1>Compte rendu d\'orchestration — ' + esc(D.projet) + ', lot ' + esc(D.lot) + '</h1>'
+    + '<div class="meta">' + esc(D.date) + ' · orchestré par ' + esc(D.orchestrateur) + '</div>'
+    + '<p class="synth">' + esc(D.synthese) + '</p>'
+    + (D.exemple ? '<span class="flag">EXEMPLE FICTIF — données de démonstration</span>' : '')
+    + '</section>';
+
+  const kpis = [
+    [us.length, 'US d\'entrée traitées'], [results.length, 'US nettoyées produites'],
+    [count('modifiée'), 'modifiées'], [count('découpée'), 'découpées'],
+    [count('inchangée'), 'inchangées'], [count('bloquée'), 'bloquées'],
+    [defauts.length, 'défauts relevés'], [(D.questions || []).length, 'questions ouvertes'],
+    [ko, 'contrôles KO restants'], [(D.validations || []).length, 'validations humaines']
+  ];
+  h += '<div class="kpis">' + kpis.map(k => '<div class="kpi"><b>' + esc(k[0]) + '</b><span>' + esc(k[1]) + '</span></div>').join('') + '</div>';
+
+  h += '<h2>Déroulé de l\'orchestration <small>agents, skills et points de validation humaine</small></h2><div class="pipe">'
+    + list(D.etapes, e => '<div class="stepc ' + esc(e.statut) + (e.humain ? ' human' : '') + '"><h4>' + esc(e.nom) + '</h4>'
+      + '<div class="who">' + (e.humain ? 'Décision humaine' : 'Agent : ' + esc(e.acteur)) + (e.skill ? '<br>Skill : ' + esc(e.skill) : '') + '</div>'
+      + '<div style="margin-top:6px">' + badge(e.statut) + '</div>'
+      + (e.livrable ? '<div class="liv">' + esc(e.livrable) + '</div>' : '')
+      + (e.commentaire ? '<div class="who" style="margin-top:6px">' + esc(e.commentaire) + '</div>' : '') + '</div>')
+    + '</div>';
+
+  h += '<h2>Ce qui n\'allait pas <small>constats du diagnostic</small></h2>'
+    + (defauts.length ? '<div class="tablewrap"><table><tr><th>US</th><th>Constat</th><th>Règle ou critère</th><th>Gravité</th></tr>'
+      + defauts.map(d => '<tr><td><b>' + esc(d.us) + '</b></td><td>' + esc(d.constat) + '</td><td>' + esc(d.regle) + '</td><td>' + badge(d.gravite) + '</td></tr>').join('')
+      + '</table></div>' : '<p class="empty">Aucun défaut relevé.</p>');
+
+  const statuts = ['toutes'].concat([...new Set(us.map(u => u.statut))]);
+  h += '<h2>Ce qui a été fait : les US nettoyées <small>avant / après, par US d\'origine</small></h2>'
+    + '<div class="filters">' + statuts.map((s, i) => '<button data-f="' + esc(s) + '"' + (i ? '' : ' class="on"') + '>' + esc(s) + '</button>').join('') + '</div>'
+    + '<div class="usgrid">' + us.map(u => {
+      const d = u.defauts || [];
+      return '<article class="us" data-statut="' + esc(u.statut) + '"><header><h3>' + esc(u.id) + ' — ' + esc(u.titre) + '</h3>' + badge(u.statut) + '</header>'
+        + '<div class="cols"><div class="before' + (d.length ? '' : ' clean') + '"><h5>Avant : ce qui n\'allait pas</h5>'
+        + (d.length ? '<ul>' + d.map(x => '<li>' + esc(x.constat) + ' <span class="tag">' + esc(x.regle) + '</span> ' + badge(x.gravite) + '</li>').join('') + '</ul>' : '<p>Aucune action : l\'US était déjà correcte.</p>')
+        + '<div class="files">Source : <a href="' + esc(href(u.source)) + '">' + esc(u.source) + '</a></div></div>'
+        + '<div class="after"><h5>Après : US nettoyée' + ((u.resultats || []).length > 1 ? 's' : '') + '</h5>'
+        + ((u.resultats || []).length ? u.resultats.map(r => '<div class="clean-us"><h4>' + esc(r.id) + ' — ' + esc(r.titre) + ' ' + badge(r.controle || 'attente', r.controle) + '</h4>'
+          + (r.besoin ? '<p class="besoin">En tant que <b>' + esc(r.besoin.role) + '</b>, je souhaite ' + esc(r.besoin.action) + ', afin de ' + esc(r.besoin.but) + '.</p>' : '')
+          + ((r.criteres || []).length ? '<b>Critères d\'acceptation</b><ol class="crit">' + r.criteres.map(c => '<li>' + esc(c) + '</li>').join('') + '</ol>' : '')
+          + '<div class="tags">' + list(r.regles, x => '<span class="tag">' + esc(x) + '</span>') + list(r.questions, x => '<span class="tag q">' + esc(x) + '</span>') + '</div>'
+          + (r.fichier ? '<div class="files">Fichier : <a href="' + esc(href(r.fichier)) + '">' + esc(r.fichier) + '</a></div>' : '') + '</div>').join('')
+          : '<p class="empty">Aucune US produite : traitement bloqué (voir questions ouvertes).</p>')
+        + '</div></div></article>';
+    }).join('') + '</div>';
+
+  h += '<div class="grid2"><div><h2>Contrôles du résultat</h2>'
+    + ((D.controles || []).length ? '<div class="tablewrap"><table><tr><th>US</th><th>Critère</th><th>Résultat</th><th>Preuve</th></tr>'
+      + D.controles.map(c => '<tr><td><b>' + esc(c.us) + '</b></td><td>' + esc(c.critere) + '</td><td>' + badge(c.resultat) + '</td><td>' + esc(c.preuve) + '</td></tr>').join('')
+      + '</table></div>' : '<p class="empty">Aucun contrôle enregistré.</p>')
+    + '</div><div><h2>Questions ouvertes à trancher</h2>'
+    + ((D.questions || []).length ? '<div class="tablewrap"><table><tr><th>ID</th><th>Question</th><th>Qui tranche</th><th>Bloque</th></tr>'
+      + D.questions.map(q => '<tr><td><b>' + esc(q.id) + '</b></td><td>' + esc(q.question) + '</td><td>' + esc(q.qui) + '</td><td>' + esc(q.bloque) + '</td></tr>').join('')
+      + '</table></div>' : '<p class="empty">Aucune question ouverte.</p>')
+    + '</div></div>';
+
+  h += '<div class="grid2"><div><h2>Journal des validations humaines</h2>'
+    + ((D.validations || []).length ? '<div class="tablewrap"><table><tr><th>Étape</th><th>Décision</th><th>Par</th><th>Commentaire</th></tr>'
+      + D.validations.map(v => '<tr><td>' + esc(v.etape) + '</td><td>' + badge(v.decision) + '</td><td>' + esc(v.par) + '</td><td>' + esc(v.commentaire) + '</td></tr>').join('')
+      + '</table></div>' : '<p class="empty">Aucune validation enregistrée.</p>')
+    + '</div><div><h2>Contrôles réellement exécutés</h2><div class="card"><ul class="checks">'
+    + list(D.controlesExecutes, c => '<li>' + esc(c) + '</li>') + '</ul></div></div></div>';
+
+  h += '<footer>Compte rendu généré à partir des fichiers du dépôt. Aucune publication externe n\'a été effectuée.</footer>';
+
+  const app = document.getElementById('app');
+  app.innerHTML = h;
+  app.addEventListener('click', e => {
+    const b = e.target.closest('[data-f]'); if (!b) return;
+    app.querySelectorAll('[data-f]').forEach(x => x.classList.toggle('on', x === b));
+    app.querySelectorAll('.us').forEach(a => { a.style.display = (b.dataset.f === 'toutes' || a.dataset.statut === b.dataset.f) ? '' : 'none'; });
+  });
+})();
+</script>
+</body>
+</html>
