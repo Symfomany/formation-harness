@@ -3,6 +3,8 @@
 Ces fiches accompagnent l'atelier. Elles expliquent comment créer chaque brique de personnalisation de GitHub Copilot dans VS Code, avec des exemples tirés de SprintDesk.
 
 ## Le parcours
+> 🆕 Découverte de Copilot ou des agents ? Commencez par [00-bases-copilot.md](00-bases-copilot.md).
+
 | Temps | Objectif | Guides |
 |---|---|---|
 | **Atelier 1 — Planifier** | Poser le contexte du projet dans des instructions claires, puis prompter pour obtenir un plan clair et bien construit | [01-instructions.md](01-instructions.md) · [02-plan.md](02-plan.md) |
