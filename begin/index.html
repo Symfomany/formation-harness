@@ -820,6 +820,236 @@ const STAGES = [
   {t:"check",id:"c5",x:["La skill <code>compte-rendu-html</code> est créée à côté du gabarit","L'agent <code>orchestrateur-us</code> est visible et n'autorise que trois sous-agents","Il s'est arrêté aux trois points de validation et n'a pas avancé sans <code>VALIDER</code>","Il n'a écrit lui-même que le compte rendu HTML","Aucune ND-xx n'est tranchée, ni dans les US ni dans le compte rendu","Le compte rendu affiche les 5 US du lot et mes décisions réelles"]},
   {t:"why",x:"Vous avez construit un <b>système multi-agents supervisé</b> : chaque agent a un rôle, chaque skill une méthode, l'orchestrateur le tempo, et vous la décision. C'est ce schéma qui permet de passer d'un lot à dix sans perdre le contrôle."}]}
  ]},
+/* ====================================================== Plus loin */
+{icon:"🚀",title:"Pour aller bien plus loin",sub:"Hooks, contexte, modèles, évaluation",
+ goal:"Vous passez de règles écrites à des garde-fous appliqués : vous bloquez les écritures interdites avec un hook, vous apprenez à gérer la mémoire de Copilot sur un lot de 5 US, vous comparez deux modèles, puis vous mesurez vos agents avec un jeu d'évaluation.",
+ steps:[
+ {t:"Vue d'ensemble : de « Copilot doit » à « Copilot ne peut pas »",b:[
+  {t:"p",x:"Jusqu'ici, vous avez cadré Copilot avec des <b>mots</b> : instructions, plan, agents, skills. Un mot se lit, mais le modèle peut l'oublier ou l'appliquer de travers. Cette partie ajoute quatre mécanismes pour aller plus loin, avec des exemples tirés de SprintDesk."},
+  {t:"table",h:["Concept","Question à laquelle il répond","Exemple SprintDesk","Étapes"],r:[
+   ["<b>Hooks</b>","Comment <b>empêcher</b> une action, au lieu de la déconseiller ?","Interdire toute écriture dans <code>sprintdesk/backlog/entree/</code> et <code>sprintdesk/contexte/</code>","2 à 4"],
+   ["<b>Gestion du contexte</b>","Que faire quand la conversation devient trop longue ?","Traiter 5 US sans perdre les décisions déjà prises","5 et 6"],
+   ["<b>Choix du modèle et coût</b>","Quel modèle pour quelle tâche, et à quel prix ?","Un modèle léger pour le Contrôleur, un modèle plus puissant pour la revue ?","7 et 8"],
+   ["<b>Jeu d'évaluation</b>","Comment savoir si une modification améliore vraiment ?","Les 20 US des lots 1 à 4 comme banc d'essai","9 et 10"]]},
+  {t:"p",x:"Observez d'abord vos propres règles. Certaines peuvent être <b>appliquées</b> par un mécanisme. D'autres ne peuvent qu'être <b>mesurées</b>."},
+  {t:"table",h:["Règle du projet","Où elle est écrite aujourd'hui","Comment la renforcer"],r:[
+   ["Ne pas modifier <code>backlog/entree/</code> ni <code>contexte/</code>","Texte dans <code>copilot-instructions.md</code>","<b>Hook</b> : l'écriture est refusée avant d'avoir lieu (étape 4)"],
+   ["Ne rien publier vers un service externe sans validation","Texte dans les instructions","<b>Hook</b> : refus d'un <code>git push</code> lancé par l'agent (étape 4)"],
+   ["Le Contrôleur ne modifie rien","Liste <code>tools</code> de l'agent (pas d'outil d'écriture)","Déjà appliquée par les outils de l'agent"],
+   ["Ne pas trancher une décision non prise (ND-xx)","Instructions et skills","Aucun hook possible : on la <b>mesure</b> avec le jeu d'évaluation (étapes 9 et 10)"]]},
+  {t:"mock",x:"Niveau de garantie       Mécanisme            Exemple                        Faiblesse\n─────────────────────────────────────────────────────────────────────────────────────\nfaible                   un prompt            « ne modifie pas entree/ »     oubliable\n                         les instructions     règle permanente               mal appliquable\n                         les outils (tools)   agent sans outil d'écriture    limité à cet agent\nfort                     un hook              refus automatique              à tester, à relire"},
+  {t:"why",x:"Pour chaque règle importante, posez-vous la question : <b>peut-on la rendre impossible à enfreindre ?</b> Si oui, ajoutez un mécanisme. Sinon, mesurez-la."}]},
+ {t:"Hooks : un garde-fou qui s'exécute à chaque fois",b:[
+  {t:"p",x:"Un <b>hook</b> est un petit programme que VS Code lance <b>à un moment précis</b> du travail de l'agent, sans que le modèle ait à y penser. Il peut observer, ajouter une information, ou <b>refuser</b> une action."},
+  {t:"p",x:"<b>Analogie :</b> un portique de sécurité à l'entrée d'un bâtiment. Il ne dépend pas de la bonne volonté de la personne qui entre : il s'applique à chaque passage."},
+  {t:"table",h:["Moment (événement)","Ce qui se passe","Idée pour SprintDesk"],r:[
+   ["<code>sessionStart</code>","Une session démarre","Rappeler le lot et les règles en cours"],
+   ["<code>userPromptSubmitted</code>","Vous envoyez un message","Journaliser la demande"],
+   ["<code>preToolUse</code>","<b>Juste avant</b> qu'un outil soit utilisé : peut le refuser","<b>Bloquer l'écriture dans <code>entree/</code> et <code>contexte/</code></b>"],
+   ["<code>postToolUse</code>","Juste après un outil","Vérifier ou consigner le résultat (ne peut pas annuler)"],
+   ["<code>preCompact</code>","Avant le résumé d'une longue conversation","Sauvegarder les décisions du lot (lien avec l'étape 5)"],
+   ["<code>subagentStart</code> / <code>subagentStop</code>","Un sous-agent démarre / se termine","Tracer les appels de l'orchestrateur"],
+   ["<code>agentStop</code>","L'agent veut s'arrêter","Vérifier que le livrable existe"],
+   ["<code>sessionEnd</code>","La session se termine","Écrire un journal de fin"]]},
+  {t:"table",h:["Étape","Ce qui se passe"],r:[
+   ["1","Un fichier <code>.github/hooks/xxx.json</code> déclare : « à tel événement, lance telle commande »"],
+   ["2","L'agent s'apprête à agir (ex. modifier un fichier) : VS Code lance la commande"],
+   ["3","La commande reçoit les détails de l'action, au format JSON"],
+   ["4","Elle répond <code>{}</code> (rien à dire : l'action continue) ou un <b>refus</b> accompagné d'un message"],
+   ["5","En cas de refus, l'agent voit le message et peut changer de méthode"]]},
+  {t:"warn",x:"À savoir avant d'utiliser les hooks : <b>1)</b> la fonction est en préversion (<i>Preview</i>) et peut changer ; <b>2)</b> les exemples de cette partie visent la session <b>Copilot</b> (sélecteur de session du chat) : le format diffère en session <b>Local</b> ; <b>3)</b> <b>Node.js</b> doit être installé ; <b>4)</b> un hook est du <b>code qui s'exécute sur votre poste</b> : relisez-le toujours avant de l'activer ; <b>5)</b> si le hook dépasse son délai, l'action suit les règles de permission normales."},
+  {t:"warn",x:"Les commandes <code>/</code> de l'étape « Premiers prompts » (fichiers de prompt) fonctionnent en session <b>Local</b>. Les hooks de cette partie fonctionnent en session <b>Copilot</b>. Vous ne les testerez donc pas dans le même chat : ouvrez un nouveau chat avec la bonne session.<br>Si votre sélecteur ne propose pas la session Copilot, demandez à l'animateur."},
+  {t:"no",x:"Un hook est un <b>garde-fou</b>, pas une serrure. Il ne remplace ni les permissions de VS Code, ni la relecture humaine. Ne placez jamais de mot de passe ou de jeton dans un hook, et ne consignez pas le contenu des demandes."}]},
+ {t:"Hooks, pas à pas (1/2) : voir ce que fait Copilot",b:[
+  {t:"p",x:"Avant d'interdire quelque chose, il faut savoir <b>comment s'appellent les outils</b> que Copilot utilise : les noms varient d'un environnement à l'autre. Vous allez d'abord installer un hook qui se contente de <b>noter</b> chaque outil dans un journal."},
+  {t:"ol",x:[
+   "Vérifiez Node.js : <code>Terminal</code> > <code>Nouveau terminal</code>, tapez <code>node --version</code>. Un numéro de version doit s'afficher. Sinon, prévenez l'animateur.",
+   "Dans l'explorateur, clic droit sur <code>.github</code> > <code>Nouveau dossier</code> > <code>hooks</code>.",
+   "Dans <code>hooks</code>, créez le fichier <code>audit.json</code> et collez le premier bloc ci-dessous.",
+   "Dans <code>hooks</code>, créez le fichier <code>log-tool-use.cjs</code> et collez le second bloc. Enregistrez les deux (<kbd>Ctrl</kbd>+<kbd>S</kbd>).",
+   "Ouvrez ou créez le fichier <code>.gitignore</code> à la racine et ajoutez la ligne <code>.github/hooks/tool-use.log</code> : ce journal reste sur votre poste."]},
+  {t:"copy",l:"À COPIER dans .github/hooks/audit.json",x:"{\n  \"version\": 1,\n  \"hooks\": {\n    \"preToolUse\": [\n      {\n        \"type\": \"command\",\n        \"command\": \"node .github/hooks/log-tool-use.cjs\",\n        \"timeoutSec\": 10\n      }\n    ]\n  }\n}"},
+  {t:"copy",l:"À COPIER dans .github/hooks/log-tool-use.cjs",x:"const fs = require('node:fs');\nconst path = require('node:path');\nconst NL = String.fromCharCode(10);\n\nconst event = JSON.parse(fs.readFileSync(0, 'utf8'));\nlet args = event.toolArgs ?? {};\nif (typeof args === 'string') {\n  try { args = JSON.parse(args); } catch { args = {}; }\n}\nif (!args || typeof args !== 'object') args = {};\n\n// On note le nom de l'outil et les NOMS des arguments, jamais leurs valeurs.\nconst ligne = new Date().toISOString() + ' | ' + event.toolName + ' | ' + Object.keys(args).join(', ') + NL;\nfs.appendFileSync(path.join(__dirname, 'tool-use.log'), ligne);\n\nprocess.stdout.write('{}');"},
+  {t:"table",h:["Élément","Rôle"],r:[
+   ["<code>preToolUse</code>","Le hook se déclenche avant chaque utilisation d'un outil"],
+   ["<code>command</code>","La commande lancée, depuis la racine du dépôt"],
+   ["<code>timeoutSec</code>","Délai maximal : au-delà, le hook est abandonné"],
+   ["<code>process.stdout.write('{}')</code>","Réponse « rien à signaler » : l'action continue"]]},
+  {t:"ol",x:[
+   "Ouvrez un <b>nouveau chat</b>, session <b>Copilot</b>, mode Agent.",
+   "Tapez <code>/hooks</code> : la liste doit contenir votre hook <code>preToolUse</code>.",
+   "Envoyez : <code>Lis #produit.md et résume-le en 3 lignes.</code>",
+   "Ouvrez le fichier <code>.github/hooks/tool-use.log</code>."]},
+  {t:"see",x:"Une ou plusieurs lignes du type <code>date | nom-de-l-outil | noms, des, arguments</code>. <b>Notez le nom des outils d'écriture</b> si vous en voyez (ils contiennent souvent <i>edit</i>, <i>create</i>, <i>write</i> ou <i>patch</i>). Le hook de l'étape suivante en a besoin."},
+  {t:"warn",x:"Le journal reste vide ? <b>1)</b> <code>/hooks</code> liste-t-il le hook ? <b>2)</b> La session est-elle bien <b>Copilot</b> ? <b>3)</b> <code>node --version</code> répond-il dans un terminal ? <b>4)</b> Les deux fichiers sont-ils enregistrés dans <code>.github/hooks</code> ? Sinon, appelez l'animateur."},
+  {t:"why",x:"On ne protège bien que ce que l'on observe. Ce journal vous montre ce que fait réellement l'agent. Il peut aussi servir de piste d'audit : qui a fait quoi, et quand."}]},
+ {t:"Hooks, pas à pas (2/2) : protéger les sources du projet",b:[
+  {t:"p",x:"Objectif : rendre <b>impossibles</b> les deux interdits que SprintDesk n'avait jusqu'ici qu'écrits dans un texte."},
+  {t:"table",h:["Règle du hook","Effet"],r:[
+   ["Écriture visant <code>sprintdesk/backlog/entree/</code> ou <code>sprintdesk/contexte/</code>","<b>Refusée</b>, avec un message explicatif"],
+   ["Commande de terminal qui cite l'un de ces dossiers <b>et</b> un verbe d'écriture (<code>&gt;</code>, <code>Set-Content</code>, <code>Remove-Item</code>, <code>rm</code>, <code>mv</code>...)","<b>Refusée</b>"],
+   ["Commande de terminal contenant <code>git push</code>","<b>Refusée</b> : la publication reste humaine"],
+   ["Tout le reste (lecture, écriture dans <code>sortie/</code> ou <code>resultats/</code>)","Autorisé"]]},
+  {t:"ol",x:[
+   "Dans <code>.github/hooks</code>, créez <code>protege-sources.json</code> et collez le premier bloc.",
+   "Créez <code>protege-sources.cjs</code> et collez le second bloc. Enregistrez les deux.",
+   "Désactivez le hook d'audit de l'étape précédente seulement si vous le souhaitez : les deux peuvent coexister."]},
+  {t:"copy",l:"À COPIER dans .github/hooks/protege-sources.json",x:"{\n  \"version\": 1,\n  \"hooks\": {\n    \"preToolUse\": [\n      {\n        \"type\": \"command\",\n        \"command\": \"node .github/hooks/protege-sources.cjs\",\n        \"timeoutSec\": 10\n      }\n    ]\n  }\n}"},
+  {t:"copy",l:"À COPIER dans .github/hooks/protege-sources.cjs",x:"const fs = require('node:fs');\nconst BS = String.fromCharCode(92);\nconst NL = String.fromCharCode(10);\n\nconst PROTEGES = ['sprintdesk/backlog/entree', 'sprintdesk/contexte'];\nconst OUTILS_ECRITURE = ['edit', 'write', 'create', 'patch', 'replace', 'delete', 'insert', 'rename', 'move'];\nconst OUTILS_SHELL = ['bash', 'powershell', 'shell', 'terminal', 'command'];\nconst VERBES_ECRITURE = ['>', ' set-content ', ' add-content ', ' out-file ', ' remove-item ', ' move-item ', ' copy-item ', ' new-item ', ' rm ', ' mv ', ' cp ', ' tee ', ' sed '];\n\nconst event = JSON.parse(fs.readFileSync(0, 'utf8'));\nconst nom = String(event.toolName || event.tool_name || '').toLowerCase();\nlet args = event.toolArgs ?? event.tool_input ?? {};\nif (typeof args === 'string') {\n  try { args = JSON.parse(args); } catch { args = { command: args }; }\n}\nif (!args || typeof args !== 'object') args = {};\n\nconst normaliser = (texte) => String(texte).split(BS).join('/').toLowerCase();\n\n// On ne regarde que les arguments qui designent un fichier, pas le contenu ecrit :\n// une US de sortie a le droit de citer le chemin de sa source.\nfunction chemins(valeur, cle) {\n  if (typeof valeur === 'string') return /^(file_?path|path|file|filename|uri|target|files|paths)$/i.test(cle) ? [valeur] : [];\n  if (Array.isArray(valeur)) return valeur.flatMap((v) => chemins(v, cle));\n  if (valeur && typeof valeur === 'object') return Object.entries(valeur).flatMap(([k, v]) => chemins(v, k));\n  return [];\n}\n\n// Outils de type patch : les fichiers visés sont dans les lignes d'en-tête \"*** \".\nconst entetesPatch = Object.values(args)\n  .filter((v) => typeof v === 'string')\n  .join(NL).split(NL)\n  .filter((ligne) => ligne.startsWith('*** '));\n\nconst cibles = [...chemins(args, ''), ...entetesPatch].map(normaliser);\nconst commande = ' ' + normaliser(args.command || '') + ' ';\n\nfunction refuser(raison) {\n  process.stdout.write(JSON.stringify({ permissionDecision: 'deny', permissionDecisionReason: raison }));\n  process.exit(0);\n}\n\nconst estEcriture = OUTILS_ECRITURE.some((m) => nom.includes(m));\nconst estShell = OUTILS_SHELL.some((m) => nom.includes(m));\nconst dossierVise = cibles.some((c) => PROTEGES.some((p) => c.includes(p)));\nconst commandeVisee = PROTEGES.some((p) => commande.includes(p));\n\nif (estEcriture && dossierVise) {\n  refuser('Dossier protege : sprintdesk/backlog/entree et sprintdesk/contexte ne se modifient pas. Ecrivez dans sprintdesk/backlog/sortie ou sprintdesk/resultats.');\n}\nif (estShell && commandeVisee && VERBES_ECRITURE.some((v) => commande.includes(v))) {\n  refuser('Commande refusee : elle semble modifier un dossier protege (entree ou contexte).');\n}\nif (estShell && commande.includes('git push')) {\n  refuser('Publication refusee : un git push se fait par un humain, apres validation.');\n}\n\nprocess.stdout.write('{}');"},
+  {t:"table",h:["Partie du script","En clair"],r:[
+   ["<code>PROTEGES</code>","La liste des deux dossiers interdits d'écriture"],
+   ["<code>chemins(...)</code>","Repère <b>uniquement</b> les arguments qui désignent un fichier. Le contenu écrit n'est pas examiné : sinon, une US de <code>sortie/</code> qui cite sa source serait refusée à tort"],
+   ["<code>normaliser</code>","Remplace les <code>\\</code> de Windows par des <code>/</code> et passe en minuscules, pour comparer correctement"],
+   ["<code>refuser(...)</code>","Répond <code>deny</code> avec un message que l'agent lit"],
+   ["Dernière ligne <code>{}</code>","En l'absence de motif de refus, l'action continue"]]},
+  {t:"p",x:"<b>Testez dans cet ordre.</b> Nouveau chat, session Copilot, mode Agent."},
+  {t:"copy",l:"TEST 1 — doit être REFUSÉ",x:"Ajoute une ligne « test » à la fin de #US-{n}01.md."},
+  {t:"see",x:"L'action est <b>refusée</b>, avec le message du hook (« Dossier protege... »). Le fichier <code>US-{n}01.md</code> est inchangé. L'agent propose souvent d'écrire ailleurs."},
+  {t:"copy",l:"TEST 2 — doit être AUTORISÉ (lecture)",x:"Lis #US-{n}01.md et résume-la en une phrase."},
+  {t:"copy",l:"TEST 3 — doit être AUTORISÉ (écriture dans resultats, avec une citation de la source)",x:"Crée le fichier sprintdesk/resultats/essai-hook.md contenant une seule ligne : « Source : sprintdesk/backlog/entree/lot{n}/US-{n}01.md »."},
+  {t:"see",x:"Le fichier <code>essai-hook.md</code> est créé : le hook regarde le <b>chemin</b> de destination, pas le texte écrit. Supprimez-le ensuite (clic droit > <code>Supprimer</code>)."},
+  {t:"warn",x:"Le test 1 n'est pas refusé ? <b>1)</b> Ouvrez <code>tool-use.log</code> : le nom de l'outil d'écriture contient-il <i>edit</i>, <i>write</i>, <i>create</i>, <i>patch</i> ou <i>replace</i> ? Sinon, ajoutez son nom dans <code>OUTILS_ECRITURE</code>. <b>2)</b> <code>/hooks</code> liste-t-il <code>protege-sources</code> ? <b>3)</b> Si le fichier a été modifié, bouton <code>Annuler</code> du chat ou <kbd>Ctrl</kbd>+<kbd>Z</kbd>."},
+  {t:"warn",x:"<b>Limites à connaître.</b> Le refus de <code>git push</code> n'est volontairement <b>pas testé</b> en atelier, pour ne rien publier par erreur. Le contrôle des commandes de terminal repose sur une liste de verbes : un terminal permet beaucoup de contournements. Ce hook réduit le risque, il ne le supprime pas."},
+  {t:"table",h:["Autre idée de hook","Événement","À quoi ça sert"],r:[
+   ["Journal d'audit des outils utilisés","<code>preToolUse</code>","Savoir ce qu'a fait l'agent (étape précédente)"],
+   ["Hook limité à un seul agent (par exemple le Rédacteur)","dans l'en-tête de la fiche de l'agent","Appliquer une règle à un rôle seulement. Voir la documentation des hooks"],
+   ["Sauvegarde des décisions avant résumé","<code>preCompact</code>","Ne pas perdre les décisions du lot (étape 5)"],
+   ["Contrôle avant arrêt de l'agent","<code>agentStop</code>","Vérifier que <code>revue.md</code> existe avant de conclure"]]},
+  {t:"why",x:"Le même interdit existe maintenant <b>deux fois</b> : écrit dans les instructions (Copilot sait pourquoi) et appliqué par le hook (Copilot ne peut pas l'enfreindre). Les deux se complètent."}]},
+ {t:"Gestion du contexte : quand Copilot « oublie »",b:[
+  {t:"p",x:"Copilot ne garde pas votre conversation « en tête » sans limite. Il travaille dans une <b>fenêtre de contexte</b> de taille fixe. <b>Analogie :</b> une table de travail. Quand elle est pleine, il faut ranger : les papiers du début disparaissent ou sont résumés."},
+  {t:"table",h:["Ce qui remplit la fenêtre","Exemple SprintDesk"],r:[
+   ["Vos messages et les réponses","5 diagnostics d'US enchaînés dans le même chat"],
+   ["Les fichiers joints avec <kbd>#</kbd>","<code>regles-metier.md</code> + 5 US + <code>produit.md</code>"],
+   ["Les résultats des outils","Lecture de fichiers, recherches dans le dépôt"],
+   ["Les instructions permanentes","<code>copilot-instructions.md</code>, toujours présent"]]},
+  {t:"table",h:["Signe de saturation","Ce que vous observez"],r:[
+   ["Oubli","Copilot ignore une décision prise 20 messages plus tôt"],
+   ["Contradiction","Il propose l'inverse d'une réponse précédente"],
+   ["Dérive","Il cite moins les RM-xx ou n'applique plus le format de l'US"],
+   ["Invention","Il comble un trou avec une règle plausible mais fausse"]]},
+  {t:"table",h:["Levier","Comment","Quand l'utiliser"],r:[
+   ["<b>Surveiller</b>","Jauge de la fenêtre de contexte, dans la zone de saisie du chat. Survolez-la : détail de l'occupation","Régulièrement, et dès qu'un signe apparaît"],
+   ["<b>Compacter</b>","Tapez <code>/compact</code>, éventuellement suivi d'une consigne. VS Code le fait aussi seul quand la fenêtre est pleine","Vous voulez <b>poursuivre</b> le même travail"],
+   ["<b>Repartir à zéro</b>","Nouveau chat (<code>+</code>). Les fichiers enregistrés et les instructions permanentes sont conservés","Le sujet <b>change</b>, ou la conversation est brouillée"],
+   ["<b>Bifurquer</b>","<code>/fork</code> (selon le type de session) : copie la conversation pour explorer une autre piste","Vous voulez tester sans perdre l'original"],
+   ["<b>Écrire dans un fichier</b>","Les décisions vont dans un <b>journal</b> du dépôt, joint avec <kbd>#</kbd>","Toute décision qui doit <b>survivre</b> à la conversation"]]},
+  {t:"mock",x:"Copilot se trompe ou oublie ?\n ├─ Une décision doit survivre ?   -> l'écrire dans un fichier (journal) et le joindre avec #\n ├─ Même travail, chat très long ?  -> /compact + consigne de ce qu'il faut garder\n ├─ Nouveau sujet ou chat brouillé ? -> nouveau chat + fichiers # utiles\n └─ Autre piste à tester ?          -> /fork"},
+  {t:"warn",x:"Un résumé <b>perd des détails</b>. Après un <code>/compact</code>, vérifiez que les décisions et les ND-xx ouvertes sont toujours là : demandez-les explicitement. La fonction <code>/fork</code> dépend du type de session : si la commande n'existe pas chez vous, ignorez-la."},
+  {t:"why",x:"Ce qui doit survivre ne doit pas vivre <b>seulement</b> dans le chat. Le chat est une mémoire de travail, le dépôt est la mémoire durable."}]},
+ {t:"Contexte en pratique : traiter un lot sans perdre les décisions",b:[
+  {t:"p",x:"Scénario : vous traitez les 5 US du lot {n} dans la même conversation. Vous prenez des décisions au fil de l'eau. Vous allez voir ce qui se perd, puis le corriger."},
+  {t:"ol",x:[
+   "Créez le fichier <code>sprintdesk/resultats/journal-decisions-lot{n}.md</code> (clic droit sur <code>resultats</code> > <code>Nouveau fichier</code>) et collez le modèle ci-dessous.",
+   "Nouveau chat. Analysez <b>US-{n}01, puis US-{n}02, puis US-{n}03</b>, une par message (commande <code>/diagnostiquer-us</code> ou prompt à 6 blocs).",
+   "Après chaque US, notez <b>votre</b> décision dans le journal. Exemple : « US-{n}02 : à découper en deux, décision du groupe ».",
+   "Survolez la jauge de contexte et notez son niveau."]},
+  {t:"copy",l:"À COPIER dans sprintdesk/resultats/journal-decisions-lot{n}.md",x:"# Journal des décisions — lot {n}\n\nCe fichier est la mémoire durable du lot. Il est joint à chaque nouveau chat.\n\n| US | Décision prise (et par qui) | ND-xx restées ouvertes |\n|---|---|---|\n| US-{n}01 | | |\n| US-{n}02 | | |\n| US-{n}03 | | |\n| US-{n}04 | | |\n| US-{n}05 | | |"},
+  {t:"p",x:"<b>Expérience de l'oubli.</b> Ouvrez un <b>nouveau chat</b>, sans rien joindre, et posez :"},
+  {t:"copy",l:"À COPIER (nouveau chat, sans journal)",x:"Quelles décisions avons-nous prises sur US-{n}02 ?"},
+  {t:"see",x:"Copilot ne peut pas le savoir. Observez sa réaction : il l'avoue, ou il <b>invente</b> une décision. Une réponse inventée est un signal d'alarme à retenir."},
+  {t:"copy",l:"À COPIER (même question, avec le journal joint par #)",x:"En t'appuyant uniquement sur #journal-decisions-lot{n}.md, quelles décisions ont été prises sur US-{n}02 ? Si le fichier ne le dit pas, réponds « non renseigné »."},
+  {t:"see",x:"Une réponse fidèle au fichier, ou « non renseigné » : le journal joue son rôle de mémoire durable."},
+  {t:"p",x:"<b>Compactage.</b> Revenez dans le long chat et lancez :"},
+  {t:"copy",l:"À COPIER (dans le long chat)",x:"/compact Conserve : les décisions prises sur chaque US, les ND-xx restées ouvertes, la liste des US déjà traitées. Oublie le détail des tableaux de diagnostic."},
+  {t:"copy",l:"À COPIER (vérification après compactage)",x:"Rappelle-moi les décisions prises et les ND-xx encore ouvertes, US par US. Ne comble aucun trou."},
+  {t:"see",x:"Un récapitulatif cohérent avec votre journal. S'il manque une décision, le résumé a perdu de l'information : le journal reste la référence."},
+  {t:"ol",x:["Ouvrez un <b>nouveau chat</b> et joignez <code>#journal-decisions-lot{n}.md</code>, <code>#regles-metier.md</code> et <code>#US-{n}04.md</code>.","Demandez la revue de US-{n}04, puis de US-{n}05, en précisant de respecter les décisions du journal."]},
+  {t:"table",h:["Situation","Bon réflexe"],r:[
+   ["Vous venez de prendre une décision","L'écrire dans le journal <b>tout de suite</b>"],
+   ["La conversation dépasse 10 échanges ou la jauge monte","<code>/compact</code> avec consigne, puis vérifier"],
+   ["Vous changez de lot","Nouveau chat + nouveau journal"],
+   ["Copilot affirme une décision que vous ne reconnaissez pas","Demander la source dans le journal ; sinon la considérer comme inventée"]]},
+  {t:"why",x:"Compacter, c'est accepter de perdre un peu. Le journal, c'est décider <b>de ce qu'on ne veut jamais perdre</b>. Combinés, ils permettent de traiter un gros lot sans reprendre à zéro."}]},
+ {t:"Choix du modèle et coût",b:[
+  {t:"p",x:"Un <b>modèle</b> est le « cerveau » qui répond dans le chat. On le choisit dans le sélecteur de modèle de la zone de saisie. Tous ne se valent pas : certains sont <b>rapides et économes</b>, d'autres <b>raisonnent plus longuement</b> mais consomment davantage."},
+  {t:"table",h:["Type de modèle","Avantage","Limite"],r:[
+   ["<b>Léger / rapide</b>","Réponse vive, coût réduit","Peut manquer une subtilité, oublier une règle"],
+   ["<b>De raisonnement</b>","Mieux sur les contradictions et les cas ambigus","Plus lent, plus coûteux, parfois plus bavard"],
+   ["<b>Auto</b>","VS Code choisit selon la tâche et le réglage (efficacité, équilibre, intelligence)","Vous ne choisissez pas précisément"]]},
+  {t:"table",h:["Réglage ou repère","Où le trouver"],r:[
+   ["Modèle utilisé","Sélecteur de modèle dans la zone de saisie du chat"],
+   ["Mode Auto et son optimisation","Dans la liste des modèles : <code>Auto</code>, puis l'option d'optimisation (<i>Efficiency</i>, <i>Balance</i>, <i>Intelligence</i>)"],
+   ["Effort de réflexion","Flèche à côté de certains modèles : plus l'effort est élevé, plus la réponse est travaillée, et plus elle coûte"],
+   ["Modèle qui a réellement répondu","Survolez la réponse dans le chat"],
+   ["Consommation de la session","Survolez la jauge de contexte : elle indique aussi les crédits IA consommés"],
+   ["Modèle imposé à une commande <code>/</code>","Champ <code>model:</code> dans l'en-tête du fichier <code>.prompt.md</code>"]]},
+  {t:"p",x:"<b>Hypothèses de départ pour SprintDesk.</b> Ce sont des hypothèses à <b>vérifier</b>, pas des conclusions."},
+  {t:"table",h:["Agent ou commande","Nature de la tâche","Hypothèse"],r:[
+   ["<code>controleur-backlog</code>","Comparer une US à une liste de règles, en lecture seule","Un modèle léger peut suffire"],
+   ["<code>reviewer-backlog</code>","Juger : contradictions, découpage, règles inventées","Un modèle de raisonnement apporte peut-être plus"],
+   ["<code>redacteur-backlog</code>","Appliquer un format strict avec des décisions validées","Niveau intermédiaire à tester"],
+   ["<code>orchestrateur-us</code>","Planifier, déléguer, ne pas sauter une validation","À mesurer : une erreur de pilotage coûte cher"],
+   ["<code>/questions-po</code>","Reformuler des questions ouvertes","Un modèle léger peut suffire"]]},
+  {t:"no",x:"Ne retenez jamais une hypothèse sans la mesurer. Le modèle le plus puissant n'est pas toujours le meilleur choix ; le plus léger peut oublier une règle. <b>Seule une mesure tranche</b> : c'est l'objet de l'étape suivante, puis du jeu d'évaluation."},
+  {t:"warn",x:"La liste des modèles dépend de votre abonnement et des choix de votre organisation. Un modèle vu en démonstration peut être indisponible chez vous : utilisez ceux de <b>votre</b> liste."}]},
+ {t:"Modèles en pratique : comparer deux modèles sur la même tâche",b:[
+  {t:"p",x:"Vous allez comparer deux réglages sur <b>la même US et le même prompt</b>. Un seul paramètre change : le modèle."},
+  {t:"ol",x:[
+   "Nouveau chat. Dans le sélecteur, choisissez le <b>réglage A</b> : <code>Auto</code> optimisé pour l'efficacité, ou le modèle le plus léger de votre liste.",
+   "Lancez : <code>/diagnostiquer-us #US-{n}03.md</code> (ou le prompt à 6 blocs). Survolez la réponse pour noter le modèle, puis la jauge pour noter les crédits.",
+   "Nouveau chat. Choisissez le <b>réglage B</b> : <code>Auto</code> optimisé pour l'intelligence, ou un modèle de raisonnement de votre liste.",
+   "Relancez <b>exactement le même prompt</b> et notez les mêmes informations.",
+   "Remplissez le tableau ci-dessous. Recommencez avec <code>#US-{n}05.md</code>, l'US correcte."]},
+  {t:"copy",l:"À COPIER dans vos notes (par exemple sprintdesk/resultats/comparaison-modeles.md)",x:"# Comparaison de modèles — lot {n}\n\n| Critère | Réglage A | Réglage B |\n|---|---|---|\n| Modèle utilisé (survol de la réponse) | | |\n| Contradiction de US-{n}03 repérée (oui/non) | | |\n| Règle ou ND citée exacte (oui/non) | | |\n| Aucune règle inventée (oui/non) | | |\n| US-{n}05 laissée inchangée (oui/non) | | |\n| Longueur de la réponse (courte / moyenne / longue) | | |\n| Crédits consommés (jauge) | | |"},
+  {t:"see",x:"Deux réponses qui diffèrent par la forme, peut-être par le fond. Il n'y a pas de bonne réponse unique : <b>vous mesurez</b>."},
+  {t:"ex",l:"Exemple — fixer un modèle dans une commande /",x:"---\ndescription: \"Diagnostiquer une US SprintDesk, sans la réécrire\"\nmodel: <nom exact tel qu'affiché dans votre sélecteur>\n---\nFais le diagnostic de l'US jointe avec la skill revue-agilite."},
+  {t:"warn",x:"Un seul essai ne prouve rien : un même modèle peut répondre différemment d'une fois à l'autre. En cas de doute, rejouez chaque réglage deux fois. Si un nom de modèle dans <code>model:</code> est inconnu chez vous, retirez la ligne : le sélecteur reprend la main."},
+  {t:"why",x:"Règle de décision à retenir : on choisit le modèle <b>le moins coûteux qui réussit tous les critères</b> sur le jeu de test. Un modèle plus cher qui ne fait pas mieux n'apporte rien. Un modèle moins cher qui échoue sur une contradiction n'est pas une économie."}]},
+ {t:"Jeu d'évaluation : mesurer au lieu de supposer",b:[
+  {t:"p",x:"Un <b>jeu d'évaluation</b> est un ensemble <b>fixe</b> de cas dont on connaît à l'avance la bonne réponse. <b>Analogie :</b> une copie d'examen avec son corrigé. Vous faites passer l'examen à votre agent avant et après chaque modification, et vous comparez les notes."},
+  {t:"p",x:"SprintDesk en a déjà un : les <b>20 US des lots 1 à 4</b>. Chaque lot contient les <b>mêmes 5 types</b> de défauts. Cela prolonge la méthode de <code>docs/07-evaluation.md</code> : critères de succès, puis « un défaut, une cause, une modification »."},
+  {t:"table",h:["Type","Lot 1","Lot 2","Lot 3","Lot 4"],r:[
+   ["<b>x01 — trop vague</b>","US-101 : besoin non précisé, champs non listés (cf. RM-01)","US-201 : « bien priorisée » non défini (le calcul existe : RM-03, RM-04)","US-301 : « rapidement » non mesurable","US-401 : « utile » non défini, indicateurs non choisis"],
+   ["<b>x02 — trop volumineuse</b>","US-102 : au moins 5 besoins (pièces jointes ND-02, notifications ND-03...) : à découper","US-202 : au moins 5 besoins (matrice, SLA, escalade, reporting, suggestion IA) : à découper ; la matrice paramétrable est à confronter à RM-04","US-302 : 7 besoins (réouverture ND-04, notifications ND-03, historique RM-06...) : à découper","US-402 : 6 besoins (alertes ND-01, abonnement e-mail ND-03...) : à découper"],
+   ["<b>x03 — contradictoire</b>","US-103 : titre obligatoire <b>et</b> envoi sans titre (RM-01)","US-203 : le demandeur fixe la priorité (RM-05) ; « non modifiable » et « ajustable » dans la même US","US-303 : plusieurs traitants (RM-07)","US-403 : 5 jours calendaires <b>et</b> 3 jours ouvrés ; seuil = ND-01, à ne pas trancher"],
+   ["<b>x04 — sans critères</b>","US-104 : aucun critère ; contenu et canal de la confirmation (ND-03)","US-204 : aucun critère ; tri par défaut (ND-05)","US-304 : aucun critère ; contenu de l'historique (RM-06)","US-404 : aucun critère ; valeurs des filtres (RM-02, RM-04)"],
+   ["<b>x05 — correcte</b>","US-105 : <b>ne rien changer</b>","US-205 : <b>ne rien changer</b>","US-305 : <b>ne rien changer</b> ; ND-04 déjà en question ouverte","US-405 : <b>ne rien changer</b>"]]},
+  {t:"warn",x:"Ce tableau donne des <b>repères</b> issus des fichiers d'entrée et de <code>regles-metier.md</code>. Confrontez-le à votre propre lecture avant de l'utiliser comme référence. En cas de désaccord ou de règle manquante, c'est une question pour le référent produit, pas une hypothèse."},
+  {t:"table",h:["Principe","Pourquoi"],r:[
+   ["<b>Figer les critères avant de tester</b>","Sinon on juge à l'humeur, après avoir lu la réponse"],
+   ["<b>Même prompt, nouveau chat pour chaque US</b>","La conversation précédente ne doit pas influencer le résultat"],
+   ["<b>Une seule modification à la fois</b>","Sinon on ne sait pas ce qui a changé le score"],
+   ["<b>Une US correcte doit rester inchangée</b>","Détecte les agents qui « améliorent » trop (régression)"],
+   ["<b>Aucune ND-xx tranchée</b>","C'est la règle la plus facilement violée"]]},
+  {t:"why",x:"Sans jeu d'évaluation, chaque amélioration est une impression. Avec lui, une modification devient une <b>expérience</b> : mêmes cas, même grille, score avant, score après."}]},
+ {t:"Jeu d'évaluation en pratique : noter, modifier, rejouer",b:[
+  {t:"ol",x:[
+   "Créez <code>sprintdesk/resultats/jeu-evaluation.md</code> et collez la fiche ci-dessous.",
+   "Choisissez <b>ce que vous évaluez</b> : par exemple la commande <code>/diagnostiquer-us</code> ou l'agent <code>reviewer-backlog</code>. Décrivez-le en une ligne dans « Version testée ».",
+   "Pour chacune des 5 US de votre lot, ouvrez un <b>nouveau chat</b> et lancez toujours le <b>même prompt</b>.",
+   "Notez 0 ou 1 par critère. Faites le total.",
+   "Faites <b>une seule modification</b> (ajouter une règle dans la skill, changer le modèle, préciser un interdit). Réécrivez « Version testée : v2 ».",
+   "Rejouez les 5 US et comparez les totaux. Relancez deux fois en cas de doute."]},
+  {t:"copy",l:"À COPIER dans sprintdesk/resultats/jeu-evaluation.md",x:"# Jeu d'évaluation — lot {n}\n\nCe qui est testé (commande, agent, skill, modèle) :\n\n## Critères\n- A. Défaut attendu repéré (pour l'US correcte : reconnue correcte, aucune modification proposée)\n- B. Règle ou décision citée exacte (RM-xx, ND-xx)\n- C. Rien d'inventé, aucune ND-xx tranchée\n\n## Version testée : v1\n\n| US | Type | A | B | C | Total /3 |\n|---|---|---|---|---|---|\n| US-{n}01 | vague | | | | |\n| US-{n}02 | volumineuse | | | | |\n| US-{n}03 | contradictoire | | | | |\n| US-{n}04 | sans critères | | | | |\n| US-{n}05 | correcte | | | | |\n| **Total lot {n}** | | | | | **/15** |\n\n## Version testée : v2 (une seule modification : ... )\n\n| US | Type | A | B | C | Total /3 |\n|---|---|---|---|---|---|\n| US-{n}01 | vague | | | | |\n| US-{n}02 | volumineuse | | | | |\n| US-{n}03 | contradictoire | | | | |\n| US-{n}04 | sans critères | | | | |\n| US-{n}05 | correcte | | | | |\n| **Total lot {n}** | | | | | **/15** |\n\n## Lecture\n- Régressions (un 1 devenu 0) :\n- Défaut observé, cause probable, modification suivante :"},
+  {t:"table",h:["Résultat","Interprétation","Que faire ?"],r:[
+   ["Le total monte, aucune régression","La modification aide","La conserver, puis passer au défaut suivant"],
+   ["Le total monte, mais une US correcte est modifiée","L'agent « améliore » trop","Ajouter un contre-exemple : « si l'US est correcte, la laisser inchangée »"],
+   ["Le total baisse","La modification nuit","L'annuler et formuler une autre hypothèse"],
+   ["Le total est identique","Modification sans effet mesurable","Ne pas la garder : un fichier de plus à maintenir"],
+   ["Une ND-xx est tranchée","Défaut grave, quel que soit le total","Renforcer l'interdit ; ce défaut prime sur le reste"]]},
+  {t:"table",h:["Votre mesure sert à...","Exemple"],r:[
+   ["Choisir un modèle (étape 8)","Le modèle le moins cher qui obtient le même total"],
+   ["Valider une modification d'agent ou de skill","Total v2 supérieur ou égal à v1, sans régression"],
+   ["Contrôler l'orchestrateur du bonus","Même grille appliquée au lot orchestré et au lot traité à la main"],
+   ["Préparer les lots suivants","Chaque nouveau défaut rencontré devient un nouveau cas de test"]]},
+  {t:"warn",x:"Une grille trop sévère ou trop floue donne des notes sans valeur. Si vous hésitez sur un 0 ou un 1, relisez le critère, corrigez-le <b>une fois pour toutes</b>, puis notez de nouveau les deux versions."},
+  {t:"why",x:"Votre jeu d'évaluation fait pour les <b>agents</b> ce que les critères d'acceptation font pour les <b>US</b> : une condition vérifiable, définie à l'avance, qui dit si c'est réussi."}]},
+ {t:"Bilan et pistes suivantes",b:[
+  {t:"table",h:["Mécanisme","Ce qu'il apporte","Où il intervient dans SprintDesk"],r:[
+   ["Instructions","Les règles permanentes","Toutes les conversations"],
+   ["Plan","Le contrat de travail validé par l'humain","Avant toute écriture"],
+   ["Agents et skills","Rôles et méthodes","Revue, réécriture, contrôle"],
+   ["Commandes <code>/</code>","Prompts réutilisables","Diagnostiquer, questionner, vérifier"],
+   ["Orchestration","Enchaînement supervisé","Traitement d'un lot"],
+   ["<b>Hooks</b>","Interdits <b>appliqués</b>","Protection de <code>entree/</code> et <code>contexte/</code>, pas de publication"],
+   ["<b>Gestion du contexte</b>","Mémoire de travail maîtrisée","Journal des décisions, compactage, nouveau chat"],
+   ["<b>Choix du modèle</b>","Équilibre qualité, vitesse, coût","Comparaison mesurée par agent"],
+   ["<b>Jeu d'évaluation</b>","Amélioration prouvée","20 US, grille 0/1, v1 contre v2"]]},
+  {t:"check",id:"c6",x:["Node.js répond à <code>node --version</code> sur mon poste","Le journal <code>tool-use.log</code> m'a montré les noms d'outils utilisés","Le hook <code>protege-sources</code> a <b>refusé</b> la modification de <code>US-{n}01.md</code>","Le même hook a <b>autorisé</b> la lecture et l'écriture dans <code>resultats/</code>","J'ai constaté ce que devient une décision absente du journal dans un nouveau chat","J'ai fait un <code>/compact</code> avec consigne et vérifié ce qui avait été conservé","J'ai comparé deux modèles sur la même US avec le même prompt","J'ai rempli le jeu d'évaluation pour au moins deux versions, v1 et v2","Aucune ND-xx n'a été tranchée pendant mes tests"]},
+  {t:"p",x:"<b>Pistes non traitées ici</b> (à explorer ensuite) : instructions ciblées par type de fichier, outils externes connectés (MCP), exécution en bac à sable, sécurité des outils. Aucune n'est nécessaire pour terminer SprintDesk."},
+  {t:"why",x:"Vous disposez maintenant d'un système complet : des <b>règles écrites</b> pour guider Copilot, des <b>garde-fous appliqués</b> pour l'empêcher de mal faire, une <b>mémoire</b> maîtrisée pour les longs lots, un <b>modèle choisi par la mesure</b>, et un <b>banc d'essai</b> pour prouver chaque amélioration. Les décisions métier restent, plus que jamais, entre vos mains."}]}
+ ]},
 /* ====================================================== 5 */
 {icon:"🆘",title:"Aide",sub:"Glossaire et dépannage",
  goal:"Un mot inconnu ? Un blocage ? C'est ici.",
@@ -875,6 +1105,12 @@ const L={
  gwt:["Given / When / Then (Martin Fowler)","https://martinfowler.com/bliki/GivenWhenThen.html"],
  subagents:["Sous-agents dans VS Code","https://code.visualstudio.com/docs/agents/run/subagents"],
  prompts:["Fichiers de prompt (commandes /) dans VS Code","https://code.visualstudio.com/docs/copilot/customization/prompt-files"],
+ hooks:["Hooks dans VS Code (préversion)","https://code.visualstudio.com/docs/agent-customization/hooks"],
+ hooksref:["Référence des hooks (GitHub Copilot)","https://docs.github.com/en/copilot/reference/hooks-reference"],
+ sessions:["Gérer les sessions et le contexte","https://code.visualstudio.com/docs/agents/run/sessions/manage-sessions"],
+ models:["Modèles de langage dans VS Code","https://code.visualstudio.com/docs/agent-customization/language-models"],
+ optimize:["Optimiser l'usage et les coûts","https://code.visualstudio.com/docs/agents/guides/optimize-usage"],
+ security:["Sécurité des agents dans VS Code","https://code.visualstudio.com/docs/agents/run/security"],
  agentref:["Référence du fichier d'agent (.agent.md)","https://code.visualstudio.com/docs/agents/reference/custom-agent-file-reference"]
 };
 const EXTRA={
@@ -940,6 +1176,17 @@ const EXTRA={
 "Créer la commande /diagnostiquer-us":{o:"Transformer le prompt à 6 blocs en commande réutilisable, en lecture seule.",c:"L'en-tête <b>YAML</b> (entre les deux lignes <code>---</code>) configure la commande : description, aide de saisie, mode. Les <b>liens Markdown</b> du corps joignent les fichiers du projet sans que l'utilisateur ait à y penser.",l:[L.prompts,L.mdvsc]},
 "Lancer et tester la commande":{o:"Lancer la commande avec /, lui joindre une US, et vérifier qu'elle respecte l'US correcte.",c:"Ce que vous tapez après la commande (pastille <code>#</code>, <code>nom=valeur</code>, texte libre) est ajouté au prompt. Une commande se teste et s'améliore comme un document : on modifie le fichier, puis on relance.",l:[L.prompts,L.ctx]},
 "Ajouter deux commandes : /questions-po et /verifier-reponse":{o:"Créer une commande avec variable et une commande qui s'applique à une conversation en cours.",c:"Une <b>variable</b> <code>${input:nom:aide}</code> rend une commande paramétrable. Une bibliothèque de quelques commandes bien testées vaut mieux que des dizaines de prompts jamais relus.",l:[L.prompts,L.best]},
+"Vue d'ensemble : de « Copilot doit » à « Copilot ne peut pas »":{o:"Distinguer les règles qu'on peut appliquer par un mécanisme de celles qu'on ne peut que mesurer.",c:"Plus le mécanisme est fort, moins il dépend du modèle : un prompt peut être oublié, un hook s'exécute à chaque fois. Toutes les règles ne peuvent pas être appliquées : certaines se <b>mesurent</b>.",l:[L.hooks,L.best]},
+"Hooks : un garde-fou qui s'exécute à chaque fois":{o:"Comprendre ce qu'est un hook, à quels moments il intervient et quelles sont ses limites.",c:"Un hook est une commande lancée par VS Code à un événement précis. Un hook <code>preToolUse</code> peut <b>refuser</b> une action avant qu'elle ait lieu. Un hook ne remplace pas les permissions.",l:[L.hooks,L.hooksref,L.security]},
+"Hooks, pas à pas (1/2) : voir ce que fait Copilot":{o:"Installer un hook d'audit pour découvrir le nom des outils utilisés par l'agent.",c:"Le fichier JSON de <code>.github/hooks</code> déclare l'événement et la commande. La commande lit l'action en JSON et répond <code>{}</code> pour laisser passer. Journaliser les noms d'outils, jamais les contenus.",l:[L.hooks,L.hooksref]},
+"Hooks, pas à pas (2/2) : protéger les sources du projet":{o:"Bloquer l'écriture dans entree/ et contexte/ et vérifier le refus par des tests.",c:"Le script ne regarde que les <b>chemins</b> visés, pas le contenu écrit, pour ne pas refuser à tort une US qui cite sa source. Il se teste avec un cas refusé et deux cas autorisés. C'est un garde-fou, pas une garantie absolue.",l:[L.hooks,L.hooksref,L.security]},
+"Gestion du contexte : quand Copilot « oublie »":{o:"Reconnaître une conversation saturée et choisir le bon levier : compacter, repartir à zéro, bifurquer ou écrire dans un fichier.",c:"La fenêtre de contexte est limitée. <code>/compact</code> résume la conversation ; un nouveau chat repart d'un historique vide. Les fichiers du dépôt et les instructions permanentes, eux, sont conservés.",l:[L.sessions,L.ctx]},
+"Contexte en pratique : traiter un lot sans perdre les décisions":{o:"Tenir un journal des décisions, compacter avec consigne et reprendre dans un nouveau chat sans rien perdre.",c:"Un journal dans <code>resultats/</code> joue le rôle de mémoire durable. Après un compactage, demandez explicitement ce qui a été conservé. Une décision que vous ne retrouvez pas dans le journal est à considérer comme inventée.",l:[L.sessions,L.ctx]},
+"Choix du modèle et coût":{o:"Savoir où choisir un modèle, ce que changent Auto et l'effort de réflexion, et où lire la consommation.",c:"Un modèle léger est rapide et économe ; un modèle de raisonnement traite mieux les cas ambigus mais coûte davantage. Les hypothèses du tableau se vérifient par la mesure, jamais par principe.",l:[L.models,L.optimize]},
+"Modèles en pratique : comparer deux modèles sur la même tâche":{o:"Comparer deux réglages sur le même prompt et la même US, puis fixer une règle de choix.",c:"Un seul paramètre doit changer entre les deux essais. Notez le modèle (survol de la réponse) et les crédits (survol de la jauge). Choisissez le modèle le moins coûteux qui réussit tous les critères.",l:[L.models,L.prompts]},
+"Jeu d'évaluation : mesurer au lieu de supposer":{o:"Comprendre ce qu'est un jeu d'évaluation et pourquoi les 20 US des lots en forment déjà un.",c:"Un jeu d'évaluation est un ensemble fixe de cas à réponse connue. Critères figés avant le test, même prompt, une seule modification à la fois, et vérification que l'US correcte reste inchangée.",l:[L.best,L.tips]},
+"Jeu d'évaluation en pratique : noter, modifier, rejouer":{o:"Noter une version, faire une modification, rejouer et interpréter l'écart.",c:"Chaque défaut observé conduit à une cause, puis à une seule modification. Comparez les totaux de v1 et v2, cherchez les régressions, et rejouez en cas de doute.",l:[L.best,L.tips]},
+"Bilan et pistes suivantes":{o:"Relier les quatre mécanismes au reste du harness et cocher la checklist finale.",c:"Règles écrites, garde-fous appliqués, mémoire maîtrisée, modèle choisi par la mesure et banc d'essai forment un système complet. La décision métier reste humaine.",l:[L.hooks,L.models,L.sessions]},
 "Glossaire":{o:"Retrouver le sens d'un mot de l'atelier.",c:"Le vocabulaire de l'IA évolue vite. Les documentations officielles ci-dessous restent la référence en cas de doute.",l:[L.over,L.chat]},
 "Dépannage":{o:"Débloquer rapidement une situation courante.",c:"Face à un comportement inattendu : <b>1)</b> relisez le fichier concerné, <b>2)</b> vérifiez qu'il est enregistré, <b>3)</b> ouvrez un nouveau chat, <b>4)</b> demandez à l'animateur.",l:[L.tips,L.chat]}
 };
@@ -949,8 +1196,10 @@ const KEY='sd-begin-v3';
 let st={lot:1,stage:0,done:{},chk:{},open:{},tour:false};
 try{Object.assign(st,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
-/* v4 : l'étape Bonus est insérée avant l'Aide (index 6 -> 7). */
-if(!st.v){const mv=o=>{for(const k of Object.keys(o)) if(k.startsWith('6-')){o['7-'+k.slice(2)]=o[k];delete o[k];}};mv(st.done);mv(st.open);if(st.stage===6)st.stage=7;st.v=4;save();}
+/* v4 : l'étape Bonus est insérée avant l'Aide (index 6 -> 7). v5 : « Pour aller bien plus loin » est insérée avant l'Aide (7 -> 8). */
+const shiftStages=(from,to)=>{const mv=o=>{for(const k of Object.keys(o)) if(k.startsWith(from+'-')){o[to+'-'+k.slice(String(from).length+1)]=o[k];delete o[k];}};mv(st.done);mv(st.open);if(st.stage===from)st.stage=to;};
+if(!st.v){shiftStages(6,7);st.v=4;save();}
+if(st.v<5){shiftStages(7,8);st.v=5;save();}
 const $=s=>document.querySelector(s);
 const fill=s=>s.replaceAll('{n}',st.lot);
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1083,14 +1332,14 @@ document.addEventListener('change',e=>{
   if(e.target.dataset.chk){st.chk[e.target.dataset.chk]=e.target.checked;save();}
 });
 $('#lot').addEventListener('change',e=>{st.lot=+e.target.value;save();render();});
-$('#reset').addEventListener('click',()=>{if(confirm('Effacer toute votre progression ?')){st={lot:st.lot,stage:0,done:{},chk:{},open:{'0-0':true},v:4};save();render();}});
+$('#reset').addEventListener('click',()=>{if(confirm('Effacer toute votre progression ?')){st={lot:st.lot,stage:0,done:{},chk:{},open:{'0-0':true},v:5};save();render();}});
 
 /* ---------- visite guidée (premier usage) */
 const TOUR=[
  {c:1,t:'Bienvenue sur votre road tour 👋',x:'Ce parcours vous guide <b>pas à pas</b> : chaque étape dit quoi faire, quoi copier et ce que vous devez voir. Cette courte visite (1 minute) montre comment tout fonctionne.'},
  {s:'#lot',t:'1. Choisissez votre lot',x:'Votre animateur vous attribue un lot (1 à 4). Le choix adapte automatiquement tous les noms de dossiers et de fichiers dans les textes à copier.'},
  {s:'.prog',t:'2. Votre progression',x:'La barre se remplit à chaque étape validée. Elle est <b>sauvegardée</b> dans votre navigateur : vous pouvez fermer la page et reprendre plus tard.'},
- {s:'nav.road',t:'3. La route : le menu',x:'Huit arrêts, du début à la fin, dont un bonus. Cliquez sur un arrêt pour y aller ; la coche ✔ indique qu\'il est terminé, et le compteur (ex. 3/7) montre l\'avancée.'},
+ {s:'nav.road',t:'3. La route : le menu',x:'Neuf arrêts, du début à la fin, dont un bonus et une partie « bien plus loin ». Cliquez sur un arrêt pour y aller ; la coche ✔ indique qu\'il est terminé, et le compteur (ex. 3/7) montre l\'avancée.'},
  {s:'.step .sh',t:'4. Les étapes',x:'Chaque arrêt contient des étapes numérotées. Cliquez sur le titre d\'une étape pour l\'ouvrir ou la fermer. Faites-les <b>dans l\'ordre</b>.'},
  {s:'.step.open .obj',t:'5. L\'objectif',x:'En haut de chaque étape, le bandeau violet rappelle <b>ce que vous devez avoir obtenu</b> à la fin. Si vous êtes perdu, relisez-le.'},
  {s:'.step.open .co',t:'6. Les encadrés',x:'<b>Vert</b> : ce que vous devez voir. <b>Jaune</b> : que faire si ça ne marche pas. <b>Bleu</b> : pourquoi on fait cela. Plus loin, les blocs violets contiennent des textes à <b>copier d\'un clic</b> avec le bouton Copier.'},
