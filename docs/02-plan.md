@@ -62,6 +62,60 @@ Distingue les faits fournis, les propositions et les décisions à prendre.
 11. Critères de réussite
 12. Limites et conditions d'arrêt
 
+## Exemple de `PLAN.md` (illustratif)
+> ⚠️ Exemple volontairement générique : il montre la **forme** attendue, pas le contenu de votre lot. Votre plan doit venir de **vos** US et de **vos** échanges avec Copilot.
+
+```markdown
+# PLAN — SprintDesk, lot <N>
+
+## 1. Objectif et périmètre
+Rendre les 5 US du lot exploitables (claires, testables, de taille adaptée) sans inventer de règle.
+Hors périmètre : code de l'application, publication externe.
+
+## 2. Sources
+produit.md · regles-metier.md · sprintdesk/backlog/entree/lot<N>/
+
+## 3. Résultats attendus
+- 5 US traitées dans backlog/sortie/ · une revue (revue.md) · une synthèse.
+
+## 4. Règles métier validées
+RM-01 à RM-08 (rappel des seules règles utilisées par le lot).
+
+## 5. Questions ouvertes
+| ID | Question | Qui tranche |
+|---|---|---|
+| ND-xx | <décision non prise rencontrée dans le lot> | Référent produit |
+
+## 6. Format cible d'une US
+Titre · En tant que / Je veux / Afin de · Critères d'acceptation (Given/When/Then) · Règles liées · Questions ouvertes.
+
+## 7. Étapes
+1. Diagnostic de chaque US (Reviewer) → 2. Validation humaine des constats → 3. Réécriture (Rédacteur) → 4. Contrôle contre RM-xx → 5. Synthèse.
+
+## 8. Rôles des agents
+| Agent | Fait | Ne décide pas |
+|---|---|---|
+| Reviewer | Diagnostique, cite la preuve | Ne réécrit pas |
+| Rédacteur | Réécrit selon le format cible | Ne tranche aucun ND-xx |
+
+## 9. Skills
+`revue-agilite` (méthode de diagnostic) · `formater-us` (format cible).
+
+## 10. Contrôles et validations humaines
+- Validation du diagnostic avant réécriture.
+- Validation de chaque US réécrite avant dépôt dans sortie/.
+- Aucune publication sans accord humain.
+
+## 11. Critères de réussite (oui/non)
+- [ ] Chaque US conserve son identifiant et cite sa source.
+- [ ] Aucune règle inventée : tout point non décidé est une question ouverte.
+- [ ] Chaque US a au moins 2 critères d'acceptation vérifiables.
+- [ ] Une US déjà correcte est restée inchangée.
+
+## 12. Limites et conditions d'arrêt
+L'agent s'arrête et demande si une règle manque, si deux sources se contredisent, ou si une décision métier est requise.
+```
+
 ## Checklist : mon plan est-il bon ?
 - [ ] Je sais dire ce que chaque agent **fera**, et ce qu'il **ne décidera pas**.
 - [ ] Chaque décision non prise (`ND-xx`) apparaît en question ouverte, pas en hypothèse cachée.

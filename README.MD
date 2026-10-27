@@ -3,6 +3,25 @@
 > 🏢 Fil rouge : **SprintDesk chez HabiOuest** (cas fictif, voir [`sprintdesk/contexte/produit.md`](sprintdesk/contexte/produit.md))
 > 👥 20 participants (PO/PM, Scrum, Dev, DevOps) · 4 groupes mélangés de 5 · un lot par groupe
 
+## 🗺️ Le parcours
+| Temps | Ce que les groupes pratiquent |
+|---|---|
+| 🧭 **Atelier 1 — Planifier** | Rédiger des **instructions claires** du contexte du projet, puis **prompter** pour obtenir un plan clair et bien construit (`PLAN.md`) |
+| ⚙️ **Atelier 2 — Acter** | Définir l'**architecture des agents** et leur rôle dans le cycle de développement (SDLC), puis créer les **agents** et les **skills** qui exécutent le plan |
+| 🔍 **Bonus — Analyser** | **Évaluer et ajuster** : critères de succès, signaux qualitatifs et quantitatifs, analyse des traces et des sorties, distinction entre erreur de raisonnement, mauvais outil, mauvais contexte et environnement, puis ajustement des instructions, outils, contraintes et mémoire |
+
+## 📦 Lots
+| Groupe | Lot | US |
+|---|---|---|
+| 1️⃣ | Dépôt des demandes | 101–105 |
+| 2️⃣ | Qualification et priorisation | 201–205 |
+| 3️⃣ | Traitement des demandes | 301–305 |
+| 4️⃣ | Pilotage du backlog | 401–405 |
+
+> ℹ️ **Un lot = un groupe.** Les 20 US sont réparties à raison de 5 par groupe (4 groupes × 5 US). Chaque groupe ne reçoit que son lot dans `sprintdesk/backlog/entree/lot<N>/` et travaille sur ces 5 US uniquement.
+
+Chaque lot : une US vague, une trop volumineuse, une contradictoire, une sans critères, une déjà correcte.
+
 ## 🔄 Le cycle Planifier → Acter → Analyser
 ```mermaid
 flowchart LR
@@ -57,23 +76,6 @@ La méthode pour travailler avec Copilot sans lui laisser improviser :
 - 🔍 **Analyser** : on compare le résultat aux attentes, on identifie l'origine d'un défaut (source, plan, instructions, agent, skill) et on ajuste **un seul élément** avant de rejouer.
 
 L'humain décide, Copilot exécute dans un cadre explicite, et chaque tour de cycle améliore le cadre.
-
-## 🗺️ Le parcours
-| Temps | Ce que les groupes pratiquent |
-|---|---|
-| 🧭 **Atelier 1 — Planifier** | Rédiger des **instructions claires** du contexte du projet, puis **prompter** pour obtenir un plan clair et bien construit (`PLAN.md`) |
-| ⚙️ **Atelier 2 — Acter** | Définir l'**architecture des agents** et leur rôle dans le cycle de développement (SDLC), puis créer les **agents** et les **skills** qui exécutent le plan |
-| 🔍 **Bonus — Analyser** | **Évaluer et ajuster** : critères de succès, signaux qualitatifs et quantitatifs, analyse des traces et des sorties, distinction entre erreur de raisonnement, mauvais outil, mauvais contexte et environnement, puis ajustement des instructions, outils, contraintes et mémoire |
-
-## 📦 Lots
-| Groupe | Lot | US |
-|---|---|---|
-| 1️⃣ | Dépôt des demandes | 101–105 |
-| 2️⃣ | Qualification et priorisation | 201–205 |
-| 3️⃣ | Traitement des demandes | 301–305 |
-| 4️⃣ | Pilotage du backlog | 401–405 |
-
-Chaque lot : une US vague, une trop volumineuse, une contradictoire, une sans critères, une déjà correcte.
 
 ## 📚 Guides pratiques
 Voir [`docs/README.md`](docs/README.md) : instructions, plan, architecture des agents, agents, skills, prompts et évaluation.
