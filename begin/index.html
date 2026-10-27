@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Road tour — Atelier SprintDesk avec Copilot (parcours débutant)</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#d9dfec;
+    --blue:#2563eb; --blue-l:#dbeafe; --green:#16a34a; --green-l:#dcfce7;
+    --amber:#d97706; --amber-l:#fef3c7; --violet:#7c3aed; --red:#dc2626;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{position:sticky;top:0;z-index:10;background:#0f172a;color:#fff;padding:10px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;flex:1;min-width:220px}
+  header label{font-size:14px}
+  header select,header button{font:inherit;font-size:14px;padding:5px 10px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#fff;cursor:pointer}
+  .prog{flex:1;min-width:200px;max-width:340px}
+  .prog small{display:block;font-size:12px;color:#cbd5e1}
+  .bar{height:8px;background:#334155;border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#38bdf8);width:0;transition:width .3s}
+  .layout{display:grid;grid-template-columns:290px 1fr;gap:24px;max-width:1280px;margin:0 auto;padding:24px 20px 80px}
+  @media(max-width:860px){.layout{grid-template-columns:1fr}}
+  /* road */
+  nav.road{position:sticky;top:76px;align-self:start;max-height:calc(100vh - 96px);overflow:auto}
+  @media(max-width:860px){nav.road{position:static;max-height:none}}
+  .road ol{list-style:none;margin:0;padding:0;position:relative}
+  .road ol:before{content:"";position:absolute;left:19px;top:20px;bottom:20px;width:4px;background:repeating-linear-gradient(#94a3b8 0 10px,transparent 10px 18px);border-radius:2px}
+  .stop{position:relative;display:flex;gap:12px;align-items:center;padding:8px 6px;border-radius:10px;cursor:pointer}
+  .stop:hover{background:#e8edf8}
+  .stop.cur{background:var(--blue-l)}
+  .dot{flex:none;width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid #94a3b8;display:grid;place-items:center;font-size:16px;z-index:1}
+  .stop.cur .dot{border-color:var(--blue);box-shadow:0 0 0 4px #bfdbfe}
+  .stop.done .dot{border-color:var(--green);background:var(--green-l)}
+  .stop b{display:block;font-size:14px;line-height:1.25}
+  .stop small{color:var(--muted);font-size:12px}
+  /* main */
+  main h2{margin:0 0 4px;font-size:26px}
+  .goal{color:var(--muted);margin:0 0 18px}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:12px 0;overflow:hidden}
+  .step.open{border-color:var(--blue);box-shadow:0 4px 18px rgba(37,99,235,.12)}
+  .step.done{border-left:6px solid var(--green)}
+  .sh{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none}
+  .num{flex:none;width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px}
+  .step.done .num{background:var(--green)}
+  .sh h3{margin:0;font-size:17px;flex:1}
+  .tag{font-size:12px;color:var(--green);font-weight:600}
+  .sb{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s ease}
+  .step.open .sb{grid-template-rows:1fr}
+  .sb>.in{overflow:hidden;min-height:0;visibility:hidden;transition:visibility 0s .45s}
+  .step.open .sb>.in{visibility:visible;transition-delay:0s}
+  .pad{padding:0 18px 18px;border-top:1px solid var(--line)}
+  .step{scroll-margin-top:80px;transition:border-color .3s,box-shadow .3s}
+  .ht{flex:1;min-width:0}
+  .sub{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .step.open .sub{display:none}
+  .chev{color:var(--muted);transition:transform .3s}
+  .step.open .chev{transform:rotate(180deg)}
+  .obj,.goalbox{display:flex;gap:14px;align-items:center;border-radius:14px;color:#fff;position:relative;overflow:hidden}
+  .obj{margin:16px 0 6px;padding:14px 18px;background:linear-gradient(120deg,#2563eb,#7c3aed);box-shadow:0 6px 18px rgba(37,99,235,.3)}
+  .goalbox{margin:6px 0 20px;padding:16px 20px;background:linear-gradient(120deg,#0f172a,#1d4ed8)}
+  .obj .oi,.goalbox .oi{font-size:32px;animation:bob 2.4s ease-in-out infinite}
+  .obj small,.goalbox small{display:block;font-size:11px;letter-spacing:.14em;font-weight:700;opacity:.85}
+  .obj strong{font-size:17px;line-height:1.35}
+  .goalbox strong{font-size:18px;line-height:1.4;font-weight:600}
+  .obj:after,.goalbox:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);transform:translateX(-100%);animation:shine 4s ease-in-out infinite}
+  .more{margin-top:18px;border:1px solid #c7d2fe;border-radius:12px;background:#f5f7ff}
+  .more summary{cursor:pointer;padding:10px 14px;font-weight:700;color:#3730a3;list-style:none}
+  .more summary::-webkit-details-marker{display:none}
+  .more summary:before{content:"▸ ";display:inline-block;transition:transform .2s}
+  .more[open] summary:before{transform:rotate(90deg)}
+  .mb{padding:0 14px 12px;animation:rise .3s both}
+  .mb a{color:var(--blue)}
+  .mb ul{margin:6px 0}
+  .chk input:checked+span{color:#166534;font-weight:600}
+  main.enter .step,main.enter h2,main.enter .goalbox{animation:rise .5s both;animation-delay:calc(var(--i,0)*70ms)}
+  .num.pop{animation:pop .7s}
+  .step.celebrate{animation:flash 1.1s}
+  .btn.pulse{animation:pulse 1.2s infinite}
+  .stop.just .dot{animation:pop .7s}
+  .confetti{position:fixed;z-index:200;width:9px;height:14px;border-radius:2px;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:210;background:#14532d;color:#fff;padding:12px 22px;border-radius:99px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:toast 2.6s both}
+  .toast.big{background:linear-gradient(120deg,#7c3aed,#2563eb);font-size:18px}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes pop{0%{transform:scale(1)}35%{transform:scale(1.6) rotate(-10deg)}70%{transform:scale(.9)}100%{transform:scale(1)}}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(22,163,74,.7)}100%{box-shadow:0 0 0 26px rgba(22,163,74,0)}}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);box-shadow:0 0 0 8px rgba(37,99,235,.25)}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  @keyframes shine{0%,60%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  @keyframes toast{0%{opacity:0;transform:translate(-50%,30px)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-10px)}}
+  .prog .bar i{transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  /* visite guidée */
+  #tour-ov{position:fixed;inset:0;z-index:100}
+  #tour-ov.dim{background:rgba(15,23,42,.72)}
+  #tour-spot{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(15,23,42,.72),0 0 0 3px #fbbf24;transition:all .35s ease;pointer-events:none}
+  #tour-tip{position:fixed;width:340px;max-width:calc(100vw - 24px);background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 16px 50px rgba(0,0,0,.4);animation:rise .35s both;z-index:101}
+  #tour-tip h4{margin:0 0 6px;font-size:17px}
+  #tour-tip p{margin:0 0 12px;font-size:14.5px}
+  .tdots{display:flex;gap:5px;margin-bottom:10px}
+  .tdots i{width:8px;height:8px;border-radius:50%;background:#cbd5e1}
+  .tdots i.on{background:var(--blue);transform:scale(1.3)}
+  .tbtn{display:flex;gap:8px;align-items:center}
+  .tbtn .skip{margin-right:auto;background:none;border:0;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;text-decoration:underline}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  .sb p,.sb li{margin:10px 0}
+  .sb ol,.sb ul{padding-left:22px}
+  code{background:#eef1f8;border-radius:5px;padding:1px 6px;font:13.5px Consolas,monospace}
+  kbd{background:#fff;border:1px solid #b8c0d4;border-bottom-width:3px;border-radius:5px;padding:0 6px;font:13px Consolas,monospace}
+  .co{border-radius:10px;padding:10px 14px;margin:12px 0}
+  .co b.l{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+  .see{background:var(--green-l);border-left:5px solid var(--green)}
+  .warn{background:var(--amber-l);border-left:5px solid var(--amber)}
+  .why{background:var(--blue-l);border-left:5px solid var(--blue)}
+  .no{background:#fee2e2;border-left:5px solid var(--red)}
+  .co p{margin:4px 0}
+  .copy{margin:14px 0;border:2px dashed var(--violet);border-radius:12px;overflow:hidden;background:#faf8ff}
+  .copy .ct{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#ede9fe;font-weight:600;font-size:14px;color:#5b21b6}
+  .copy button{font:inherit;font-size:13px;padding:5px 12px;border:0;border-radius:6px;background:var(--violet);color:#fff;cursor:pointer}
+  .copy button.ok{background:var(--green)}
+  .copy pre{margin:0;padding:12px 14px;white-space:pre-wrap;word-wrap:break-word;font:13.5px/1.5 Consolas,monospace;max-height:420px;overflow:auto}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#eef2fb}
+  .chk label{display:flex;gap:10px;align-items:flex-start;padding:5px 0;cursor:pointer}
+  .chk input{margin-top:5px;width:18px;height:18px}
+  .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .btn{font:inherit;padding:9px 18px;border-radius:9px;border:0;cursor:pointer;font-weight:600}
+  .btn.p{background:var(--green);color:#fff}
+  .btn.s{background:#e5e7eb;color:var(--ink)}
+  .btn.b{background:var(--blue);color:#fff}
+  .end{margin:28px 0;text-align:center}
+  .mock{font-family:Consolas,monospace;font-size:13px;white-space:pre;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:12px;overflow:auto}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛣️ Road tour — Atelier SprintDesk avec Copilot</h1>
+  <label>Mon lot :
+    <select id="lot">
+      <option value="1">Lot 1 (US-101 à 105)</option>
+      <option value="2">Lot 2 (US-201 à 205)</option>
+      <option value="3">Lot 3 (US-301 à 305)</option>
+      <option value="4">Lot 4 (US-401 à 405)</option>
+    </select>
+  </label>
+  <div class="prog"><small id="ptxt"></small><div class="bar"><i id="pbar"></i></div></div>
+  <button id="tourbtn" title="Revoir la visite guidée">❓ Visite guidée</button>
+  <button id="reset" title="Effacer ma progression">↺ Recommencer</button>
+</header>
+<div class="layout">
+  <nav class="road"><ol id="road"></ol></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+/* Balises : {n} = numéro du lot ; ¤ = apostrophe inversée (backtick) dans les textes à copier */
+const STAGES = [
+/* ====================================================== 0 */
+{icon:"🚪",title:"Démarrer",sub:"Prise en main de VS Code",
+ goal:"À la fin de cette étape : vous savez ouvrir le projet, lire un fichier, parler à Copilot et annuler ce qu'il fait.",
+ steps:[
+ {t:"Ouvrir le dossier du projet",b:[
+  {t:"ol",x:[
+   "Lancez <b>Visual Studio Code</b> (icône bleue).",
+   "Menu du haut : cliquez sur <code>Fichier</code> (<code>File</code>) puis <code>Ouvrir le dossier...</code> (<code>Open Folder...</code>).",
+   "Choisissez le dossier <code>formation-harness</code> fourni par l'animateur, puis <code>Sélectionner un dossier</code>.",
+   "Si une fenêtre demande « Faites-vous confiance aux auteurs ? », cliquez <code>Oui, je fais confiance aux auteurs</code>."]},
+  {t:"see",x:"À gauche, une liste de dossiers : <code>begin</code>, <code>docs</code>, <code>sprintdesk</code>... Elle s'appelle l'<b>Explorateur</b>."},
+  {t:"warn",x:"Liste absente ? Appuyez sur <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>E</kbd>."},
+  {t:"why",x:"VS Code travaille sur un <b>dossier</b>. Copilot ne voit que les fichiers de ce dossier : si vous ouvrez un seul fichier, il ne trouvera pas vos règles métier."}]},
+ {t:"Ouvrir et lire un fichier",b:[
+  {t:"ol",x:[
+   "Dans l'explorateur, cliquez sur la flèche à gauche de <code>sprintdesk</code> pour le déplier.",
+   "Dépliez <code>contexte</code>, puis cliquez <b>une fois</b> sur <code>produit.md</code>.",
+   "Pour une lecture agréable, appuyez sur <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>V</kbd> : un aperçu mis en forme s'ouvre.",
+   "Faites de même avec <code>regles-metier.md</code>."]},
+  {t:"see",x:"Le titre « Contexte produit — SprintDesk chez HabiOuest » et un tableau des utilisateurs."},
+  {t:"why",x:"Les fichiers <code>.md</code> (Markdown) sont du texte simple lisible par vous <b>et</b> par Copilot. Tout ce que vous allez créer est un fichier <code>.md</code>."},
+  {t:"p",x:"<b>À retenir absolument :</b> <code>RM-xx</code> = règle <b>validée</b>. <code>ND-xx</code> = décision <b>non prise</b>, interdit de la deviner."}]},
+ {t:"Ouvrir Copilot Chat",b:[
+  {t:"ol",x:[
+   "Appuyez sur <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>I</kbd> : le chat s'ouvre à droite.",
+   "Sinon, cliquez sur l'icône Copilot en haut de la fenêtre, à côté de la barre de recherche centrale.",
+   "Si on vous demande de vous connecter : <code>Se connecter avec GitHub</code>, suivez le navigateur, puis revenez dans VS Code."]},
+  {t:"see",x:"Un panneau avec une zone de saisie en bas (texte grisé du type « Ask Copilot »)."}]},
+ {t:"Repérer les boutons du chat",b:[
+  {t:"table",h:["Élément","Où","À quoi il sert"],r:[
+   ["<b>Sélecteur de mode</b>","En bas à gauche de la zone de saisie (affiche <code>Agent</code>, <code>Ask</code> ou <code>Plan</code>)","Choisit <b>comment</b> Copilot travaille"],
+   ["<b>Sélecteur de modèle</b>","À côté du mode","Laissez le choix par défaut"],
+   ["<b>Envoyer</b>","En bas à droite (flèche)","<kbd>Entrée</kbd> fait pareil"],
+   ["<b>Nouveau chat</b>","Bouton <code>+</code> en haut du chat","Repart d'une conversation vierge"]]},
+  {t:"p",x:"Pour aller à la ligne sans envoyer : <kbd>Maj</kbd>+<kbd>Entrée</kbd>."},
+  {t:"table",h:["Mode","Modifie vos fichiers ?","Quand"],r:[["<b>Ask</b>","Non","Explorer sans risque (étape « Premiers prompts »)"],["<b>Plan</b>","Non","Atelier 1"],["<b>Agent</b>","<b>Oui</b>","Ateliers 2 et 3"]]},
+  {t:"no",x:"Tant que le guide ne dit pas « passez en Agent », restez en <b>Ask</b>."}]},
+ {t:"Votre premier message",b:[
+  {t:"ol",x:["Dans le sélecteur de mode, choisissez <code>Ask</code>.","Cliquez dans la zone de saisie, collez le texte ci-dessous, puis <kbd>Entrée</kbd>."]},
+  {t:"copy",l:"À COPIER dans le chat",x:"Bonjour ! Réponds uniquement par la phrase : \"Copilot est prêt.\""},
+  {t:"see",x:"« Copilot est prêt. » en quelques secondes."},
+  {t:"warn",x:"Erreur d'accès ? Vérifiez votre connexion (étape précédente). Sinon prévenez l'animateur : la licence Copilot manque peut-être."}]},
+ {t:"Donner un fichier à Copilot avec #",b:[
+  {t:"p",x:"Copilot ne lit pas tout seul tous vos fichiers. Pour lui en montrer un :"},
+  {t:"ol",x:[
+   "Dans la zone de saisie, tapez <kbd>#</kbd> : une liste de fichiers apparaît.",
+   "Tapez le début du nom (<code>produit</code>), sélectionnez <code>produit.md</code> avec les flèches puis <kbd>Entrée</kbd> : une pastille apparaît.",
+   "Complétez la phrase, par exemple : « D'après [pastille produit.md], quels sont les 4 rôles d'utilisateurs de SprintDesk ? »"]},
+  {t:"see",x:"Demandeur, Qualificateur, Traitant, Manager."},
+  {t:"why",x:"Citer un fichier avec <code>#</code> est plus sûr que de compter sur le fichier ouvert au centre."}]},
+ {t:"Accepter ou annuler ce que Copilot modifie",b:[
+  {t:"p",x:"Quand Copilot modifie un fichier (mode Agent), vous voyez les fichiers concernés dans le chat, du texte vert (ajouté) et rouge (supprimé), et des boutons <code>Conserver</code> / <code>Annuler</code> (<code>Keep</code> / <code>Undo</code>)."},
+  {t:"table",h:["Je veux...","Je fais..."],r:[["Accepter","Bouton <code>Conserver</code>"],["Tout refuser","Bouton <code>Annuler</code>"],["Annuler ma propre frappe","<kbd>Ctrl</kbd>+<kbd>Z</kbd>"],["Enregistrer un fichier","<kbd>Ctrl</kbd>+<kbd>S</kbd> (le point <code>●</code> de l'onglet disparaît)"]]},
+  {t:"no",x:"Relisez <b>avant</b> de cliquer sur <code>Conserver</code>."},
+  {t:"check",id:"c0",x:["Dossier <code>formation-harness</code> ouvert","J'ai lu <code>produit.md</code> et <code>regles-metier.md</code>","Copilot m'a répondu « Copilot est prêt. »","Je sais citer un fichier avec <code>#</code>","Je sais où sont <code>Conserver</code> / <code>Annuler</code> et <kbd>Ctrl</kbd>+<kbd>S</kbd>"]}]}
+ ]},
+/* ====================================================== 1 */
+{icon:"💬",title:"Premiers prompts",sub:"Parler à Copilot sans risque",
+ goal:"Mode Ask uniquement : Copilot répond, ne modifie rien. Vous voyez pourquoi un prompt vague est dangereux et comment en écrire un bon.",
+ steps:[
+ {t:"Lire les 5 US de votre lot",b:[
+  {t:"ol",x:["Explorateur : <code>sprintdesk</code> > <code>backlog</code> > <code>entree</code> > <code>lot{n}</code>.","Ouvrez les 5 fichiers un par un (aperçu : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>V</kbd>).","Pour chacune, notez en une phrase : est-elle claire ? complète ?"]},
+  {t:"table",h:["Type de défaut","Signification"],r:[["US <b>vague</b>","On ne sait pas quoi construire"],["US <b>trop volumineuse</b>","Plusieurs besoins en une seule US"],["US <b>contradictoire</b>","Contredit une règle validée (<code>RM-xx</code>)"],["US <b>sans critères</b>","Impossible de vérifier qu'elle est terminée"],["US <b>déjà correcte</b>","À ne surtout pas modifier"]]},
+  {t:"why",x:"Chaque lot contient exactement ces 5 cas. Il n'y a pas de bonne réponse à cette étape : vous formez votre propre avis, que Copilot va ensuite confronter."}]},
+ {t:"Le mauvais prompt (pour voir le problème)",b:[
+  {t:"p",x:"Ouvrez un <b>nouveau chat</b> (<code>+</code>), mode <code>Ask</code>. Tapez ce texte en remplaçant le dernier mot par la pastille du fichier (<kbd>#</kbd> puis <code>US-{n}01.md</code>)."},
+  {t:"copy",l:"À COPIER (puis ajouter #US-{n}01.md)",x:"Améliore"},
+  {t:"p",x:"Lisez la réponse et posez-vous :"},
+  {t:"ul",x:["Copilot a-t-il ajouté des champs (nom, téléphone, pièce jointe...) ? <b>Qui les a décidés ?</b>","Vous a-t-il posé une question ? Non : il a <b>deviné</b>.","A-t-il cité des règles <code>RM-xx</code> ? Probablement pas."]},
+  {t:"why",x:"Sans cadre, Copilot comble les vides avec des idées plausibles. Dans un vrai projet, ces idées deviennent des « règles » que personne n'a validées. C'est le risque que tout l'atelier combat."}]},
+ {t:"Le bon prompt en 6 blocs",b:[
+  {t:"table",h:["Bloc","Question","Exemple"],r:[["Contexte","Sur quoi on travaille ?","Projet SprintDesk, lot {n}"],["Sources","Que doit-il lire ?","Fichiers cités avec <code>#</code>"],["Interdits","Que ne doit-il pas faire ?","Ne réécris pas, n'invente rien"],["Tâche","Que produire ?","Dire si l'US est exploitable"],["Exigences","Quelles garanties ?","Citer RM/ND, poser des questions"],["Format","Sous quelle forme ?","Un tableau"]]},
+  {t:"p",x:"Nouveau chat (<code>+</code>), mode <code>Ask</code>. Collez le prompt, puis <b>remplacez</b> les noms de fichiers par des pastilles (<kbd>#</kbd> + nom) : <code>produit.md</code>, <code>regles-metier.md</code>, <code>US-{n}01.md</code>."},
+  {t:"copy",l:"À COPIER dans le chat",x:"Contexte : projet SprintDesk, lot {n}.\nSources : produit.md, regles-metier.md, US-{n}01.md (à ajouter avec #).\n\nInterdits : ne réécris pas l'US. N'invente aucune règle métier. Ne modifie aucun fichier.\n\nTâche : indique si cette US est exploitable en l'état.\n\nExigences :\n- Cite les règles RM-xx ou décisions ND-xx concernées.\n- Si une information manque, pose-moi la question au lieu de la deviner.\n\nFormat : un tableau avec les colonnes \"Constat\", \"Pourquoi c'est un problème\", \"Question à poser au métier\"."},
+  {t:"see",x:"Un tableau qui constate que l'US est trop vague, et des <b>questions</b> au lieu d'inventions."},
+  {t:"why",x:"Même US, même IA qu'à l'étape précédente : seul le cadre a changé."}]},
+ {t:"Tester sur l'US correcte",b:[
+  {t:"p",x:"Nouveau chat, même prompt, avec l'<b>US-{n}05</b> (la correcte)."},
+  {t:"see",x:"Copilot dit qu'elle est globalement correcte."},
+  {t:"p",x:"S'il propose de grosses modifications, envoyez :"},
+  {t:"copy",l:"À COPIER",x:"Rappel : une US déjà correcte ne doit pas être modifiée. Si tu penses qu'elle est correcte, dis-le simplement et n'invente aucune amélioration."},
+  {t:"why",x:"Un Copilot non cadré « améliore » même ce qui est bon. Cette règle ira dans les instructions (Atelier 1)."}]},
+ {t:"Critiquer au lieu de tout relancer",b:[
+  {t:"table",h:["Problème constaté","Phrase à écrire"],r:[["Réponse trop longue","« Résume en 5 lignes maximum. »"],["Affirmation sans source","« Sur quelle règle RM-xx ou quel fichier t'appuies-tu ? »"],["Invention","« Tu as inventé ce point. Retire-le et transforme-le en question ouverte. »"],["Décision à la place du métier","« Ne décide pas. Présente les options et laisse-moi trancher. »"]]},
+  {t:"p",x:"Entraînement : demandez les défauts de l'US contradictoire de votre lot avec le prompt à 6 blocs, puis utilisez une phrase du tableau. Copilot a-t-il cité la bonne règle <code>RM-xx</code> tout seul ?"},
+  {t:"check",id:"c1",x:["J'ai vu la différence entre « Améliore » et un prompt à 6 blocs","Je sais nommer les 6 blocs : contexte, sources, interdits, tâche, exigences, format","J'ai vu Copilot poser des questions plutôt qu'inventer","Je sais critiquer une réponse au lieu de tout relancer"]}]}
+ ]},
+/* ====================================================== 2 */
+{icon:"🧭",title:"Atelier 1 — Planifier",sub:"Instructions puis PLAN.md",
+ goal:"Vous donnez à Copilot ses règles permanentes (instructions), puis vous construisez avec lui un plan validé avant de lui laisser toucher quoi que ce soit.",
+ steps:[
+ {t:"Comprendre ce que vous allez construire",b:[
+  {t:"table",h:["Ordre","Livrable","Analogie","Rôle"],r:[["1","<code>.github/copilot-instructions.md</code>","Règlement intérieur","Règles lues par Copilot dans <b>toutes</b> vos conversations"],["2","<code>PLAN.md</code>","Contrat de mission","Ce qu'on va faire, ce qu'on ne décidera pas, comment on jugera le résultat"]]},
+  {t:"why",x:"On ne fait <b>pas</b> faire le travail à Copilot tout de suite. D'abord le cadre (instructions), ensuite la feuille de route (plan). Un cadre vague donne un travail vague."}]},
+ {t:"Ouvrir le fichier d'instructions",b:[
+  {t:"ol",x:["Explorateur : dépliez le dossier <code>.github</code> (le point au début du nom est normal).","Cliquez sur <code>copilot-instructions.md</code>.","Vous voyez un squelette rempli de <code>TODO</code> : c'est ce que vous allez compléter."]},
+  {t:"warn",x:"Dossier <code>.github</code> introuvable ? Vérifiez que vous avez ouvert <code>formation-harness</code> et non <code>begin</code> ou un sous-dossier."}]},
+ {t:"Remplacer le contenu par les instructions complètes",b:[
+  {t:"ol",x:["Cliquez dans le fichier ouvert au centre.","<kbd>Ctrl</kbd>+<kbd>A</kbd> (tout sélectionner), puis <kbd>Suppr</kbd>.","Cliquez sur <code>Copier</code> ci-dessous, puis <kbd>Ctrl</kbd>+<kbd>V</kbd> dans le fichier.","<kbd>Ctrl</kbd>+<kbd>S</kbd> pour enregistrer."]},
+  {t:"copy",l:"À COPIER dans .github/copilot-instructions.md",x:"# Instructions communes — SprintDesk\n\n## Références\n- Contexte produit : ¤sprintdesk/contexte/produit.md¤.\n- Règles métier validées (RM-xx) et décisions non prises (ND-xx) : ¤sprintdesk/contexte/regles-metier.md¤.\n- US d'origine : ¤sprintdesk/backlog/entree/¤ (ne jamais les modifier).\n- Production : ¤sprintdesk/backlog/sortie/¤ et ¤sprintdesk/resultats/¤.\n\n## Règles\n- Ne jamais inventer de règle ou de décision métier absente des fichiers de contexte.\n- Toute décision non prise (ND-xx) devient une question ouverte, jamais une hypothèse cachée.\n- Conserver l'identifiant et la traçabilité de chaque US (identifiant d'origine, lien vers l'US source).\n- Distinguer explicitement : faits (issus des fichiers), propositions (de Copilot), questions ouvertes (à trancher par l'humain).\n- Si une US est déjà correcte, la laisser inchangée et le dire.\n- Ne jamais publier vers un service externe sans validation humaine.\n- En fin de réponse, indiquer les contrôles réellement exécutés (et seulement ceux-là).\n- En cas de doute, de règle manquante ou de contradiction entre deux sources : s'arrêter et poser la question.\n\n## Où trouver les détails\n- Format d'une US : skill ¤formater-us¤.\n- Méthode de revue : skill ¤revue-agilite¤."},
+  {t:"see",x:"Un fichier de 25 lignes environ, sans aucun <code>TODO</code>, et l'onglet sans point <code>●</code>."},
+  {t:"why",x:"Chaque règle répond à un défaut vu au guide précédent : inventions (règle 1-2), « amélioration » d'une US correcte (règle 5), absence de traces (règle 7), blocage plutôt que devinette (règle 8)."}]},
+ {t:"Vérifier que Copilot applique ces règles",b:[
+  {t:"ol",x:["Nouveau chat (<code>+</code>), mode <code>Ask</code>.","Collez la question ci-dessous."]},
+  {t:"copy",l:"À COPIER dans le chat",x:"Quelles règles dois-tu respecter sur ce projet ? Réponds en une liste courte."},
+  {t:"see",x:"Une liste qui reprend : ne pas inventer, tracer les US, distinguer faits/propositions/questions, laisser une US correcte inchangée, ne pas publier sans validation."},
+  {t:"warn",x:"Copilot répond de façon générique ? Cliquez sur la ligne « Used 1 reference » (ou « Références utilisées ») sous la réponse : <code>copilot-instructions.md</code> doit y figurer. Sinon, vérifiez que le fichier est enregistré et bien dans <code>.github</code>."}]},
+ {t:"Passer en mode Plan",b:[
+  {t:"ol",x:["Nouveau chat (<code>+</code>).","Cliquez sur le sélecteur de mode (en bas à gauche de la zone de saisie).","Choisissez <code>Plan</code>."]},
+  {t:"why",x:"En mode Plan, Copilot ne modifie rien : il vous pose des questions et propose. C'est exactement ce qu'on veut avant d'agir."},
+  {t:"warn",x:"Pas de mode <code>Plan</code> dans la liste ? Utilisez <code>Ask</code> : le prompt de l'étape suivante fonctionne pareil."}]},
+ {t:"Envoyer le prompt de plan",b:[
+  {t:"p",x:"Collez le prompt ci-dessous. Il contient un modèle de prompt complet : contexte, sources, interdits, tâche, exigences, format."},
+  {t:"copy",l:"À COPIER dans le chat (mode Plan)",x:"Nous préparons le backlog du projet SprintDesk, lot {n}.\n\nLis :\n- sprintdesk/contexte/produit.md ;\n- sprintdesk/contexte/regles-metier.md ;\n- les cinq user stories de sprintdesk/backlog/entree/lot{n}/.\n\nNe réécris pas encore les user stories.\nNe modifie pas le code de l'application.\nNe publie rien.\n\nPrépare un plan de traitement du backlog.\n\nAvant de finaliser ce plan :\n1. Identifie les ambiguïtés, contradictions et informations manquantes.\n2. Pose les questions nécessaires aux décisions métier.\n3. Propose le format des user stories attendues.\n4. Définis des critères de qualité vérifiables.\n5. Propose les étapes, les rôles des agents et leurs livrables.\n6. Identifie les points de validation humaine.\n7. Prévois comment comparer les résultats aux attentes.\n\nDistingue les faits fournis, les propositions et les décisions à prendre."},
+  {t:"see",x:"Copilot lit les fichiers (vous voyez leurs noms défiler), puis vous pose des questions et/ou propose un premier plan."}]},
+ {t:"Répondre aux questions de Copilot",b:[
+  {t:"p",x:"Répondre à ces questions <b>est</b> le travail de cadrage. Appliquez cette grille à chaque question :"},
+  {t:"table",h:["Si la question porte sur...","Votre réponse"],r:[["Une règle <b>validée</b> (RM-xx)","Confirmez-la : « Oui, c'est RM-xx »"],["Une décision <b>non prise</b> (ND-xx)","<b>Ne tranchez pas.</b> « Question ouverte, à faire trancher par le référent produit »"],["Le format des US","Prenez le modèle : Titre, Besoin (En tant que / Je souhaite / Afin de), Règles métier, Critères d'acceptation (Étant donné / Quand / Alors), Dépendances, Questions ouvertes"],["Qui valide","« Un humain valide le diagnostic avant réécriture, et chaque US avant dépôt dans sortie/ »"]]},
+  {t:"copy",l:"Réponse type à utiliser si vous hésitez",x:"Pour toute décision non prise (ND-xx), ne propose pas de valeur par défaut : liste-la en \"Questions ouvertes\" avec la mention \"à trancher par le référent produit\". Le format cible des US est : Titre, Besoin (En tant que / Je souhaite / Afin de), Règles métier, Critères d'acceptation (Étant donné / Quand / Alors), Dépendances, Questions ouvertes. Un humain valide le diagnostic avant toute réécriture, puis chaque US avant dépôt dans backlog/sortie/."},
+  {t:"no",x:"Ne répondez jamais à une question ND-xx par une invention « raisonnable » (ex : « 30 jours »). C'est précisément ce que l'atelier interdit."}]},
+ {t:"Affiner le plan par la critique",b:[
+  {t:"p",x:"Le premier plan est rarement bon. Envoyez ces trois critiques, <b>une par message</b>, en lisant la réponse entre chaque."},
+  {t:"copy",l:"Critique 1 — critères vérifiables",x:"Chaque critère de réussite doit pouvoir être répondu par oui ou non. Réécris ceux qui sont flous (par exemple \"US de qualité\")."},
+  {t:"copy",l:"Critique 2 — séparer diagnostic et réécriture",x:"Sépare clairement les étapes : 1. diagnostic, 2. validation humaine, 3. réécriture, 4. contrôle contre les RM-xx, 5. synthèse. Aucune étape ne doit mélanger diagnostic et réécriture."},
+  {t:"copy",l:"Critique 3 — conditions d'arrêt",x:"Ajoute une section \"Limites et conditions d'arrêt\" : l'agent s'arrête et demande si une règle manque, si deux sources se contredisent, ou si une décision métier est requise."}]},
+ {t:"Enregistrer le plan dans PLAN.md",b:[
+  {t:"p",x:"Jusqu'ici, le plan n'existe que dans le chat. On le sauvegarde dans un fichier."},
+  {t:"ol",x:["Nouveau passage au mode <code>Agent</code> (sélecteur de mode).","<b>Gardez la même conversation</b> (ne cliquez pas sur <code>+</code>) pour que Copilot retrouve le plan.","Collez le prompt ci-dessous."]},
+  {t:"copy",l:"À COPIER dans le chat (mode Agent)",x:"Crée le fichier PLAN.md à la racine du projet avec le plan que nous venons de valider. Utilise exactement ces 12 sections : 1. Objectif et périmètre, 2. Sources, 3. Résultats attendus, 4. Règles métier validées, 5. Questions ouvertes, 6. Format cible d'une US, 7. Étapes, 8. Rôles des agents, 9. Skills, 10. Contrôles et validations humaines, 11. Critères de réussite, 12. Limites et conditions d'arrêt. Ne crée ni ne modifie aucun autre fichier."},
+  {t:"ol",x:["Relisez le fichier créé, puis cliquez <code>Conserver</code>.","<kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"see",x:"Un fichier <code>PLAN.md</code> à la racine de l'explorateur, avec 12 titres numérotés."}]},
+ {t:"Contrôler votre plan",b:[
+  {t:"p",x:"Relisez <code>PLAN.md</code> avec cette liste. Si une case reste vide, redemandez à Copilot de corriger <b>ce point précis</b>."},
+  {t:"check",id:"c2",x:["Je sais dire ce que chaque agent <b>fera</b> et ce qu'il <b>ne décidera pas</b>","Chaque ND-xx rencontrée est une question ouverte, pas une hypothèse cachée","Les critères de réussite sont vérifiables (oui/non)","Un humain valide avant toute décision métier et toute publication","Une condition d'arrêt est définie","Le plan est lisible en 10 minutes (pas un roman)"]},
+  {t:"why",x:"<code>PLAN.md</code> est votre contrat : les agents de l'Atelier 2 vont le suivre, et c'est lui qui servira à juger leur travail."}]}
+ ]},
+/* ====================================================== 3 */
+{icon:"🧑‍💼",title:"Atelier 2 — Agents",sub:"Éditer puis créer des rôles",
+ goal:"Vous transformez Copilot en équipe de rôles distincts (une « fiche de poste » par agent), puis vous les faites travailler avec validation humaine.",
+ steps:[
+ {t:"Comprendre ce qu'est un agent",b:[
+  {t:"p",x:"Un agent est une <b>fiche de poste</b> : un fichier texte que Copilot lit avant de travailler. Sans fiche, il improvise ; avec, il connaît sa mission, ses limites et sa sortie."},
+  {t:"mock",x:"---\ndescription: \"Phrase qui dit QUAND utiliser cet agent\"\ntools: ['read', 'search', 'edit']\n---\n# Nom de l'agent\n\n## Mission      <- ce qu'il fait\n## Interdits     <- ce qu'il ne décide pas\n## Sortie        <- ce qu'il rend, et où"},
+  {t:"table",h:["Partie","Rôle"],r:[["Entre les deux <code>---</code> (<b>en-tête</b>)","Réglages techniques. <code>description</code> = résumé affiché dans la liste. <code>tools</code> = outils autorisés"],["<code>read</code>","Lire des fichiers"],["<code>search</code>","Chercher dans le projet"],["<code>edit</code>","Créer / modifier des fichiers"],["Sous l'en-tête","Texte libre : mission, interdits, sortie"]]},
+  {t:"warn",x:"Respectez les <code>---</code> et les guillemets de l'en-tête à la lettre : une erreur et l'agent n'apparaît pas dans la liste."},
+  {t:"table",h:["Agent","Rôle","Outils","Pourquoi séparés"],r:[["Reviewer","Constate (diagnostic)","read, search, edit (écrit uniquement revue.md)","Il ne réécrit pas"],["Rédacteur","Réécrit selon la revue validée","read, search, edit","Il ne tranche aucune décision métier"],["Contrôleur (à créer)","Vérifie le résultat","read, search (lecture seule)","Il ne se valide pas lui-même"]]},
+  {t:"why",x:"Un seul agent qui juge <b>et</b> corrige se valide lui-même. Séparer les rôles, c'est comme séparer l'auditeur et le comptable."}]},
+ {t:"Éditer l'agent Reviewer",b:[
+  {t:"ol",x:["Explorateur : <code>.github</code> > <code>agents</code> > cliquez sur <code>reviewer-backlog.agent.md</code>.","Vous voyez un squelette avec des <code>TODO</code>.","<kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, puis collez le contenu ci-dessous.","<kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans reviewer-backlog.agent.md",x:"---\ndescription: \"Relit des user stories SprintDesk et produit une revue sans les réécrire. Utiliser pour diagnostiquer défauts, contradictions et dépendances.\"\ntools: ['read', 'search', 'edit']\n---\n# Reviewer backlog\n\n## Mission\n- Lire le contexte (sprintdesk/contexte/produit.md et regles-metier.md), le fichier PLAN.md et les US d'origine du lot dans sprintdesk/backlog/entree/.\n- Appliquer la skill ¤revue-agilite¤ à chaque US.\n- Identifier défauts, contradictions et dépendances, en citant la règle concernée (RM-xx ou ND-xx).\n- Une US correcte reçoit la mention \"Aucune action\" : ne pas lui chercher de défaut.\n\n## Interdits\n- Ne pas réécrire les US et ne pas proposer de nouvelle version complète.\n- Ne pas inventer de règle et ne trancher aucune décision non prise (ND-xx) : la formuler en question métier.\n- Ne modifier aucun fichier sauf sprintdesk/resultats/revue.md. Ne jamais toucher sprintdesk/backlog/entree/.\n\n## Sortie attendue (une entrée par constat)\n¤¤¤\nUS concernée :\nConstat :\nRègle ou critère concerné :\nGravité : bloquant / recommandation\nQuestion métier éventuelle :\nRecommandation :\n¤¤¤\nÉcrire le résultat dans sprintdesk/resultats/revue.md.\n\n## Fin de réponse\nIndiquer les contrôles réellement exécutés et la liste des questions ouvertes à faire trancher."},
+  {t:"see",x:"Fichier sans <code>TODO</code>, onglet sans <code>●</code>."},
+  {t:"why",x:"<b>Mission</b> = ce qu'il fait. <b>Interdits</b> = ce qui l'empêche d'inventer ou de réécrire. <b>Sortie</b> = un format fixe pour que vous puissiez comparer les constats."}]},
+ {t:"Éditer l'agent Rédacteur",b:[
+  {t:"ol",x:["Dans <code>.github/agents</code>, cliquez sur <code>redacteur-backlog.agent.md</code>.","<kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans redacteur-backlog.agent.md",x:"---\ndescription: \"Réécrit des user stories SprintDesk à partir de la revue et des décisions validées. Utiliser après la revue.\"\ntools: ['read', 'search', 'edit']\n---\n# Rédacteur backlog\n\n## Mission\n- Réécrire les US à partir de sprintdesk/resultats/revue.md et des décisions validées par l'humain dans la conversation.\n- Appliquer la skill ¤formater-us¤ (format cible et règles de rédaction).\n- Laisser toute décision non prise (ND-xx) dans la section \"Questions ouvertes\" de l'US.\n- Une US que la revue juge correcte (\"Aucune action\") est recopiée à l'identique, sans retouche.\n\n## Interdits\n- Ne jamais inventer de règle, de valeur, de format ou de seuil.\n- Ne jamais modifier sprintdesk/backlog/entree/.\n- Ne pas commencer sans revue validée : si sprintdesk/resultats/revue.md est absent, s'arrêter et le dire.\n- Ne jamais publier vers un service externe.\n\n## Sorties\n- Une US par fichier dans sprintdesk/backlog/sortie/lot{n}/US-XXX.md. Une US trop volumineuse peut produire plusieurs fichiers, avec identifiants dérivés (ex. US-{n}02-A, US-{n}02-B) et un lien vers l'US d'origine.\n- sprintdesk/resultats/synthese-actions.md : un tableau listant, pour chaque US, le statut créé / modifié / inchangé / bloqué.\n\n## Fin de réponse\nIndiquer les contrôles réellement exécutés."},
+  {t:"why",x:"Le Rédacteur ne \"juge\" pas : il exécute la revue. Sa règle clé : tout ce qui n'est pas décidé reste une <b>question ouverte</b>."}]},
+ {t:"Créer un nouvel agent : le Contrôleur",b:[
+  {t:"p",x:"Jusqu'ici vous avez <b>édité</b> des squelettes. Vous allez maintenant en <b>créer</b> un depuis zéro."},
+  {t:"ol",x:[
+   "Appuyez sur <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>P</kbd> : la <b>palette de commandes</b> s'ouvre en haut.",
+   "Tapez <code>Chat: New Custom Agent</code> puis <kbd>Entrée</kbd> sur la ligne qui apparaît.",
+   "On vous demande où l'enregistrer : choisissez <code>.github/agents</code>.",
+   "Nom du fichier : tapez <code>controleur-backlog</code> puis <kbd>Entrée</kbd>.",
+   "Un fichier <code>controleur-backlog.agent.md</code> s'ouvre avec un modèle. <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez le contenu ci-dessous, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"warn",x:"Commande introuvable ? Méthode manuelle : clic droit sur le dossier <code>.github/agents</code> > <code>Nouveau fichier</code> > nommez-le exactement <code>controleur-backlog.agent.md</code>, puis collez le contenu."},
+  {t:"copy",l:"À COPIER dans controleur-backlog.agent.md",x:"---\ndescription: \"Contrôle les user stories SprintDesk réécrites par rapport aux règles métier et au plan, sans rien modifier. Utiliser après la réécriture.\"\ntools: ['read', 'search']\n---\n# Contrôleur backlog\n\n## Mission\n- Comparer chaque US de sprintdesk/backlog/sortie/ à l'US d'origine (sprintdesk/backlog/entree/), à regles-metier.md et aux critères de réussite de PLAN.md.\n- Vérifier, pour chaque US : identifiant conservé, source citée, aucune règle inventée, au moins 2 critères d'acceptation vérifiables, ND-xx présentes en questions ouvertes.\n- Vérifier qu'une US jugée correcte est restée identique.\n\n## Interdits\n- Ne modifier aucun fichier (lecture seule).\n- Ne pas corriger : signaler seulement.\n\n## Sortie attendue\nUn tableau dans la conversation : US | Critère vérifié | Résultat (OK / KO) | Preuve (citation du fichier) | Action proposée.\nTerminer par : \"Contrôles réellement exécutés\" et la liste des points à faire trancher par l'humain."},
+  {t:"why",x:"Cet agent n'a que <code>read</code> et <code>search</code> : il lui est <b>techniquement impossible</b> de modifier un fichier. La contrainte est dans l'outil, pas seulement dans la consigne."}]},
+ {t:"Vérifier que vos agents sont visibles",b:[
+  {t:"ol",x:["Ouvrez le chat, nouveau chat (<code>+</code>).","Cliquez sur le sélecteur de mode (en bas à gauche).","Dans la liste, cherchez : <code>reviewer-backlog</code>, <code>redacteur-backlog</code>, <code>controleur-backlog</code>."]},
+  {t:"see",x:"Les 3 agents dans la liste, sous <code>Agent</code>, <code>Ask</code>, <code>Plan</code>."},
+  {t:"warn",x:"Agent absent ? (1) Le fichier est-il bien dans <code>.github/agents</code> ? (2) Se termine-t-il par <code>.agent.md</code> ? (3) L'en-tête commence-t-il par <code>---</code> sur la 1<sup>re</sup> ligne ? (4) Sinon : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>P</kbd>, tapez <code>Developer: Reload Window</code>, <kbd>Entrée</kbd>."}]},
+ {t:"Lancer le Reviewer",b:[
+  {t:"ol",x:["Nouveau chat (<code>+</code>).","Sélecteur de mode : choisissez <code>reviewer-backlog</code>.","Collez le prompt ci-dessous, puis <kbd>Entrée</kbd>."]},
+  {t:"copy",l:"À COPIER (mode reviewer-backlog)",x:"Fais la revue des cinq user stories de sprintdesk/backlog/entree/lot{n}/ en suivant PLAN.md. Écris le résultat dans sprintdesk/resultats/revue.md. Ne réécris aucune US."},
+  {t:"ol",x:["Si Copilot demande l'autorisation de créer/modifier un fichier, lisez le nom (<code>revue.md</code>) puis cliquez <code>Autoriser</code> / <code>Continue</code>.","Dans l'explorateur, ouvrez <code>sprintdesk/resultats/revue.md</code>."]},
+  {t:"see",x:"Un constat par défaut, avec règle concernée et gravité ; l'US correcte marquée « Aucune action »."}]},
+ {t:"Valider le diagnostic (étape humaine)",b:[
+  {t:"p",x:"Étape <b>obligatoire</b> avant la réécriture : l'humain relit et décide. Lisez <code>revue.md</code> avec ces questions :"},
+  {t:"check",id:"c3a",x:["Chaque constat cite une règle RM-xx ou ND-xx exacte","L'US contradictoire est bien identifiée, avec la règle contredite","L'US correcte est bien marquée « Aucune action »","Aucune règle n'a été inventée dans les recommandations","Les questions métier sont des <b>questions</b>, pas des réponses déguisées"]},
+  {t:"p",x:"S'il y a un défaut, corrigez par la critique (même chat, même agent) :"},
+  {t:"copy",l:"Exemple de correction",x:"Ton constat sur l'US concernée cite une règle qui n'existe pas dans regles-metier.md. Retire-le ou reformule-le en question ouverte, puis mets à jour sprintdesk/resultats/revue.md."},
+  {t:"p",x:"Pour les <b>décisions métier</b> (ND-xx), notez-les : vous les laisserez en questions ouvertes à l'étape suivante. Ne tranchez rien vous-même."}]},
+ {t:"Lancer le Rédacteur",b:[
+  {t:"ol",x:["Nouveau chat (<code>+</code>).","Sélecteur de mode : <code>redacteur-backlog</code>.","Collez le prompt ci-dessous."]},
+  {t:"copy",l:"À COPIER (mode redacteur-backlog)",x:"La revue sprintdesk/resultats/revue.md est validée. Réécris les cinq US du lot {n} dans sprintdesk/backlog/sortie/lot{n}/, une US par fichier. Laisse toutes les décisions non prises (ND-xx) en questions ouvertes, sans les trancher. Recopie à l'identique l'US que la revue juge correcte. Produis aussi sprintdesk/resultats/synthese-actions.md."},
+  {t:"ol",x:["Autorisez les créations de fichiers après lecture du nom.","Ouvrez chaque fichier de <code>sprintdesk/backlog/sortie/lot{n}/</code> et relisez.","Seulement si tout est bon : <code>Conserver</code>, puis <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"see",x:"Des US au format Besoin / Règles métier / Critères Étant donné-Quand-Alors / Dépendances / Questions ouvertes."}]},
+ {t:"Lancer le Contrôleur et conclure",b:[
+  {t:"ol",x:["Nouveau chat (<code>+</code>), mode <code>controleur-backlog</code>.","Collez le prompt."]},
+  {t:"copy",l:"À COPIER (mode controleur-backlog)",x:"Contrôle les US de sprintdesk/backlog/sortie/lot{n}/ par rapport à celles de sprintdesk/backlog/entree/lot{n}/, à regles-metier.md et aux critères de réussite de PLAN.md. Donne le tableau de contrôle."},
+  {t:"p",x:"Pour chaque ligne <code>KO</code>, retournez voir le Rédacteur avec le correctif précis (mêmes gestes que précédemment)."},
+  {t:"check",id:"c3b",x:["Trois agents visibles dans le sélecteur","<code>revue.md</code> validée par un humain avant réécriture","5 US traitées dans <code>backlog/sortie/lot{n}/</code>, identifiants conservés","L'US correcte est restée identique","Aucune ND-xx n'a été tranchée : toutes sont en questions ouvertes","Le contrôleur n'a plus de <code>KO</code> (ou les <code>KO</code> restants sont expliqués)"]}]}
+ ]},
+/* ====================================================== 4 */
+{icon:"🧰",title:"Atelier 3 — Skills",sub:"Savoir-faire réutilisables",
+ goal:"Vous donnez aux agents des procédures précises (format d'US, méthode de revue), puis vous créez votre propre skill.",
+ steps:[
+ {t:"Comprendre ce qu'est une skill",b:[
+  {t:"table",h:["","Agent","Skill"],r:[["Répond à","<b>Qui</b> fait ?","<b>Comment</b> faire ?"],["Analogie","Fiche de poste","Mode d'emploi / procédure"],["Fichier","<code>.github/agents/nom.agent.md</code>","<code>.github/skills/nom/SKILL.md</code>"],["Chargée","Quand vous choisissez l'agent","Quand la tâche correspond à sa <code>description</code>"],["Partagée ?","Non","Oui : plusieurs agents peuvent s'en servir"]]},
+  {t:"mock",x:".github/skills/\n  formater-us/\n    SKILL.md        <- la procédure\n    modele-us.md    <- un fichier annexe (modèle)"},
+  {t:"warn",x:"Deux règles qui piègent : (1) le <code>name</code> dans l'en-tête doit être <b>identique au nom du dossier</b> ; (2) la <code>description</code> est ce qui permet à Copilot de choisir la skill : elle doit dire <b>quand</b> l'utiliser."}]},
+ {t:"Compléter la skill formater-us",b:[
+  {t:"ol",x:["Explorateur : <code>.github</code> > <code>skills</code> > <code>formater-us</code>.","Ouvrez d'abord <code>modele-us.md</code> et lisez le modèle cible (c'est lui que la skill va faire respecter).","Ouvrez <code>SKILL.md</code> : <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez le contenu ci-dessous, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans .github/skills/formater-us/SKILL.md",x:"---\nname: formater-us\ndescription: \"Formate une user story SprintDesk selon le modèle cible : champs obligatoires, critères d'acceptation Given/When/Then, questions ouvertes. Utiliser pour réécrire ou contrôler le format d'une US.\"\n---\n# Skill formater-us\n\n## Quand l'utiliser\nPour réécrire une US au format cible, ou vérifier qu'une US respecte ce format.\n\n## Procédure\n1. Utiliser le modèle de ¤modele-us.md¤ : Titre, Besoin (En tant que / Je souhaite / Afin de), Règles métier, Critères d'acceptation, Dépendances, Questions ouvertes. Toutes les sections sont présentes, même vides (\"Aucune\").\n2. Conserver l'identifiant d'origine dans le titre (US-XXX). En cas de découpage, dériver les identifiants (US-XXX-A, US-XXX-B) et citer l'US d'origine.\n3. Rédiger les critères d'acceptation sous la forme \"Étant donné ..., quand ..., alors ...\". Un critère = un seul comportement, observable et vérifiable (oui/non). Au moins 2 critères par US.\n4. Citer en \"Règles métier\" uniquement des règles qui existent dans regles-metier.md (RM-xx).\n5. Information manquante ou décision non prise (ND-xx) : l'écrire dans \"Questions ouvertes\". Ne jamais inventer une valeur, un seuil, un format ou une règle.\n6. US déjà conforme : la recopier à l'identique et le signaler. Ne rien \"améliorer\".\n\n## Exemple conforme / contre-exemple\n- Conforme : sprintdesk/backlog/entree/lot1/US-105.md (toutes sections, critères Étant donné/Quand/Alors, RM-01 citée, questions ouvertes \"Aucune\").\n- Contre-exemple : sprintdesk/backlog/entree/lot1/US-104.md (aucun critère d'acceptation, aucune règle, aucune section)."},
+  {t:"why",x:"L'étape 5 est le garde-fou central : l'information manquante devient une question, jamais une invention. L'étape 6 protège l'US déjà correcte."}]},
+ {t:"Compléter la skill revue-agilite",b:[
+  {t:"ol",x:["Dans <code>.github/skills/revue-agilite</code>, ouvrez <code>checklist.md</code> (7 questions de revue) pour la lire.","Ouvrez <code>SKILL.md</code> : <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans .github/skills/revue-agilite/SKILL.md",x:"---\nname: revue-agilite\ndescription: \"Revue agile d'une user story SprintDesk : valeur, périmètre, testabilité, règles inventées, dépendances, découpage. Utiliser pour diagnostiquer une US avant réécriture.\"\n---\n# Skill revue-agilite\n\n## Procédure\nAppliquer ¤checklist.md¤ à chaque US, puis produire des observations argumentées (pas seulement une note ni un oui/non).\n\n## Règles\n- Distinguer ce qui est bloquant (la US ne peut pas être réalisée ou testée en l'état) de ce qui est une recommandation (amélioration utile mais non bloquante).\n- Citer pour chaque observation la règle ou le critère concerné (RM-xx, ND-xx, ou la ligne de la checklist) et la phrase de l'US qui pose problème.\n- Repérer une contradiction avec regles-metier.md en citant la règle validée contredite.\n- Une décision manquante se formule en question métier à faire trancher, jamais en solution.\n- Une US correcte reçoit \"Aucune action\" : ne pas inventer de défaut pour justifier la revue.\n- Ne jamais réécrire l'US : la revue diagnostique seulement."},
+  {t:"why",x:"La skill transforme la checklist en méthode : exiger une <b>preuve</b> (la phrase fautive) rend chaque constat vérifiable par vous."}]},
+ {t:"Créer une nouvelle skill : verifier-regles-metier",b:[
+  {t:"p",x:"Comme pour l'agent, vous <b>créez</b> maintenant depuis zéro. Cette skill décrit comment vérifier une US contre les règles métier."},
+  {t:"ol",x:[
+   "Explorateur : clic droit sur le dossier <code>.github/skills</code> > <code>Nouveau dossier</code> > tapez <code>verifier-regles-metier</code> > <kbd>Entrée</kbd>.",
+   "Clic droit sur ce nouveau dossier > <code>Nouveau fichier</code> > tapez exactement <code>SKILL.md</code> (majuscules) > <kbd>Entrée</kbd>.",
+   "Le fichier s'ouvre vide. Collez le contenu ci-dessous, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans .github/skills/verifier-regles-metier/SKILL.md",x:"---\nname: verifier-regles-metier\ndescription: \"Vérifie qu'une user story SprintDesk respecte les règles métier validées (RM-xx) et ne tranche aucune décision non prise (ND-xx). Utiliser pour contrôler une US réécrite avant validation.\"\n---\n# Skill verifier-regles-metier\n\n## Quand l'utiliser\nAprès la réécriture d'une US, ou pour contrôler une US avant de la valider.\n\n## Procédure\n1. Lire sprintdesk/contexte/regles-metier.md.\n2. Relever dans l'US chaque affirmation qui ressemble à une règle (valeur, statut, délai, droit, format, notification...).\n3. Pour chacune : trouver la RM-xx correspondante. Si aucune ne correspond, regarder si un ND-xx couvre le sujet.\n4. Classer le résultat :\n   - Conforme : la RM-xx est citée et respectée.\n   - Contradiction : l'US contredit une RM-xx (citer les deux).\n   - Invention : aucune RM-xx ni ND-xx ne couvre cette affirmation.\n   - Décision tranchée : l'US répond à un sujet ND-xx qui doit rester question ouverte.\n5. Restituer un tableau : Affirmation de l'US | Règle liée | Résultat | Action proposée.\n\n## Règles\n- Ne jamais corriger l'US : signaler seulement.\n- Ne jamais combler un manque par une hypothèse : le proposer en question ouverte."},
+  {t:"see",x:"Dans l'explorateur : <code>.github/skills/verifier-regles-metier/SKILL.md</code>, à côté des deux autres skills."}]},
+ {t:"Tester vos skills",b:[
+  {t:"p",x:"Une skill s'active toute seule quand la demande correspond à sa <code>description</code>. Pour le vérifier :"},
+  {t:"ol",x:["Nouveau chat (<code>+</code>), mode <code>Agent</code>.","Collez le prompt ci-dessous."]},
+  {t:"copy",l:"À COPIER (mode Agent)",x:"Sans modifier aucun fichier : contrôle l'une des US de sprintdesk/backlog/sortie/lot{n}/ avec la skill verifier-regles-metier, et dis-moi quelles skills tu as utilisées."},
+  {t:"see",x:"Un tableau Affirmation | Règle liée | Résultat | Action, et la mention de la skill utilisée. Sous la réponse, la liste des références doit inclure <code>SKILL.md</code>."},
+  {t:"warn",x:"La skill n'est pas utilisée ? (1) Le <code>name</code> est-il identique au nom du dossier ? (2) Le fichier s'appelle-t-il exactement <code>SKILL.md</code> ? (3) La <code>description</code> contient-elle des mots de votre demande ? Sinon, nommez-la explicitement dans le prompt, comme ci-dessus."},
+  {t:"p",x:"Bonus : refaites tourner le Rédacteur sur une US avec la skill <code>formater-us</code> complétée, et comparez avec votre première version."}]},
+ {t:"Bilan final",b:[
+  {t:"check",id:"c4",x:["<code>copilot-instructions.md</code> complété (sans TODO)","<code>PLAN.md</code> créé et relu","Agents : reviewer et rédacteur complétés, contrôleur créé","Skills : formater-us et revue-agilite complétées, verifier-regles-metier créée","5 US traitées avec traçabilité et questions ouvertes visibles","J'ai indiqué à l'équipe les contrôles que j'ai réellement exécutés"]},
+  {t:"why",x:"Vous avez construit un <b>harness</b> : instructions (règles permanentes) + plan (contrat) + agents (rôles) + skills (savoir-faire) + validation humaine. Copilot travaille désormais dans un cadre, et non plus au hasard."},
+  {t:"table",h:["Brique","Fichier","Question à laquelle elle répond"],r:[["Instructions","<code>.github/copilot-instructions.md</code>","Quelles règles sont <b>toujours</b> vraies ?"],["Plan","<code>PLAN.md</code>","Que fait-on, et comment jugera-t-on ?"],["Agent","<code>.github/agents/*.agent.md</code>","<b>Qui</b> fait quoi ?"],["Skill","<code>.github/skills/*/SKILL.md</code>","<b>Comment</b> le faire ?"]]}]}
+ ]},
+/* ====================================================== 5 */
+{icon:"🆘",title:"Aide",sub:"Glossaire et dépannage",
+ goal:"Un mot inconnu ? Un blocage ? C'est ici.",
+ steps:[
+ {t:"Glossaire",b:[
+  {t:"table",h:["Mot","Signification simple"],r:[
+   ["Prompt","Le message que vous écrivez à Copilot"],
+   ["Instructions","Règles que Copilot lit dans toutes vos conversations"],
+   ["Agent","Rôle défini par une fiche de poste (fichier <code>.agent.md</code>)"],
+   ["Skill","Procédure réutilisable (fichier <code>SKILL.md</code>)"],
+   ["Harness","L'ensemble du cadre : instructions + plan + agents + skills + validations"],
+   ["US (user story)","Un besoin écrit du point de vue de l'utilisateur"],
+   ["Critère d'acceptation","Condition vérifiable (oui/non) pour dire que l'US est terminée"],
+   ["RM-xx","Règle métier validée"],
+   ["ND-xx","Décision non prise : ne pas la deviner"],
+   ["Markdown (.md)","Format de texte simple utilisé pour tous les fichiers de l'atelier"],
+   ["Palette de commandes","<kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>P</kbd> : barre pour lancer n'importe quelle commande par son nom"]]}]},
+ {t:"Dépannage",b:[
+  {t:"table",h:["Problème","Que faire"],r:[
+   ["Copilot invente des règles","Critiquez : « Tu as inventé ce point, retire-le et mets-le en question ouverte ». Vérifiez les instructions."],
+   ["Mon agent n'apparaît pas","Dossier <code>.github/agents</code>, nom en <code>.agent.md</code>, en-tête <code>---</code> en 1<sup>re</sup> ligne, puis <code>Developer: Reload Window</code>."],
+   ["Ma skill n'est pas utilisée","<code>name</code> = nom du dossier, fichier <code>SKILL.md</code>, description claire. Sinon, nommez la skill dans le prompt."],
+   ["Copilot a modifié un fichier que je ne voulais pas","Bouton <code>Annuler</code> du chat, ou <kbd>Ctrl</kbd>+<kbd>Z</kbd> dans le fichier."],
+   ["Je ne trouve pas <code>.github</code>","Vérifiez que le dossier ouvert est <code>formation-harness</code> (nom en haut de l'explorateur)."],
+   ["La réponse est incohérente","Nouveau chat (<code>+</code>) : une conversation trop longue brouille Copilot."],
+   ["Un fichier n'est pas pris en compte","Citez-le avec <kbd>#</kbd> et vérifiez qu'il est enregistré (pas de <code>●</code>)."],
+   ["Je suis perdu","Fermez le chat, rouvrez avec <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>I</kbd>, appelez l'animateur."]]}]}
+ ]}
+];
+
+/* ----------------------------------------------------------- objectifs + pour aller plus loin */
+const L={
+ ui:["Interface de VS Code (documentation officielle)","https://code.visualstudio.com/docs/getstarted/userinterface"],
+ trust:["Confiance dans l'espace de travail (Workspace Trust)","https://code.visualstudio.com/docs/editing/workspaces/workspace-trust"],
+ tips:["Astuces et raccourcis VS Code","https://code.visualstudio.com/docs/getstarted/tips-and-tricks"],
+ md:["Markdown : la syntaxe de base","https://www.markdownguide.org/basic-syntax/"],
+ mdvsc:["Markdown dans VS Code","https://code.visualstudio.com/docs/languages/markdown"],
+ over:["Copilot dans VS Code : vue d'ensemble","https://code.visualstudio.com/docs/copilot/overview"],
+ chat:["Utiliser Copilot Chat dans VS Code","https://code.visualstudio.com/docs/copilot/chat/copilot-chat"],
+ ctx:["Donner du contexte au chat (#fichier)","https://code.visualstudio.com/docs/copilot/chat/copilot-chat-context"],
+ agentmode:["Le mode Agent","https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode"],
+ edits:["Copilot Edits : relire, conserver, annuler","https://code.visualstudio.com/docs/copilot/chat/copilot-edits"],
+ plan:["Planifier avec Copilot","https://code.visualstudio.com/docs/copilot/chat/chat-planning"],
+ instr:["Instructions personnalisées","https://code.visualstudio.com/docs/copilot/customization/custom-instructions"],
+ agents:["Agents personnalisés","https://code.visualstudio.com/docs/copilot/customization/custom-agents"],
+ skills:["Agent Skills dans VS Code","https://code.visualstudio.com/docs/copilot/customization/agent-skills"],
+ skillsstd:["Le standard ouvert Agent Skills","https://agentskills.io"],
+ pe:["GitHub : l'art de bien prompter Copilot","https://docs.github.com/en/copilot/using-github-copilot/prompt-engineering-for-github-copilot"],
+ best:["GitHub : bonnes pratiques avec Copilot","https://docs.github.com/en/copilot/get-started/best-practices"],
+ us:["Atlassian : les user stories","https://www.atlassian.com/agile/project-management/user-stories"],
+ invest:["Le critère INVEST pour juger une US","https://agilealliance.org/glossary/invest/"],
+ gwt:["Given / When / Then (Martin Fowler)","https://martinfowler.com/bliki/GivenWhenThen.html"]
+};
+const EXTRA={
+"Ouvrir le dossier du projet":{o:"Avoir le dossier formation-harness ouvert dans VS Code, avec l'Explorateur visible à gauche.",c:"Un <b>espace de travail</b> (workspace) est le dossier que VS Code surveille. Copilot n'a accès qu'à lui. La <b>confiance</b> (Workspace Trust) protège votre poste : VS Code vous demande si vous connaissez l'origine du dossier avant d'autoriser certaines actions.",l:[L.ui,L.trust]},
+"Ouvrir et lire un fichier":{o:"Lire produit.md et regles-metier.md en aperçu mis en forme et distinguer RM-xx (validé) de ND-xx (non décidé).",c:"<b>Markdown</b> est un format de texte où <code>#</code> fait un titre et <code>|</code> un tableau. Il est lisible brut et se met en forme dans l'aperçu. Copilot lit très bien le Markdown, d'où son usage pour les règles, plans, agents et skills.",l:[L.md,L.mdvsc]},
+"Ouvrir Copilot Chat":{o:"Avoir le panneau Copilot Chat ouvert et connecté à votre compte GitHub.",c:"Copilot Chat est une <b>conversation</b> avec un modèle de langage (LLM). Il produit du texte probable à partir de ce que vous lui donnez : il n'a ni mémoire du projet ni connaissances sur votre entreprise, sauf ce que vous lui montrez.",l:[L.chat,L.over]},
+"Repérer les boutons du chat":{o:"Savoir choisir le bon mode (Ask, Plan, Agent) et démarrer une conversation neuve.",c:"Chaque mode donne un <b>niveau d'autonomie</b> différent. Ask et Plan lisent et conseillent ; Agent agit sur vos fichiers. Plus l'autonomie est grande, plus la relecture humaine compte. Une conversation neuve repart sans l'historique, utile quand Copilot s'embrouille.",l:[L.chat,L.agentmode]},
+"Votre premier message":{o:"Envoyer un premier prompt et recevoir une réponse de Copilot.",c:"Un <b>prompt</b> est l'instruction envoyée au modèle. Les modèles de langage ne sont pas déterministes : la même question peut donner deux formulations différentes. C'est normal, et c'est pourquoi on cadre les réponses.",l:[L.pe,L.best]},
+"Donner un fichier à Copilot avec #":{o:"Savoir joindre un fichier précis à un message avec le #.",c:"Le <b>contexte</b> est l'ensemble des informations que Copilot a sous les yeux pour répondre. Un modèle ne peut s'appuyer que sur ce contexte. Moins il en a, plus il comble les vides par des suppositions.",l:[L.ctx,L.pe]},
+"Accepter ou annuler ce que Copilot modifie":{o:"Relire chaque modification de Copilot, puis la conserver ou l'annuler en connaissance de cause.",c:"Le principe du <b>human in the loop</b> : l'IA propose, l'humain valide. Les couleurs vert/rouge montrent le <i>diff</i> (la différence) entre l'ancien et le nouveau texte. Prenez l'habitude de lire ce diff avant de cliquer sur Conserver.",l:[L.edits,L.tips]},
+"Lire les 5 US de votre lot":{o:"Repérer par vous-même, avant toute IA, les 5 types de défauts : vague, volumineuse, contradictoire, sans critères, correcte.",c:"Une <b>user story</b> exprime un besoin du point de vue de l'utilisateur (« En tant que… je veux… afin de… »). Une bonne US est petite, claire et testable : c'est le critère <b>INVEST</b>.",l:[L.us,L.invest]},
+"Le mauvais prompt (pour voir le problème)":{o:"Constater qu'un prompt vague pousse Copilot à inventer des règles.",c:"Une <b>hallucination</b> est une réponse plausible mais non fondée sur vos sources. Elle apparaît surtout quand la consigne est floue ou que l'information manque. Le meilleur remède : fournir les sources et autoriser à dire « je ne sais pas ».",l:[L.pe,L.best]},
+"Le bon prompt en 6 blocs":{o:"Écrire un prompt qui impose sources, interdits et format, et obtenir des questions plutôt que des inventions.",c:"Le <b>prompt engineering</b> consiste à rendre la demande explicite : contexte, sources, interdits, tâche, exigences, format. Un exemple dans le prompt (<i>few-shot</i>) améliore encore la précision.",l:[L.pe,L.best]},
+"Tester sur l'US correcte":{o:"Vérifier que Copilot laisse intacte une US déjà correcte.",c:"Les modèles ont un <b>biais de complaisance</b> : ils cherchent à « aider », donc à modifier. Il faut dire explicitement « si c'est correct, ne touche à rien ». Savoir ne rien faire est une qualité à exiger.",l:[L.pe,L.us]},
+"Critiquer au lieu de tout relancer":{o:"Corriger une réponse en une phrase de critique ciblée, sans repartir de zéro.",c:"Le chat est <b>itératif</b> : chaque message s'ajoute à l'historique. Une critique précise (« retire ce point inventé ») est plus efficace qu'un nouveau prompt. Si l'historique devient trop long ou confus, ouvrez un nouveau chat.",l:[L.pe,L.chat]},
+"Comprendre ce que vous allez construire":{o:"Comprendre l'ordre de l'Atelier 1 : d'abord les instructions (règles permanentes), ensuite le plan (contrat).",c:"Le <b>harness</b> (harnais) désigne tout ce qui encadre l'IA : instructions, plan, agents, skills, validations. L'idée : ne pas compter sur la bonne volonté du modèle, mais sur un cadre écrit et vérifiable.",l:[L.over,L.instr]},
+"Ouvrir le fichier d'instructions":{o:"Trouver et ouvrir .github/copilot-instructions.md.",c:"Le fichier <code>.github/copilot-instructions.md</code> est lu <b>automatiquement</b> dans chaque conversation du dossier. Le dossier <code>.github</code> (nom commençant par un point) est une convention : il regroupe la configuration du dépôt.",l:[L.instr,L.ui]},
+"Remplacer le contenu par les instructions complètes":{o:"Obtenir un fichier d'instructions complet, sans TODO, qui interdit les inventions et impose la traçabilité.",c:"De bonnes instructions sont <b>courtes, concrètes et vérifiables</b> (« ne jamais inventer de règle » plutôt que « sois rigoureux »). Mettez-y ce qui doit être vrai tout le temps ; le reste va dans les agents et skills.",l:[L.instr,L.best]},
+"Vérifier que Copilot applique ces règles":{o:"Confirmer que Copilot charge bien vos instructions.",c:"Tester un changement est un réflexe clé : posez une question dont la réponse dépend du fichier modifié. La liste des <b>références utilisées</b> sous la réponse montre quels fichiers ont réellement été lus.",l:[L.instr,L.chat]},
+"Passer en mode Plan":{o:"Basculer Copilot en mode Plan, où il propose sans rien modifier.",c:"Le mode <b>Plan</b> sépare la réflexion de l'exécution. Corriger un plan coûte une phrase ; corriger 20 fichiers modifiés par erreur coûte bien plus.",l:[L.plan,L.agentmode]},
+"Envoyer le prompt de plan":{o:"Faire lire à Copilot le contexte et les 5 US, puis obtenir un premier plan et des questions.",c:"Le prompt demande explicitement de <b>distinguer faits, propositions et décisions à prendre</b>. Cette séparation rend visibles les endroits où le modèle serait tenté d'inventer.",l:[L.plan,L.pe]},
+"Répondre aux questions de Copilot":{o:"Répondre sans jamais trancher une décision non prise (ND-xx).",c:"Il existe deux sortes d'information : ce que le métier a <b>décidé</b> (RM-xx) et ce qui reste <b>ouvert</b> (ND-xx). Une question ouverte documentée vaut mieux qu'une hypothèse cachée dans un livrable : elle sera tranchée par la bonne personne.",l:[L.plan,L.us]},
+"Affiner le plan par la critique":{o:"Rendre le plan vérifiable : critères oui/non, étapes séparées, conditions d'arrêt.",c:"Un <b>critère de réussite</b> doit pouvoir se répondre par oui ou non (« chaque US a au moins 2 critères Étant donné/Quand/Alors »). « Qualité correcte » n'est pas évaluable. C'est la base de toute évaluation ultérieure.",l:[L.invest,L.pe]},
+"Enregistrer le plan dans PLAN.md":{o:"Sauvegarder le plan validé dans un fichier PLAN.md à la racine.",c:"Un fichier est <b>durable et partageable</b> ; une conversation ne l'est pas. Une fois écrit, le plan peut être relu par un collègue, versionné avec Git et cité par vos agents.",l:[L.agentmode,L.edits]},
+"Contrôler votre plan":{o:"Valider que le plan est lisible, vérifiable et place l'humain avant toute décision.",c:"Un plan sert de <b>contrat</b> : il dit ce que les agents feront, ce qu'ils ne décideront pas et comment juger le résultat. Il évite aussi le « scope creep » (périmètre qui dérive).",l:[L.plan,L.best]},
+"Comprendre ce qu'est un agent":{o:"Savoir expliquer ce qu'est un agent personnalisé et pourquoi on en crée plusieurs plutôt qu'un seul.",c:"Un agent personnalisé fixe une <b>persona</b> : mission, outils autorisés, interdits, format de sortie. Séparer les rôles évite qu'un agent juge son propre travail, comme on sépare l'auditeur et le comptable.",l:[L.agents,L.agentmode]},
+"Éditer l'agent Reviewer":{o:"Compléter l'agent Reviewer : il diagnostique, cite ses preuves, ne réécrit jamais.",c:"Le champ <code>tools</code> liste les <b>outils</b> accessibles (lire, chercher, éditer). Restreindre les outils est un garde-fou plus fort qu'une simple consigne : ce qui n'est pas autorisé est impossible.",l:[L.agents,L.agentmode]},
+"Éditer l'agent Rédacteur":{o:"Compléter l'agent Rédacteur : il applique la revue validée et laisse les décisions ouvertes en questions.",c:"Faire suivre le diagnostic par une réécriture, avec validation humaine entre les deux, est un <b>workflow en chaîne</b> (handoff). Chaque agent reçoit en entrée la sortie validée du précédent.",l:[L.agents,L.skills]},
+"Créer un nouvel agent : le Contrôleur":{o:"Créer de zéro un agent en lecture seule qui contrôle le résultat sans pouvoir le modifier.",c:"Le principe du <b>moindre privilège</b> : donner à un agent uniquement les outils nécessaires. Le Contrôleur n'a que <code>read</code> et <code>search</code> : il ne peut donc pas « corriger discrètement ».",l:[L.agents,L.tips]},
+"Vérifier que vos agents sont visibles":{o:"Voir vos 3 agents dans le sélecteur de mode.",c:"VS Code détecte les fichiers <code>*.agent.md</code> du dossier <code>.github/agents</code>. Un en-tête (<i>frontmatter</i>) mal formé empêche la détection : c'est la cause n°1 d'un agent absent.",l:[L.agents,L.tips]},
+"Lancer le Reviewer":{o:"Obtenir sprintdesk/resultats/revue.md avec un constat argumenté par US.",c:"Un agent fonctionne en <b>boucle</b> : il lit, raisonne, agit (écrit un fichier), puis vous rend compte. Le mode Agent demande votre autorisation avant d'agir : lisez le nom du fichier concerné avant d'accepter.",l:[L.agentmode,L.agents]},
+"Valider le diagnostic (étape humaine)":{o:"Relire la revue et décider, avant que la moindre US soit réécrite.",c:"La <b>validation humaine</b> est le point de contrôle qui rend le processus fiable. L'IA ne tranche pas les décisions métier : elle les rend visibles pour qu'un responsable les prenne.",l:[L.best,L.us]},
+"Lancer le Rédacteur":{o:"Obtenir 5 US réécrites dans backlog/sortie, avec une synthèse des actions.",c:"Les <b>critères d'acceptation</b> au format Étant donné / Quand / Alors (Given/When/Then) décrivent un comportement observable et testable. Un critère = un comportement.",l:[L.gwt,L.invest]},
+"Lancer le Contrôleur et conclure":{o:"Comparer les US réécrites aux attentes du plan et corriger les écarts.",c:"Un contrôle indépendant est une <b>évaluation</b> : on compare un résultat à des critères connus à l'avance (ceux du plan). Un échec précis (une ligne KO avec preuve) se corrige facilement.",l:[L.best,L.agents]},
+"Comprendre ce qu'est une skill":{o:"Distinguer une skill (le comment) d'un agent (le qui) et savoir où elle vit.",c:"Une <b>skill</b> est un dossier de connaissances réutilisables (procédure, modèle, exemples). Copilot la charge <b>à la demande</b> selon sa description, ce qui économise le contexte. Le format est un standard ouvert, partagé entre outils.",l:[L.skills,L.skillsstd]},
+"Compléter la skill formater-us":{o:"Donner à vos agents la procédure exacte pour écrire une US au bon format.",c:"Une bonne skill contient une <b>procédure numérotée</b>, des règles claires et des exemples bon/mauvais. Les fichiers annexes (ici <code>modele-us.md</code>) sont lus uniquement si besoin.",l:[L.skills,L.gwt]},
+"Compléter la skill revue-agilite":{o:"Transformer une checklist en méthode de revue qui exige des preuves.",c:"Distinguer <b>bloquant</b> (empêche de réaliser ou tester) et <b>recommandation</b> (amélioration) est la base d'une revue utile. Exiger la phrase fautive rend chaque constat vérifiable.",l:[L.invest,L.us]},
+"Créer une nouvelle skill : verifier-regles-metier":{o:"Créer de zéro une skill avec le bon nom de dossier, le bon fichier SKILL.md et une description efficace.",c:"La <b>description</b> est le déclencheur : Copilot s'en sert pour décider d'utiliser la skill. Écrivez-la avec les mots que vous utiliseriez dans votre demande. Le <code>name</code> doit être identique au dossier.",l:[L.skills,L.skillsstd]},
+"Tester vos skills":{o:"Vérifier qu'une skill est bien chargée et utilisée par Copilot.",c:"Tester, c'est comparer <b>avant / après</b>. Si une skill n'est pas utilisée, la cause est presque toujours le nom, le fichier ou la description. Vous pouvez aussi la citer explicitement dans le prompt.",l:[L.skills,L.best]},
+"Bilan final":{o:"Contrôler que tout le harness est en place et savoir le décrire en une phrase.",c:"Un harness évolue par <b>cycles</b> : planifier, agir, analyser, ajuster <i>un seul élément</i> à la fois. C'est ainsi qu'on progresse sans casser ce qui marche.",l:[L.over,L.best]},
+"Glossaire":{o:"Retrouver le sens d'un mot de l'atelier.",c:"Le vocabulaire de l'IA évolue vite. Les documentations officielles ci-dessous restent la référence en cas de doute.",l:[L.over,L.chat]},
+"Dépannage":{o:"Débloquer rapidement une situation courante.",c:"Face à un comportement inattendu : <b>1)</b> relisez le fichier concerné, <b>2)</b> vérifiez qu'il est enregistré, <b>3)</b> ouvrez un nouveau chat, <b>4)</b> demandez à l'animateur.",l:[L.tips,L.chat]}
+};
+
+/* ----------------------------------------------------------- moteur */
+const KEY='sd-begin-v2';
+let st={lot:1,stage:0,done:{},chk:{},open:{},tour:false};
+try{Object.assign(st,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const $=s=>document.querySelector(s);
+const fill=s=>s.replaceAll('{n}',st.lot);
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const sid=(i,j)=>i+'-'+j;
+let copies=[];
+
+function block(b,i,j,k){
+  switch(b.t){
+    case 'p': return '<p>'+fill(b.x)+'</p>';
+    case 'ol': return '<ol>'+b.x.map(x=>'<li>'+fill(x)+'</li>').join('')+'</ol>';
+    case 'ul': return '<ul>'+b.x.map(x=>'<li>'+fill(x)+'</li>').join('')+'</ul>';
+    case 'see': return '<div class="co see"><b class="l">✅ Vous devez voir</b><p>'+fill(b.x)+'</p></div>';
+    case 'warn': return '<div class="co warn"><b class="l">⚠️ Si ça ne marche pas / attention</b><p>'+fill(b.x)+'</p></div>';
+    case 'why': return '<div class="co why"><b class="l">💡 Pourquoi</b><p>'+fill(b.x)+'</p></div>';
+    case 'no': return '<div class="co no"><b class="l">⛔ Règle</b><p>'+fill(b.x)+'</p></div>';
+    case 'mock': return '<div class="mock">'+esc(b.x)+'</div>';
+    case 'table': return '<table><tr>'+b.h.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+b.r.map(r=>'<tr>'+r.map(c=>'<td>'+fill(c)+'</td>').join('')+'</tr>').join('')+'</table>';
+    case 'copy': {
+      const text=fill(b.x).replaceAll('¤','`'); copies.push(text);
+      return '<div class="copy"><div class="ct"><span>📋 '+fill(b.l)+'</span><button data-copy="'+(copies.length-1)+'">Copier</button></div><pre>'+esc(text)+'</pre></div>';}
+    case 'check': return '<div class="chk">'+b.x.map((x,n)=>{const id=b.id+'-'+n;return '<label><input type="checkbox" data-chk="'+id+'"'+(st.chk[id]?' checked':'')+'><span>'+fill(x)+'</span></label>'}).join('')+'</div>';
+  }
+  return '';
+}
+
+const stageDone=i=>STAGES[i].steps.every((_,j)=>st.done[sid(i,j)]);
+const btnLabel=d=>d?'↺ Marquer comme non fait':'✔ J\'ai fait cette étape — suivante';
+const link=l=>'<li><a href="'+l[1]+'" target="_blank" rel="noopener noreferrer">'+l[0]+' ↗</a></li>';
+
+function updateMeta(justStage){
+  $('#road').innerHTML=STAGES.map((s,i)=>{
+    const tot=s.steps.length, dn=s.steps.filter((_,j)=>st.done[sid(i,j)]).length;
+    return '<li class="stop'+(i===st.stage?' cur':'')+(dn===tot?' done':'')+(i===justStage?' just':'')+'" data-stage="'+i+'"><span class="dot">'+(dn===tot?'✔':s.icon)+'</span><span><b>'+s.title+'</b><small>'+s.sub+' · '+dn+'/'+tot+'</small></span></li>';
+  }).join('');
+  let T=0,D=0; STAGES.forEach((s,i)=>s.steps.forEach((_,j)=>{T++;if(st.done[sid(i,j)])D++}));
+  $('#pbar').style.width=(100*D/T)+'%'; $('#ptxt').textContent='Progression : '+D+' / '+T+' étapes';
+}
+
+function paintStep(id){
+  const el=document.getElementById('st'+id); if(!el) return;
+  const d=!!st.done[id], j=+id.split('-')[1];
+  el.classList.toggle('done',d); el.classList.toggle('open',!!st.open[id]);
+  el.querySelector('.num').textContent=d?'✔':j+1;
+  el.querySelector('.tag').textContent=d?'Fait':'';
+  el.querySelector('[data-done]').textContent=btnLabel(d);
+}
+
+function render(){
+  copies=[];
+  $('#lot').value=st.lot;
+  updateMeta();
+  const s=STAGES[st.stage], i=st.stage;
+  let h='<h2>'+s.icon+' '+s.title+'</h2><div class="goalbox"><span class="oi">🎯</span><div><small>OBJECTIF DE CETTE PARTIE</small><strong>'+s.goal+'</strong></div></div>';
+  s.steps.forEach((p,j)=>{
+    const id=sid(i,j), open=st.open[id], dn=st.done[id], ex=EXTRA[p.t]||{};
+    const more=ex.c?'<details class="more"><summary>📚 Pour aller plus loin</summary><div class="mb"><p><b>Le concept :</b> '+ex.c+'</p><p><b>Liens pour approfondir :</b></p><ul>'+(ex.l||[]).map(link).join('')+'</ul></div></details>':'';
+    h+='<section class="step'+(open?' open':'')+(dn?' done':'')+'" id="st'+id+'" style="--i:'+j+'"><div class="sh" data-toggle="'+id+'"><span class="num">'+(dn?'✔':(j+1))+'</span><div class="ht"><h3>'+fill(p.t)+'</h3>'+(ex.o?'<span class="sub">🎯 '+fill(ex.o)+'</span>':'')+'</div><span class="tag">'+(dn?'Fait':'')+'</span><span class="chev">▾</span></div><div class="sb"><div class="in"><div class="pad">'
+      +(ex.o?'<div class="obj"><span class="oi">🎯</span><div><small>OBJECTIF DE L\'ÉTAPE</small><strong>'+fill(ex.o)+'</strong></div></div>':'')
+      +p.b.map((b,k)=>block(b,i,j,k)).join('')
+      +more
+      +'<div class="actions"><button class="btn p" data-done="'+id+'">'+btnLabel(dn)+'</button></div></div></div></div></section>';
+  });
+  h+='<div class="end">'+(st.stage<STAGES.length-1?'<button class="btn b'+(stageDone(i)?' pulse':'')+'" data-next>Passer à : '+STAGES[st.stage+1].title+' →</button>':'<p>🎉 Parcours terminé. Bravo !</p>')+'</div>';
+  const m=$('#main'); m.innerHTML=h;
+  m.classList.remove('enter'); void m.offsetWidth; m.classList.add('enter');
+}
+
+/* ---------- animations de réussite */
+const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function confetti(x,y,n){
+  if(REDUCED) return;
+  const colors=['#16a34a','#2563eb','#7c3aed','#f59e0b','#ef4444','#06b6d4'];
+  for(let k=0;k<n;k++){
+    const el=document.createElement('i'); el.className='confetti';
+    el.style.left=x+'px'; el.style.top=y+'px'; el.style.background=colors[k%colors.length];
+    document.body.appendChild(el);
+    const dx=(Math.random()-.5)*360, up=-(80+Math.random()*220), rot=Math.random()*720-360;
+    el.animate([
+      {transform:'translate(0,0) rotate(0)',opacity:1},
+      {transform:'translate('+dx*.6+'px,'+up+'px) rotate('+rot*.5+'deg)',opacity:1,offset:.45},
+      {transform:'translate('+dx+'px,'+(up+320)+'px) rotate('+rot+'deg)',opacity:0}
+    ],{duration:1100+Math.random()*700,easing:'cubic-bezier(.2,.7,.4,1)'}).onfinish=()=>el.remove();
+  }
+}
+function toast(msg,big){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div'); t.className='toast'+(big?' big':''); t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),2700);
+}
+const CHEERS=['Bravo, étape réussie !','Bien joué !','Étape validée, continuez !','Excellent !','Un pas de plus sur la route !'];
+function celebrate(id,x,y,i){
+  const el=document.getElementById('st'+id), num=el.querySelector('.num');
+  el.classList.add('celebrate'); num.classList.add('pop');
+  setTimeout(()=>{el.classList.remove('celebrate');num.classList.remove('pop')},1200);
+  confetti(x,y,26);
+  if(stageDone(i)){
+    setTimeout(()=>{confetti(innerWidth/2,innerHeight/3,70);toast('🏁 Partie terminée : '+STAGES[i].title+' !',true);},350);
+    updateMeta(i);
+    const nb=document.querySelector('.end .btn'); if(nb) nb.classList.add('pulse');
+  } else toast('✔ '+CHEERS[Math.floor(Math.random()*CHEERS.length)]);
+}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-stage],[data-toggle],[data-done],[data-next],[data-copy]'); if(!t) return;
+  if(t.dataset.stage!==undefined){st.stage=+t.dataset.stage; if(!Object.keys(st.open).some(k=>k.startsWith(st.stage+'-')&&st.open[k])) st.open[sid(st.stage,0)]=true; save();render();scrollTo({top:0});}
+  else if(t.dataset.toggle){const id=t.dataset.toggle;st.open[id]=!st.open[id];save();paintStep(id);}
+  else if(t.dataset.done){
+    const id=t.dataset.done,[i,j]=id.split('-').map(Number);
+    const r=t.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+    if(st.done[id]){delete st.done[id];paintStep(id);updateMeta();}
+    else{
+      st.done[id]=true;st.open[id]=false;paintStep(id);
+      const nid=sid(i,j+1), hasNext=j+1<STAGES[i].steps.length;
+      if(hasNext){st.open[nid]=true;paintStep(nid);}
+      updateMeta(); celebrate(id,cx,cy,i);
+      setTimeout(()=>{const n=document.getElementById('st'+(hasNext?nid:id));if(n)n.scrollIntoView({behavior:'smooth',block:'start'})},400);
+    }
+    save();
+  }
+  else if(t.dataset.next!==undefined){st.stage++;st.open[sid(st.stage,0)]=true;save();render();scrollTo({top:0});}
+  else if(t.dataset.copy!==undefined){
+    const txt=copies[+t.dataset.copy];
+    const ok=()=>{t.textContent='✔ Copié !';t.classList.add('ok');setTimeout(()=>{t.textContent='Copier';t.classList.remove('ok')},1600)};
+    if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt).then(ok,()=>fb(txt,ok))}else fb(txt,ok);
+  }
+});
+function fb(txt,ok){const a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){}a.remove()}
+document.addEventListener('change',e=>{
+  if(e.target.dataset.chk){st.chk[e.target.dataset.chk]=e.target.checked;save();}
+});
+$('#lot').addEventListener('change',e=>{st.lot=+e.target.value;save();render();});
+$('#reset').addEventListener('click',()=>{if(confirm('Effacer toute votre progression ?')){st={lot:st.lot,stage:0,done:{},chk:{},open:{'0-0':true}};save();render();}});
+
+/* ---------- visite guidée (premier usage) */
+const TOUR=[
+ {c:1,t:'Bienvenue sur votre road tour 👋',x:'Ce parcours vous guide <b>pas à pas</b> : chaque étape dit quoi faire, quoi copier et ce que vous devez voir. Cette courte visite (1 minute) montre comment tout fonctionne.'},
+ {s:'#lot',t:'1. Choisissez votre lot',x:'Votre animateur vous attribue un lot (1 à 4). Le choix adapte automatiquement tous les noms de dossiers et de fichiers dans les textes à copier.'},
+ {s:'.prog',t:'2. Votre progression',x:'La barre se remplit à chaque étape validée. Elle est <b>sauvegardée</b> dans votre navigateur : vous pouvez fermer la page et reprendre plus tard.'},
+ {s:'nav.road',t:'3. La route : le menu',x:'Six arrêts, du début à la fin. Cliquez sur un arrêt pour y aller ; la coche ✔ indique qu\'il est terminé, et le compteur (ex. 3/7) montre l\'avancée.'},
+ {s:'.step .sh',t:'4. Les étapes',x:'Chaque arrêt contient des étapes numérotées. Cliquez sur le titre d\'une étape pour l\'ouvrir ou la fermer. Faites-les <b>dans l\'ordre</b>.'},
+ {s:'.step.open .obj',t:'5. L\'objectif',x:'En haut de chaque étape, le bandeau violet rappelle <b>ce que vous devez avoir obtenu</b> à la fin. Si vous êtes perdu, relisez-le.'},
+ {s:'.step.open .co',t:'6. Les encadrés',x:'<b>Vert</b> : ce que vous devez voir. <b>Jaune</b> : que faire si ça ne marche pas. <b>Bleu</b> : pourquoi on fait cela. Plus loin, les blocs violets contiennent des textes à <b>copier d\'un clic</b> avec le bouton Copier.'},
+ {s:'.step.open .more',t:'7. Pour aller plus loin',x:'Facultatif : un concept expliqué simplement et des liens officiels pour approfondir. À lire quand vous voulez comprendre le « pourquoi ».'},
+ {s:'.step.open [data-done]',t:'8. Valider l\'étape',x:'Quand l\'étape est faite, cliquez ici : elle se ferme, la suivante s\'ouvre et un petit feu d\'artifice vous félicite 🎉. Cliquer de nouveau annule.'},
+ {s:'#tourbtn',t:'9. Revoir cette visite',x:'Ce bouton relance la visite à tout moment. « Recommencer » efface votre progression.'},
+ {c:1,t:'C\'est parti ! 🚀',x:'Commencez par la première étape : <b>Ouvrir le dossier du projet</b>.'}
+];
+let ti=0;
+function startTour(){
+  if($('#tour-ov')) return;
+  document.body.insertAdjacentHTML('beforeend','<div id="tour-ov"></div><div id="tour-spot"></div><div id="tour-tip"></div>');
+  window.scrollTo({top:0}); showTour(0,1);
+}
+function endTour(){
+  ['#tour-ov','#tour-spot','#tour-tip'].forEach(s=>{const e=$(s);if(e)e.remove()});
+  st.tour=true; save();
+}
+function tourTarget(e){return e.s?document.querySelector(e.s):null}
+function showTour(i,dir){
+  while(i>=0&&i<TOUR.length&&TOUR[i].s&&!tourTarget(TOUR[i])) i+=dir;
+  if(i<0) i=0;
+  if(i>=TOUR.length){endTour();return;}
+  ti=i; const e=TOUR[i], last=i===TOUR.length-1;
+  const el=tourTarget(e);
+  if(el){const r=el.getBoundingClientRect(); if(r.top<70||r.bottom>innerHeight-20) el.scrollIntoView({block:'center'});}
+  $('#tour-tip').innerHTML='<div class="tdots">'+TOUR.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join('')+'</div><h4>'+e.t+'</h4><p>'+e.x+'</p><div class="tbtn"><button class="skip" data-tour="end">Passer la visite</button>'+(i>0?'<button class="btn s" data-tour="prev">Précédent</button>':'')+'<button class="btn b" data-tour="next">'+(last?'Commencer':'Suivant')+'</button></div>';
+  tourPos();
+}
+function tourPos(){
+  const tip=$('#tour-tip'); if(!tip) return;
+  const spot=$('#tour-spot'), ov=$('#tour-ov'), el=tourTarget(TOUR[ti]);
+  const tw=tip.offsetWidth, th=tip.offsetHeight;
+  if(!el){
+    ov.classList.add('dim'); spot.style.opacity=0;
+    tip.style.left=(innerWidth-tw)/2+'px'; tip.style.top=Math.max(12,(innerHeight-th)/2)+'px'; return;
+  }
+  ov.classList.remove('dim'); spot.style.opacity=1;
+  const r=el.getBoundingClientRect(), p=6;
+  Object.assign(spot.style,{left:r.left-p+'px',top:r.top-p+'px',width:r.width+2*p+'px',height:r.height+2*p+'px'});
+  let x,y;
+  if(r.right+tw+24<innerWidth){x=r.right+18;y=r.top}
+  else if(r.bottom+th+24<innerHeight){x=r.left;y=r.bottom+18}
+  else if(r.top-th-24>0){x=r.left;y=r.top-th-18}
+  else{x=(innerWidth-tw)/2;y=innerHeight-th-16}
+  tip.style.left=Math.min(Math.max(12,x),innerWidth-tw-12)+'px';
+  tip.style.top=Math.min(Math.max(12,y),innerHeight-th-12)+'px';
+}
+addEventListener('resize',tourPos);
+addEventListener('scroll',tourPos,{passive:true});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-tour]'); if(!b) return;
+  const a=b.dataset.tour;
+  if(a==='end') endTour(); else if(a==='next') showTour(ti+1,1); else showTour(ti-1,-1);
+});
+document.addEventListener('keydown',e=>{
+  if(!$('#tour-ov')) return;
+  if(e.key==='Escape') endTour(); else if(e.key==='ArrowRight') showTour(ti+1,1); else if(e.key==='ArrowLeft') showTour(ti-1,-1);
+});
+$('#tourbtn').addEventListener('click',startTour);
+
+if(!Object.keys(st.open).length) st.open[sid(st.stage,0)]=true;
+render();
+if(!st.tour) setTimeout(startTour,500);
+</script>
+</body>
+</html>
