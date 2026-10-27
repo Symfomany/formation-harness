@@ -4,6 +4,7 @@ Ces fiches accompagnent l'atelier. Elles expliquent comment créer chaque brique
 
 ## Le parcours
 > 🆕 Découverte de Copilot ou des agents ? Commencez par [00-bases-copilot.md](00-bases-copilot.md).
+> 💻 Quel outil installer (VS Code ou GitHub Copilot app) ? Voir [08-environnements.md](08-environnements.md).
 
 | Temps | Objectif | Guides |
 |---|---|---|
