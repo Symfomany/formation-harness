@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · 3 — Mémoire, état et exécution</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a class="on" href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>3 · Mémoire, état et exécution</h1>
+<p><em>Manage memory, state, and execution</em></p>
+<div class="tags"><span>10–15 % de l'examen</span><span>Formation : chapitres 01, 07, 11</span></div></header>
+
+<h2>Ce que dit le guide d'étude</h2>
+<div class="tablewrap"><table><thead><tr><th>Compétence</th><th>Points évalués</th></tr></thead><tbody>
+<tr><td>Stratégies de mémoire</td><td>Choisir entre mémoire court terme, long terme et externe ; limiter la mémoire à l'utile pour la tâche ; règles d'expiration, d'élagage <em>(pruning)</em> et de réinitialisation.</td></tr>
+<tr><td>Persister l'état, gérer la dérive</td><td>Progression et décisions en artefacts durables ; reprendre sans répéter ni contredire ; détecter et corriger la dérive pendant une longue exécution.</td></tr>
+<tr><td>Continuité entre outils et environnements</td><td>Partager l'état ; éviter le contexte contradictoire ; éviter le contexte périmé <em>(stale)</em>.</td></tr>
+</tbody></table></div>
+
+<h2>Les trois mémoires</h2>
+<div class="tablewrap"><table><thead><tr><th>Type</th><th>Exemples</th><th>Durée de vie</th><th>Quand la choisir</th></tr></thead><tbody>
+<tr><td><strong>Court terme</strong> <em>(short-term)</em></td><td>Fenêtre de contexte de la session : messages, fichiers lus, résultats d'outils</td><td>La session ; résumée automatiquement quand elle sature</td><td>Raisonnement en cours, détails éphémères</td></tr>
+<tr><td><strong>Long terme</strong> <em>(long-term)</em></td><td>Copilot Memory ; fichiers d'instructions ; skills</td><td>Plusieurs sessions</td><td>Conventions stables, faits durables sur le dépôt</td></tr>
+<tr><td><strong>Externe</strong> <em>(external)</em></td><td>Fichiers versionnés (plan, journal), issues, PR, données via MCP</td><td>Aussi longtemps que la source</td><td>État partagé, décisions à auditer, reprise par un autre agent ou humain</td></tr>
+</tbody></table></div>
+
+<h2>Copilot Memory : les faits à retenir</h2>
+<div class="box memo"><b>Copilot Memory</b><ul>
+<li>Deux familles : <strong>faits du dépôt</strong> <em>(repository facts)</em> et <strong>préférences de l'utilisateur</strong>.</li>
+<li>Chaque fait du dépôt porte des <strong>citations</strong> (emplacements dans le code). Avant usage, Copilot les <strong>vérifie sur la branche courante</strong> : un fait contredit par le code n'est pas utilisé.</li>
+<li><strong>Expiration : 28 jours</strong> sans utilisation. Un fait validé et utilisé repart pour 28 jours.</li>
+<li>Seuls les utilisateurs avec accès en <strong>écriture</strong> génèrent des faits du dépôt.</li>
+<li>Copilot code review n'utilise que les <strong>faits du dépôt</strong>, pas les préférences personnelles.</li>
+<li>Les propriétaires du dépôt voient et suppriment les faits ; les administrateurs peuvent exporter ou supprimer les préférences.</li>
+</ul></div>
+
+<h3>Fichiers d'instructions (mémoire long terme explicite)</h3>
+<div class="tablewrap"><table><thead><tr><th>Fichier</th><th>Portée</th></tr></thead><tbody>
+<tr><td><code>.github/copilot-instructions.md</code></td><td>Tout le dépôt, toujours</td></tr>
+<tr><td><code>.github/instructions/*.instructions.md</code> + <code>applyTo</code> (glob)</td><td>Fichiers ciblés uniquement : mémoire limitée à la tâche</td></tr>
+<tr><td><code>AGENTS.md</code> (et équivalents à la racine)</td><td>Instructions pour agents ; lues par plusieurs outils</td></tr>
+<tr><td>Skills (<code>SKILL.md</code>)</td><td>Chargées seulement quand la tâche correspond : contexte économisé</td></tr>
+</tbody></table></div>
+<p>Copilot code review ne lit que les <strong>4 000 premiers caractères</strong> d'un fichier d'instructions. On peut exclure un fichier d'une surface avec <code>excludeAgent</code> (ex. <code>"code-review"</code>).</p>
+
+<h2>Limiter, expirer, réinitialiser</h2>
+<div class="tablewrap"><table><thead><tr><th>Règle</th><th>Mise en œuvre</th></tr></thead><tbody>
+<tr><td>Limiter à l'utile <em>(scope)</em></td><td><code>applyTo</code>, skills à la demande, sous-agents à contexte isolé, outils MCP en lecture ciblée</td></tr>
+<tr><td>Expirer</td><td>Copilot Memory : 28 jours ; plan : numéro de version, plan périmé = plan à refaire</td></tr>
+<tr><td>Élaguer <em>(prune)</em></td><td>Supprimer les faits faux dans les réglages ; archiver les vieux journaux ; CLI : <code>/compact</code></td></tr>
+<tr><td>Réinitialiser <em>(reset)</em></td><td>Nouvelle session ; CLI : <code>/clear</code> ; repartir des artefacts (plan + journal), pas de l'historique du chat</td></tr>
+</tbody></table></div>
+
+<h2>État durable et reprise</h2>
+<ul>
+<li><strong>Capturer</strong> : plan versionné, journal d'exécution (étape, résultat, commit, décision humaine), une PR dont la description sert de liste de progression, un commit par étape.</li>
+<li><strong>Reprendre</strong> : relire plan + journal, repartir de la première étape non terminée ; CLI : <code>--continue</code> ou <code>--resume</code> ; cloud agent : <code>@copilot</code> dans la PR existante, qui continue sur la même branche.</li>
+<li><strong>Ne pas diverger</strong> : les décisions prises sont écrites (« ND-02 reste ouverte ») et rappelées au démarrage (hook <code>sessionStart</code>, <code>source = resume</code>).</li>
+</ul>
+
+<h2>Dérive, contexte contradictoire, contexte périmé</h2>
+<div class="tablewrap"><table><thead><tr><th>Problème</th><th>Signal</th><th>Remède</th></tr></thead><tbody>
+<tr><td>Dérive <em>(drift)</em></td><td>L'agent oublie une contrainte après un long échange ; actions hors plan</td><td>Contraintes dans des fichiers toujours chargés ; réinjection par hook ; comparer journal et plan ; session neuve</td></tr>
+<tr><td>Contexte contradictoire <em>(conflicting)</em></td><td><code>copilot-instructions.md</code> et <code>AGENTS.md</code> disent l'inverse ; deux agents avec des versions différentes du plan</td><td>Une seule source de vérité par règle ; supprimer les doublons ; état partagé dans le dépôt</td></tr>
+<tr><td>Contexte périmé <em>(stale)</em></td><td>Mémoire qui cite du code supprimé ; plan v1 utilisé alors que v2 existe</td><td>Citations vérifiées (Copilot Memory) ; versions ; expiration ; relire la source avant d'agir</td></tr>
+</tbody></table></div>
+<p>Partager l'état entre VS Code, CLI et cloud agent : <strong>dans le dépôt</strong> (fichiers, branches, PR, issues). Une conversation de chat n'est pas un état partagé.</p>
+
+<h2>Exemple concret</h2>
+<p>Un groupe traite le lot 3 sur deux jours. Jour 1 : diagnostic validé, journal à jour, commit <code>3f2a9c1</code>. Jour 2 : un collègue reprend dans la CLI.</p>
+<ol>
+<li>Il ne réutilise pas le chat de la veille. Il lit <code>plan-lot3.md</code> (v2, APPROUVÉ) et <code>journal-lot3.md</code>.</li>
+<li>Le hook <code>sessionStart</code> rappelle les ND-xx ouvertes.</li>
+<li>Il lance l'étape 2 uniquement. L'étape 1 n'est pas refaite.</li>
+</ol>
+
+<h2>Pièges</h2>
+<div class="box piege"><b>Les erreurs classiques</b><ul>
+<li>Croire que Copilot Memory garde un fait « pour toujours » : 28 jours sans usage, et il est vérifié contre la branche courante.</li>
+<li>Utiliser la mémoire du chat pour un état que d'autres doivent reprendre : il faut un artefact externe.</li>
+<li>Tout mettre dans <code>copilot-instructions.md</code> : contexte gonflé, règles diluées. Préférer <code>applyTo</code> et skills.</li>
+<li>Croire qu'un long fichier d'instructions est intégralement lu par code review : 4 000 premiers caractères.</li>
+<li>Résoudre la dérive en « répétant la règle dans le prompt » : solution fragile. Mieux : mécanisme (hook, check) + artefact.</li>
+</ul></div>
+
+<h2>Trucs et astuces</h2>
+<div class="box astuce"><b>Lecture des questions</b><ul>
+<li>« Doit survivre à la session et être audité » → mémoire <strong>externe</strong> versionnée.</li>
+<li>« Convention stable pour tout le dépôt » → instructions (long terme).</li>
+<li>« Détail utile seulement pour cette étape » → court terme, ne pas persister.</li>
+<li>« L'agent utilise une info obsolète » → réponse qui parle de citations, de vérification, d'expiration ou de suppression du fait.</li>
+</ul></div>
+
+<p><a href="08-quiz.html#D3">S'entraîner : questions du domaine 3 →</a></p>
+<div class="pager"><a href="02-outils-mcp-environnements.html"><small>← Précédent</small>2 · Outils, MCP & environnements</a><a class="n" href="04-evaluation-tuning.html"><small>Suivant →</small>4 · Évaluation & ajustement</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

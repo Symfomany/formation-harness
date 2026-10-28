@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · Fiche mémo</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a class="on" href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>Fiche mémo</h1>
+<p>Les chiffres, noms et règles à connaître par cœur. À relire la veille de l'examen. Imprimable.</p>
+<div class="tags"><span>Chiffres</span><span>Noms exacts</span><span>Règles de priorité</span></div></header>
+
+<h2>Les chiffres</h2>
+<div class="tablewrap"><table><thead><tr><th>Valeur</th><th>Signification</th></tr></thead><tbody>
+<tr><td><strong>700 / 1 000</strong></td><td>Score de réussite de l'examen</td></tr>
+<tr><td><strong>28 jours</strong></td><td>Durée de vie d'un fait Copilot Memory non utilisé</td></tr>
+<tr><td><strong>59 minutes</strong></td><td>Durée maximale d'une session du cloud agent, et <code>timeout-minutes</code> maximal du job de préparation</td></tr>
+<tr><td><strong>30 s</strong></td><td>Délai par défaut d'un hook (<code>timeoutSec</code>)</td></tr>
+<tr><td><strong>8</strong></td><td>Blocages consécutifs maximum de <code>agentStop</code> / <code>subagentStop</code> avant que l'agent finisse quand même</td></tr>
+<tr><td><strong>10 Ko</strong></td><td>Taille maximale de <code>additionalContext</code> renvoyé par un hook</td></tr>
+<tr><td><strong>30 000 caractères</strong></td><td>Taille maximale du prompt d'un profil d'agent personnalisé</td></tr>
+<tr><td><strong>4 000 caractères</strong></td><td>Ce que Copilot code review lit d'un fichier d'instructions</td></tr>
+<tr><td><strong>1 / 1 / 1</strong></td><td>Une tâche cloud agent = un dépôt, une branche, une PR</td></tr>
+<tr><td><strong>15–20 / 20–25 / 10–15 / 15–20 / 15–20 / 10–15 %</strong></td><td>Poids des domaines 1 à 6</td></tr>
+</tbody></table></div>
+
+<h2>Les noms exacts</h2>
+<div class="tablewrap"><table><thead><tr><th>Élément</th><th>À retenir</th></tr></thead><tbody>
+<tr><td>Préparation de l'environnement</td><td>Fichier <code>.github/workflows/copilot-setup-steps.yml</code>, job <code>copilot-setup-steps</code>, sur la branche par défaut</td></tr>
+<tr><td>Clés autorisées du job</td><td><code>steps</code>, <code>permissions</code>, <code>runs-on</code>, <code>services</code>, <code>snapshot</code>, <code>timeout-minutes</code> ; le reste est ignoré</td></tr>
+<tr><td>Branches du cloud agent</td><td><code>copilot/...</code></td></tr>
+<tr><td>Secrets MCP du cloud agent</td><td>Préfixe <code>COPILOT_MCP_</code> ; syntaxes <code>$COPILOT_MCP_X</code>, <code>${COPILOT_MCP_X}</code>, <code>${{ secrets.COPILOT_MCP_X }}</code></td></tr>
+<tr><td>Fichier MCP de VS Code</td><td><code>.vscode/mcp.json</code>, clé <code>servers</code> ; CLI et cloud agent : <code>mcpServers</code> ; <code>stdio</code> équivaut à <code>local</code></td></tr>
+<tr><td>Jeton de la CLI en Actions</td><td><code>COPILOT_GITHUB_TOKEN</code></td></tr>
+<tr><td>Bouton de la PR du cloud agent</td><td><strong>Approve and run workflows</strong></td></tr>
+<tr><td>Workflows agentiques (gh-aw)</td><td>Source <code>.md</code>, compilé en <code>.lock.yml</code> (les deux sont commités) ; <code>staged: true</code> = aperçu sans écrire</td></tr>
+<tr><td>Outil MCP en lecture</td><td>Annotation <code>readOnlyHint</code></td></tr>
+<tr><td>Agents d'organisation</td><td>Dépôt <code>.github-private</code>, dossier <code>agents/</code></td></tr>
+<tr><td>Ancien nom</td><td><em>Copilot coding agent</em> = <strong>Copilot cloud agent</strong></td></tr>
+</tbody></table></div>
+
+<h2>Profil d'agent personnalisé</h2>
+<div class="tablewrap"><table><thead><tr><th>Propriété</th><th>Rôle</th></tr></thead><tbody>
+<tr><td><code>description</code></td><td><strong>Obligatoire</strong></td></tr>
+<tr><td><code>name</code></td><td>Facultatif (sinon nom du fichier)</td></tr>
+<tr><td><code>tools</code></td><td>Absent ou <code>*</code> = tous ; <code>[]</code> = aucun ; noms inconnus ignorés ; <code>serveur/outil</code>, <code>serveur/*</code></td></tr>
+<tr><td><code>target</code></td><td><code>vscode</code> ou <code>github-copilot</code></td></tr>
+<tr><td><code>disable-model-invocation</code></td><td><code>true</code> : pas d'appel automatique (remplace <code>infer</code>, retiré)</td></tr>
+<tr><td><code>user-invocable</code></td><td><code>false</code> : masqué du sélecteur, appelable par un autre agent</td></tr>
+<tr><td><code>handoffs</code>, <code>argument-hint</code></td><td>Ignorés sur GitHub.com</td></tr>
+<tr><td><code>mcp-servers</code>, <code>metadata</code></td><td>Non utilisés dans VS Code</td></tr>
+</tbody></table></div>
+<p>Alias d'outils : <code>execute</code> (shell, Bash, powershell), <code>read</code>, <code>edit</code>, <code>search</code>, <code>agent</code> (custom-agent, Task), <code>web</code>, <code>todo</code>.</p>
+
+<h2>Règles de priorité</h2>
+<div class="tablewrap"><table><thead><tr><th>Sujet</th><th>Règle</th></tr></thead><tbody>
+<tr><td>Agents de même nom</td><td>Le niveau le plus bas gagne : dépôt &gt; organisation &gt; entreprise</td></tr>
+<tr><td>Version d'un agent</td><td>SHA du commit du fichier ; une PR garde la même version</td></tr>
+<tr><td>CLI : autoriser et refuser</td><td><code>--deny-tool</code> l'emporte sur <code>--allow-tool</code></td></tr>
+<tr><td>Code de sortie 2</td><td>Refus, même si la sortie dit <code>allow</code></td></tr>
+</tbody></table></div>
+
+<h2>Hooks : échec ouvert ou fermé</h2>
+<div class="tablewrap"><table><thead><tr><th>Situation</th><th><code>preToolUse</code></th><th>Autres événements</th></tr></thead><tbody>
+<tr><td>Plantage, code de sortie non nul</td><td><strong>Refus</strong></td><td>Ignoré</td></tr>
+<tr><td>Délai dépassé</td><td><strong>Autorisé</strong></td><td>Ignoré</td></tr>
+<tr><td>Hook HTTP en erreur</td><td>Autorisé</td><td>Ignoré</td></tr>
+<tr><td>Cloud agent</td><td colspan="2"><code>ask</code> vaut <code>deny</code> ; seul <code>bash</code> / <code>command</code> s'exécute</td></tr>
+</tbody></table></div>
+
+<h2>Cloud agent : les protections</h2>
+<ul>
+<li>Seuls les utilisateurs avec accès en écriture le déclenchent.</li>
+<li>PR brouillon ; il ne fusionne pas, n'approuve pas.</li>
+<li>Le demandeur ne peut pas approuver ; approbation supplémentaire si la PR n'est attribuée à personne.</li>
+<li>Workflows : « Approve and run workflows » par défaut.</li>
+<li>Validation intégrée : CodeQL, Advisory Database, secret scanning, Copilot code review (sans licence GHAS, désactivables une à une).</li>
+<li>Ruleset incompatible : ajouter Copilot en <em>bypass actor</em> de ce ruleset.</li>
+<li>Commits signés, auteur Copilot, demandeur en co-auteur, lien vers le journal de session.</li>
+<li>Pare-feu ; caractères cachés filtrés.</li>
+</ul>
+
+<h2>GitHub Actions : les pièges</h2>
+<ul>
+<li>Événements créés avec <code>GITHUB_TOKEN</code> : ne déclenchent pas d'autres workflows (sauf <code>workflow_dispatch</code>, <code>repository_dispatch</code>).</li>
+<li>Check requis + filtre <code>paths</code> : statut jamais reçu, PR bloquée.</li>
+<li>Entrées : via <code>env:</code>, jamais <code>${{ }}</code> dans <code>run:</code>.</li>
+<li>Revert d'un commit de fusion : <code>git revert -m 1 &lt;sha&gt;</code>.</li>
+<li>Environnement protégé : approbateurs + « Prevent self-review » + branches autorisées.</li>
+<li>Créer une PR depuis Actions : « Allow GitHub Actions to create and approve pull requests ».</li>
+</ul>
+
+<div class="box memo"><b>Les sept réflexes</b><ol>
+<li>Imposer par un mécanisme plutôt que par une consigne.</li>
+<li>Moindre privilège.</li>
+<li>Humain sur l'irréversible, et seulement là.</li>
+<li>Trace durable et inspectable.</li>
+<li>Preuves (CI, scan, journal) plutôt qu'affirmation de l'agent.</li>
+<li>Annuler sans réécrire l'histoire.</li>
+<li>Corriger la cause, une chose à la fois.</li>
+</ol></div>
+
+<div class="pager"><a href="08-quiz.html"><small>← Précédent</small>Quiz (examen blanc)</a><a class="n" href="index.html"><small>Retour →</small>Accueil révisions</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bonus 12 — Workflows agentiques et GitHub Actions</title><style>
+:root{--bg:#f6f7fb;--panel:#fff;--text:#1f2433;--muted:#667085;--line:#e4e7ee;--accent:#5b5bd6;--accent-soft:#eceafd;
+--code-bg:#14172b;--code-text:#e6e8f5;--inline:#eef0f6;--warn-bg:#fff7e6;--warn:#b54708;--shadow:0 1px 3px rgba(20,23,43,.08),0 8px 24px rgba(20,23,43,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1220;--panel:#171a2c;--text:#e6e8f5;--muted:#9aa2c0;--line:#272b45;--accent:#8b8bff;--accent-soft:#242850;
+--code-bg:#0a0c18;--code-text:#e6e8f5;--inline:#242848;--warn-bg:#2b2310;--warn:#fbbf24;--shadow:0 1px 3px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+nav.side{position:sticky;top:0;height:100vh;overflow:auto;padding:24px 16px;background:var(--panel);border-right:1px solid var(--line)}
+.brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:15px;margin:0 8px 20px}
+.brand i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#5b5bd6,#a78bfa);color:#fff;font-style:normal}
+nav.side a{display:block;padding:8px 12px;margin:2px 0;border-radius:8px;color:var(--text);text-decoration:none;font-size:14.5px}
+nav.side a:hover{background:var(--accent-soft)}
+nav.side a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.side .grp{margin:18px 12px 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+main{padding:32px clamp(16px,4vw,56px) 64px;max-width:980px;width:100%;margin:0 auto}
+.hero{margin:0 -4px 28px;padding:40px clamp(20px,4vw,40px);border-radius:20px;color:#fff;background:linear-gradient(135deg,#4338ca,#7c3aed 60%,#c084fc);box-shadow:var(--shadow)}
+.hero h1{margin:0;font-size:clamp(26px,4vw,38px);line-height:1.2}
+.hero p{margin:12px 0 0;opacity:.92}
+.hero a{color:#fff}
+h2{margin:44px 0 14px;font-size:24px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h3{margin:30px 0 10px;font-size:19px}
+h2 .a,h3 .a{margin-left:8px;color:var(--muted);text-decoration:none;opacity:0;font-weight:400}
+h2:hover .a,h3:hover .a{opacity:1}
+p,ul,ol{margin:12px 0}li{margin:5px 0}
+a{color:var(--accent)}
+code{font:0.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--inline);padding:2px 6px;border-radius:6px}
+.code{position:relative;margin:16px 0;border-radius:14px;overflow:hidden;background:var(--code-bg);box-shadow:var(--shadow)}
+.code .lang{display:block;padding:8px 16px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9aa2c0;border-bottom:1px solid #272b45}
+.code pre{margin:0;padding:16px;overflow:auto;color:var(--code-text)}
+.code pre code{background:none;padding:0;color:inherit;font-size:13.5px;line-height:1.5;display:block}
+.code button{position:absolute;top:6px;right:8px;border:0;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;background:#272b45;color:#cfd3ea}
+.code button:hover{background:var(--accent);color:#fff}
+.tablewrap{overflow-x:auto;margin:18px 0;border-radius:14px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{background:var(--accent-soft);text-align:left;font-weight:600}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--accent-soft)}
+ul.check{list-style:none;padding-left:4px}
+blockquote{margin:18px 0;padding:12px 18px;border-left:4px solid var(--warn);background:var(--warn-bg);border-radius:0 12px 12px 0}
+blockquote p{margin:4px 0}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:56px}
+.pager a{flex:1;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-decoration:none;color:var(--text);box-shadow:var(--shadow)}
+.pager a:hover{border-color:var(--accent)}.pager small{display:block;color:var(--muted)}.pager .n{text-align:right}
+footer{margin-top:32px;color:var(--muted);font-size:13px;text-align:center}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px;border-right:0;border-bottom:1px solid var(--line)}
+nav.side .brand,nav.side .grp{width:100%}nav.side a{margin:0}}
+</style></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Harness Copilot</div><a href="../index.html">Accueil</a><a href="../docs/index.html">Vue d'ensemble</a><div class="grp">Atelier 1 · Planifier</div><a href="../docs/01-instructions.html">1 · Instructions</a><a href="../docs/02-plan.html">2 · Prompter le plan</a><div class="grp">Atelier 2 · Acter</div><a href="../docs/03-architecture-agents.html">3 · Architecture & SDLC</a><a href="../docs/04-agents.html">4 · Agents</a><a href="../docs/05-skills.html">5 · Skills</a><a href="../docs/06-prompts.html">6 · Prompts (annexe)</a><div class="grp">Bonus · Analyser</div><a href="../docs/07-evaluation.html">7 · Évaluer & ajuster</a><div class="grp">Bonus · Automatiser</div><a href="../docs/10-hooks.html">10 · Hooks pas à pas</a><a href="../docs/11-planificateur-orchestration.html">11 · Planifier & orchestrer</a><a href="../docs/12-workflows-agentiques.html">12 · Workflows & Actions</a><a href="../../revisions/index.html">Révisions GH-600</a><div class="grp">Bonus · Automatiser</div><a href="../docs/10-hooks.html">10 · Hooks pas à pas</a><a href="../docs/11-planificateur-orchestration.html">11 · Planifier & orchestrer</a><a class="on" href="../docs/12-workflows-agentiques.html">12 · Workflows & Actions</a><a href="../../revisions/index.html">Révisions GH-600</a><div class="grp">Ressources</div><a href="../docs/Aide_Memoire_Participant.pdf">Aide-mémoire (PDF)</a></nav>
+<main><header class="hero"><h1>Bonus 12 — Workflows agentiques et GitHub Actions</h1></header>
+<h2 id="à-quoi-ça-sert">À quoi ça sert<a class="a" href="#à-quoi-ça-sert">#</a></h2>
+<p>Jusqu'ici, les agents travaillent dans VS Code, sous vos yeux. Ce bonus passe sur GitHub : des agents qui travaillent <strong>en arrière-plan</strong>, et des contrôles automatiques qui décident si leur travail peut entrer dans <code>main</code>.</p>
+<p>Tous les fichiers de ce guide sont déjà dans le dépôt. Ils ne s'exécutent que lorsque le dépôt est poussé sur GitHub, après validation humaine.</p>
+<div class="tablewrap"><table><thead><tr><th>Fichier</th><th>Rôle</th></tr></thead><tbody><tr><td><code>.github/workflows/copilot-setup-steps.yml</code></td><td>Prépare l'environnement de Copilot cloud agent</td></tr><tr><td><code>.github/workflows/controle-backlog.yml</code></td><td>Contrôles requis avant fusion : politique, format, tests</td></tr><tr><td><code>.github/workflows/rollback-backlog.yml</code></td><td>Annule un commit par son SHA, via une PR</td></tr><tr><td><code>.github/workflows/publication-backlog.yml</code></td><td>Publie le backlog après approbation de l'environnement <code>publication</code></td></tr><tr><td><code>.github/workflows/triage-demande.md</code></td><td>Workflow agentique : pré-qualifie une demande déposée en issue</td></tr><tr><td><code>.github/workflows/revue-pr-backlog.md</code></td><td>Workflow agentique : relit une PR de backlog, commente sans approuver</td></tr><tr><td><code>.github/CODEOWNERS</code></td><td>Revue obligatoire des fichiers sensibles</td></tr><tr><td><code>.github/scripts/*.cjs</code></td><td>Contrôles déterministes partagés par la CI et les hooks</td></tr></tbody></table></div>
+<h2 id="1-la-carte--qui-sexécute-où">1. La carte : qui s'exécute où ?<a class="a" href="#1-la-carte--qui-sexécute-où">#</a></h2>
+<div class="tablewrap"><table><thead><tr><th>Mécanisme</th><th>Déclencheur</th><th>Qui agit</th><th>Peut écrire ?</th></tr></thead><tbody><tr><td>Workflow GitHub Actions classique</td><td>Événement (push, PR, manuel)</td><td>Un script, pas d'IA</td><td>Selon <code>permissions:</code></td></tr><tr><td>Copilot cloud agent</td><td>Issue assignée à Copilot, <code>@copilot</code> dans une PR, panneau Agents</td><td>L'agent, dans un environnement Actions éphémère</td><td>Une seule branche, une PR brouillon</td></tr><tr><td><code>copilot-setup-steps.yml</code></td><td>Démarrage d'une tâche de cloud agent</td><td>Des étapes de préparation</td><td>Non (lecture)</td></tr><tr><td>GitHub Agentic Workflows (<code>gh aw</code>)</td><td>Événement GitHub</td><td>Un agent en <strong>lecture seule</strong> ; les écritures passent par des <em>safe outputs</em></td><td>Seulement via les sorties autorisées</td></tr><tr><td>Copilot CLI dans Actions</td><td>Étape <code>copilot -p "..."</code> d'un workflow</td><td>La CLI, outils autorisés un par un</td><td>Selon <code>--allow-tool</code> et le jeton</td></tr><tr><td>Automations Copilot</td><td>Planification ou événement, définies dans l'onglet Agents</td><td>Cloud agent, au nom du créateur</td><td>Comme cloud agent</td></tr></tbody></table></div>
+<h2 id="2-pas-à-pas">2. Pas à pas<a class="a" href="#2-pas-à-pas">#</a></h2>
+<h3 id="étape-1--préparer-lenvironnement-du-cloud-agent">Étape 1 — Préparer l'environnement du cloud agent<a class="a" href="#étape-1--préparer-lenvironnement-du-cloud-agent">#</a></h3>
+<p>Ouvrir <code>.github/workflows/copilot-setup-steps.yml</code>. Règles à retenir :</p>
+<div class="tablewrap"><table><thead><tr><th>Règle</th><th>Conséquence</th></tr></thead><tbody><tr><td>Un seul job nommé exactement <code>copilot-setup-steps</code></td><td>Un autre nom : le fichier est ignoré</td></tr><tr><td>Le fichier doit être sur la branche par défaut</td><td>Sur une branche de travail, il ne s'applique pas encore</td></tr><tr><td>Clés prises en compte : <code>steps</code>, <code>permissions</code>, <code>runs-on</code>, <code>services</code>, <code>snapshot</code>, <code>timeout-minutes</code></td><td>Toute autre clé est ignorée sans erreur</td></tr><tr><td><code>timeout-minutes</code> : 59 maximum</td><td>Une tâche de cloud agent dure 59 minutes au plus</td></tr><tr><td>Une étape échoue</td><td>Les suivantes sont sautées, <strong>l'agent démarre quand même</strong></td></tr><tr><td><code>fetch-depth</code> imposé par Copilot</td><td>Il garde l'historique pour pouvoir revenir sur ses propres commits</td></tr><tr><td>Runners : Ubuntu x64 ou Windows 64 bits</td><td>Pas de macOS</td></tr></tbody></table></div>
+<p>Ici, il installe Node.js (nécessaire aux hooks) et lance <code>tester-harness.cjs</code>. Les déclencheurs <code>push</code> et <code>pull_request</code> filtrés sur le fichier lui-même permettent de tester une modification avant fusion.</p>
+<h3 id="étape-2--les-contrôles-requis--les-tests-passent">Étape 2 — Les contrôles requis (« les tests passent »)<a class="a" href="#étape-2--les-contrôles-requis--les-tests-passent">#</a></h3>
+<p><code>.github/workflows/controle-backlog.yml</code> lance trois jobs sur chaque PR :</p>
+<div class="tablewrap"><table><thead><tr><th>Check (nom du job)</th><th>Ce qu'il vérifie</th><th>Script</th></tr></thead><tbody><tr><td><code>Politique - sources protégées</code></td><td>Aucune modification de <code>entree/</code> ; <code>contexte/</code> seulement avec le label <code>decision-referent</code></td><td><code>verifier-sources.cjs</code></td></tr><tr><td><code>Format des US de sortie</code></td><td>Toutes les US de <code>sortie/</code> respectent le modèle</td><td><code>verifier-us.cjs</code></td></tr><tr><td><code>Tests du harness</code></td><td>Scripts et hooks se comportent comme prévu</td><td><code>tester-harness.cjs</code></td></tr></tbody></table></div>
+<p>Pour qu'ils <strong>bloquent</strong> la fusion : <em>Settings &gt; Rules &gt; Rulesets</em>, nouveau ruleset sur la branche par défaut :</p>
+<ol><li><em>Require a pull request before merging</em> : 1 approbation minimum, <em>Require review from Code Owners</em>.</li><li><em>Require status checks to pass</em> : ajouter les trois checks par leur nom.</li><li><em>Block force pushes</em> et <em>Restrict deletions</em>.</li></ol>
+<p>Trois pièges à connaître :</p>
+<ul><li><strong>Filtre <code>paths</code> sur un check requis</strong> : si le workflow ne démarre pas, le check reste « en attente » et la PR est bloquée. D'où l'absence de filtre ici.</li><li><strong>Job sauté = succès</strong> : <code>politique-sources</code> est sauté sur <code>push</code>, ce n'est pas un échec.</li><li><strong>Label et sécurité</strong> : n'importe qui ayant le rôle <em>triage</em> peut poser un label. Le label <code>decision-referent</code> ne suffit pas seul : la revue Code Owners de <code>sprintdesk/contexte/</code> est la vraie barrière.</li></ul>
+<h3 id="étape-3--protéger-la-configuration-des-agents">Étape 3 — Protéger la configuration des agents<a class="a" href="#étape-3--protéger-la-configuration-des-agents">#</a></h3>
+<p><code>.github/CODEOWNERS</code> désigne les propriétaires des fichiers qui changent le comportement des agents : instructions, agents, skills, hooks, scripts, workflows. Avec <em>Require review from Code Owners</em>, un agent (ou un humain) qui modifie ces fichiers doit obtenir leur approbation.</p>
+<p>Remplacer les équipes d'exemple (<code>@habiouest/...</code>) par de vraies équipes avant d'activer la règle.</p>
+<h3 id="étape-4--le-parcours-dune-pr-ouverte-par-copilot">Étape 4 — Le parcours d'une PR ouverte par Copilot<a class="a" href="#étape-4--le-parcours-dune-pr-ouverte-par-copilot">#</a></h3>
+<p>Exemple : une issue « Réécrire le lot 2 selon le plan approuvé » est assignée à Copilot.</p>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>Étape</th><th>Qui</th><th>Garde-fou</th></tr></thead><tbody><tr><td>1</td><td>Assignation de l'issue</td><td>Humain avec accès en écriture</td><td>Les commentaires de personnes sans accès en écriture ne sont jamais transmis à l'agent</td></tr><tr><td>2</td><td>Préparation</td><td><code>copilot-setup-steps</code></td><td>Node.js installé, tests du harness</td></tr><tr><td>3</td><td>Travail</td><td>Cloud agent sur une branche <code>copilot/...</code></td><td>Hooks <code>.github/hooks/</code>, pare-feu, une seule branche</td></tr><tr><td>4</td><td>PR <strong>brouillon</strong></td><td>Cloud agent</td><td>Il ne peut pas la passer en « prête », ni l'approuver, ni la fusionner</td></tr><tr><td>5</td><td>Lancement des workflows</td><td>Humain : <strong>Approve and run workflows</strong></td><td>Par défaut, aucun workflow ne tourne sur le code de l'agent sans ce clic</td></tr><tr><td>6</td><td>Checks requis</td><td>Actions</td><td>Politique, format, tests</td></tr><tr><td>7</td><td>Revue</td><td>Un humain <strong>autre</strong> que celui qui a demandé la tâche</td><td>Le demandeur ne peut pas approuver ; une approbation de plus est exigée si la PR n'est attribuée à personne</td></tr><tr><td>8</td><td>Fusion</td><td>Humain</td><td>Ruleset</td></tr><tr><td>9</td><td>Publication</td><td><code>publication-backlog.yml</code></td><td>Approbation de l'environnement <code>publication</code></td></tr></tbody></table></div>
+<p>Les commits de l'agent sont signés, ont Copilot comme auteur et le demandeur comme co-auteur, et leur message pointe vers le journal de session.</p>
+<h3 id="étape-5--revenir-en-arrière-par-sha">Étape 5 — Revenir en arrière par SHA<a class="a" href="#étape-5--revenir-en-arrière-par-sha">#</a></h3>
+<p>Cas : la PR du lot 2 a été fusionnée, puis on découvre qu'une US tranche ND-04.</p>
+<ol><li>Retrouver le SHA du commit fautif (historique de <code>main</code>, ou colonne « Commit » du journal d'exécution).</li><li><em>Actions &gt; Rollback backlog (revert par SHA) &gt; Run workflow</em> : SHA complet (40 caractères) et motif.</li><li>Le workflow vérifie le format du SHA, vérifie qu'il appartient à <code>main</code>, crée une branche <code>rollback/...</code>, applique <code>git revert</code> (avec <code>-m 1</code> pour un commit de fusion) et ouvre une PR brouillon.</li><li>Revue et checks requis comme pour toute PR, puis fusion.</li></ol>
+<div class="tablewrap"><table><thead><tr><th>Pourquoi <code>revert</code> et pas <code>reset</code> ?</th><th></th></tr></thead><tbody><tr><td><code>git revert</code></td><td>Ajoute un commit qui annule. Historique intact, audit possible, et le revert est lui-même annulable.</td></tr><tr><td><code>git reset --hard</code> + <code>push --force</code></td><td>Réécrit l'historique partagé : commits perdus pour les autres, audit cassé. Bloqué par le ruleset.</td></tr></tbody></table></div>
+<p>Limite : une PR créée avec <code>GITHUB_TOKEN</code> ne déclenche pas les workflows <code>pull_request</code>. Pour faire tourner les checks requis, un humain pousse un commit sur la branche (ou ferme et rouvre la PR), ou l'on utilise le jeton d'une GitHub App.</p>
+<h3 id="étape-6--publier-et-republier-une-version-saine">Étape 6 — Publier, et republier une version saine<a class="a" href="#étape-6--publier-et-republier-une-version-saine">#</a></h3>
+<p><code>publication-backlog.yml</code> s'exécute après chaque fusion qui touche <code>sprintdesk/backlog/sortie/</code> :</p>
+<ol><li>Job <code>controler</code> : vérifie le format, empaquette le backlog.</li><li>Job <code>publier</code> : attend l'<strong>approbation de l'environnement</strong> <code>publication</code>, puis crée une release.</li></ol>
+<p>Configurer l'environnement (<em>Settings &gt; Environments &gt; publication</em>) : <em>Required reviewers</em> (référent produit), <em>Prevent self-review</em>, branches autorisées : <code>main</code> uniquement.</p>
+<p>Rollback d'une publication : relancer le workflow à la main avec le SHA d'une version saine. On republie un état connu ; on ne touche pas à l'historique.</p>
+<h3 id="étape-7--les-workflows-agentiques-github-agentic-workflows">Étape 7 — Les workflows agentiques (GitHub Agentic Workflows)<a class="a" href="#étape-7--les-workflows-agentiques-github-agentic-workflows">#</a></h3>
+<p>Un workflow agentique est un fichier Markdown : un en-tête YAML (déclencheur, droits, outils, sorties autorisées) et des consignes en langage naturel. On le compile en workflow Actions :</p>
+<div class="code"><span class="lang">bash</span><button type="button">Copier</button><pre><code>gh extension install github/gh-aw
+gh aw compile          # produit .github/workflows/triage-demande.lock.yml</code></pre></div>
+<p>On versionne <strong>les deux</strong> fichiers : le <code>.md</code> (lisible) et le <code>.lock.yml</code> (exécuté).</p>
+<p>Le principe de sécurité : <strong>l'agent ne peut rien écrire lui-même</strong>. Il travaille avec des droits en lecture et produit des demandes d'écriture (<em>safe outputs</em>). Un job séparé, aux droits limités, les applique si elles respectent les règles.</p>
+<p>Lecture de <code>triage-demande.md</code> :</p>
+<div class="tablewrap"><table><thead><tr><th>Ligne</th><th>Effet</th></tr></thead><tbody><tr><td><code>permissions: contents: read, issues: read</code></td><td>L'agent lit, n'écrit pas</td></tr><tr><td><code>add-comment: max: 1</code></td><td>Au plus un commentaire</td></tr><tr><td><code>add-labels: allowed: [...]</code></td><td>Seuls ces labels sont possibles. Aucun label de priorité : <strong>RM-05</strong> est imposée par la configuration, pas seulement par la consigne</td></tr><tr><td><code>noop</code></td><td>L'agent doit le signaler quand il n'y a rien à faire : un silence n'est jamais ambigu</td></tr><tr><td><code>staged: true</code></td><td>Mode aperçu : les sorties sont affichées dans le résumé du run, rien n'est écrit. À retirer après validation humaine</td></tr></tbody></table></div>
+<p>Lecture de <code>revue-pr-backlog.md</code> : <code>submit-pull-request-review</code> avec <code>allowed-events: [COMMENT]</code>. L'agent commente, il <strong>n'approuve jamais</strong>. L'approbation reste humaine.</p>
+<h3 id="étape-8--alternative--copilot-cli-dans-une-étape-actions">Étape 8 — Alternative : Copilot CLI dans une étape Actions<a class="a" href="#étape-8--alternative--copilot-cli-dans-une-étape-actions">#</a></h3>
+<p>Pour un besoin ponctuel (ex. résumé quotidien des US modifiées) :</p>
+<div class="code"><span class="lang">yaml</span><button type="button">Copier</button><pre><code>- run: npm install -g @github/copilot
+- env:
+    COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}   # PAT fin avec la permission « Copilot Requests »
+  run: |
+    copilot -p &quot;Résume les US modifiées aujourd&#x27;hui dans sprintdesk/backlog/sortie/ dans resume.md&quot; \
+      --allow-tool=&#x27;shell(git:*)&#x27; --allow-tool=write --no-ask-user
+    cat resume.md &gt;&gt; &quot;$GITHUB_STEP_SUMMARY&quot;</code></pre></div>
+<div class="tablewrap"><table><thead><tr><th>Option</th><th>Rôle</th></tr></thead><tbody><tr><td><code>-p</code></td><td>Mode programmatique : un prompt, puis fin</td></tr><tr><td><code>--allow-tool='shell(git:*)'</code></td><td>Seules les commandes <code>git</code> sont autorisées</td></tr><tr><td><code>--allow-tool=write</code></td><td>Écriture de fichiers sur le runner</td></tr><tr><td><code>--no-ask-user</code></td><td>Aucune question : personne pour répondre</td></tr></tbody></table></div>
+<p>GitHub recommande les workflows agentiques pour la plupart des automatisations : garde-fous intégrés, <code>GITHUB_TOKEN</code> par défaut.</p>
+<h3 id="étape-9--donner-des-outils-externes-au-cloud-agent-mcp">Étape 9 — Donner des outils externes au cloud agent (MCP)<a class="a" href="#étape-9--donner-des-outils-externes-au-cloud-agent-mcp">#</a></h3>
+<p>Dans les <em>Settings</em> du dépôt, section Copilot (cloud agent), configuration MCP en JSON :</p>
+<div class="code"><span class="lang">json</span><button type="button">Copier</button><pre><code>{
+  &quot;mcpServers&quot;: {
+    &quot;referentiel-habiouest&quot;: {
+      &quot;type&quot;: &quot;http&quot;,
+      &quot;url&quot;: &quot;https://mcp.exemple-habiouest.fr/mcp&quot;,
+      &quot;headers&quot;: { &quot;Authorization&quot;: &quot;Bearer $COPILOT_MCP_REFERENTIEL_TOKEN&quot; },
+      &quot;tools&quot;: [&quot;lire_service&quot;, &quot;lister_agences&quot;]
+    }
+  }
+}</code></pre></div>
+<div class="tablewrap"><table><thead><tr><th>Règle</th><th>Pourquoi</th></tr></thead><tbody><tr><td><code>tools</code> : liste explicite d'outils en lecture</td><td>Le cloud agent utilise les outils MCP <strong>sans demander d'approbation</strong></td></tr><tr><td>Secrets préfixés <code>COPILOT_MCP_</code>, dans les secrets <em>Agents</em></td><td>Seuls ces secrets sont visibles par la configuration MCP</td></tr><tr><td>Vérifier dans le journal de session, étape « Start MCP Servers »</td><td>C'est là qu'on voit les outils réellement chargés</td></tr><tr><td>Le serveur MCP GitHub intégré est en lecture seule, sur le dépôt courant</td><td>L'élargir demande un jeton dédié, avec le minimum de droits</td></tr></tbody></table></div>
+<h2 id="checklist">Checklist<a class="a" href="#checklist">#</a></h2>
+<ul class="check"><li>☐ <code>copilot-setup-steps.yml</code> est sur <code>main</code>, avec un job <code>copilot-setup-steps</code>.</li><li>☐ Les trois checks de « Contrôle backlog » sont requis dans un ruleset.</li><li>☐ <em>Require review from Code Owners</em> est activé, avec de vraies équipes dans <code>CODEOWNERS</code>.</li><li>☐ L'environnement <code>publication</code> a des approbateurs et interdit l'auto-approbation.</li><li>☐ Les workflows agentiques sont compilés et testés en <code>staged: true</code> avant activation.</li><li>☐ Aucun secret dont l'agent n'a pas besoin n'est dans les secrets <em>Agents</em>.</li></ul>
+<h2 id="pièges">Pièges<a class="a" href="#pièges">#</a></h2>
+<ul><li><strong>Croire que la PR de Copilot est testée</strong> : sans « Approve and run workflows », aucun check n'a tourné.</li><li><strong>Approuver sa propre demande</strong> : impossible ; prévoir un second relecteur.</li><li><strong>Donner <code>contents: write</code> à tout le workflow</strong> : déclarer les droits par job, au plus juste.</li><li><strong>Interpoler <code>${{ inputs.x }}</code> dans un <code>run:</code></strong> : injection de commande possible. Passer par <code>env:</code>.</li><li><strong>Oublier le <code>.lock.yml</code></strong> : un workflow agentique non compilé ne s'exécute pas.</li><li><strong>Laisser <code>staged: true</code> sans le dire</strong> : l'équipe croit que le triage fonctionne alors que rien n'est écrit.</li></ul>
+<blockquote><p>Références : <a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/customize-the-agent-environment">environnement du cloud agent</a>, <a href="https://docs.github.com/en/copilot/concepts/agents/cloud-agent/risks-and-mitigations">risques et protections du cloud agent</a>, <a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers">serveurs MCP du dépôt</a>, <a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/automate-copilot-cli/automate-with-actions">Copilot CLI dans Actions</a>, <a href="https://github.github.com/gh-aw/">GitHub Agentic Workflows</a>.</p></blockquote><div class="pager"><a href="../docs/11-planificateur-orchestration.html"><small>← Précédent</small>11 · Planifier & orchestrer</a><a class="n" href="../../revisions/index.html"><small>Suivant →</small>Révisions GH-600</a></div><footer>SprintDesk · HabiOuest (cas fictif)</footer></main></div>
+<script>document.querySelectorAll('.code button').forEach(function(b){b.addEventListener('click',function(){
+var t=b.parentElement.querySelector('code').innerText;
+(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier'},1500)}).catch(function(){});
+})});</script></body></html>

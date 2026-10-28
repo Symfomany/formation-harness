@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bonus 10 — Les hooks, pas à pas</title><style>
+:root{--bg:#f6f7fb;--panel:#fff;--text:#1f2433;--muted:#667085;--line:#e4e7ee;--accent:#5b5bd6;--accent-soft:#eceafd;
+--code-bg:#14172b;--code-text:#e6e8f5;--inline:#eef0f6;--warn-bg:#fff7e6;--warn:#b54708;--shadow:0 1px 3px rgba(20,23,43,.08),0 8px 24px rgba(20,23,43,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1220;--panel:#171a2c;--text:#e6e8f5;--muted:#9aa2c0;--line:#272b45;--accent:#8b8bff;--accent-soft:#242850;
+--code-bg:#0a0c18;--code-text:#e6e8f5;--inline:#242848;--warn-bg:#2b2310;--warn:#fbbf24;--shadow:0 1px 3px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+nav.side{position:sticky;top:0;height:100vh;overflow:auto;padding:24px 16px;background:var(--panel);border-right:1px solid var(--line)}
+.brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:15px;margin:0 8px 20px}
+.brand i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#5b5bd6,#a78bfa);color:#fff;font-style:normal}
+nav.side a{display:block;padding:8px 12px;margin:2px 0;border-radius:8px;color:var(--text);text-decoration:none;font-size:14.5px}
+nav.side a:hover{background:var(--accent-soft)}
+nav.side a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.side .grp{margin:18px 12px 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+main{padding:32px clamp(16px,4vw,56px) 64px;max-width:980px;width:100%;margin:0 auto}
+.hero{margin:0 -4px 28px;padding:40px clamp(20px,4vw,40px);border-radius:20px;color:#fff;background:linear-gradient(135deg,#4338ca,#7c3aed 60%,#c084fc);box-shadow:var(--shadow)}
+.hero h1{margin:0;font-size:clamp(26px,4vw,38px);line-height:1.2}
+.hero p{margin:12px 0 0;opacity:.92}
+.hero a{color:#fff}
+h2{margin:44px 0 14px;font-size:24px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h3{margin:30px 0 10px;font-size:19px}
+h2 .a,h3 .a{margin-left:8px;color:var(--muted);text-decoration:none;opacity:0;font-weight:400}
+h2:hover .a,h3:hover .a{opacity:1}
+p,ul,ol{margin:12px 0}li{margin:5px 0}
+a{color:var(--accent)}
+code{font:0.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--inline);padding:2px 6px;border-radius:6px}
+.code{position:relative;margin:16px 0;border-radius:14px;overflow:hidden;background:var(--code-bg);box-shadow:var(--shadow)}
+.code .lang{display:block;padding:8px 16px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9aa2c0;border-bottom:1px solid #272b45}
+.code pre{margin:0;padding:16px;overflow:auto;color:var(--code-text)}
+.code pre code{background:none;padding:0;color:inherit;font-size:13.5px;line-height:1.5;display:block}
+.code button{position:absolute;top:6px;right:8px;border:0;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;background:#272b45;color:#cfd3ea}
+.code button:hover{background:var(--accent);color:#fff}
+.tablewrap{overflow-x:auto;margin:18px 0;border-radius:14px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{background:var(--accent-soft);text-align:left;font-weight:600}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--accent-soft)}
+ul.check{list-style:none;padding-left:4px}
+blockquote{margin:18px 0;padding:12px 18px;border-left:4px solid var(--warn);background:var(--warn-bg);border-radius:0 12px 12px 0}
+blockquote p{margin:4px 0}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:56px}
+.pager a{flex:1;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-decoration:none;color:var(--text);box-shadow:var(--shadow)}
+.pager a:hover{border-color:var(--accent)}.pager small{display:block;color:var(--muted)}.pager .n{text-align:right}
+footer{margin-top:32px;color:var(--muted);font-size:13px;text-align:center}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px;border-right:0;border-bottom:1px solid var(--line)}
+nav.side .brand,nav.side .grp{width:100%}nav.side a{margin:0}}
+</style></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Harness Copilot</div><a href="../index.html">Accueil</a><a href="../docs/index.html">Vue d'ensemble</a><div class="grp">Atelier 1 · Planifier</div><a href="../docs/01-instructions.html">1 · Instructions</a><a href="../docs/02-plan.html">2 · Prompter le plan</a><div class="grp">Atelier 2 · Acter</div><a href="../docs/03-architecture-agents.html">3 · Architecture & SDLC</a><a href="../docs/04-agents.html">4 · Agents</a><a href="../docs/05-skills.html">5 · Skills</a><a href="../docs/06-prompts.html">6 · Prompts (annexe)</a><div class="grp">Bonus · Analyser</div><a href="../docs/07-evaluation.html">7 · Évaluer & ajuster</a><div class="grp">Bonus · Automatiser</div><a href="../docs/10-hooks.html">10 · Hooks pas à pas</a><a href="../docs/11-planificateur-orchestration.html">11 · Planifier & orchestrer</a><a href="../docs/12-workflows-agentiques.html">12 · Workflows & Actions</a><a href="../../revisions/index.html">Révisions GH-600</a><div class="grp">Bonus · Automatiser</div><a class="on" href="../docs/10-hooks.html">10 · Hooks pas à pas</a><a href="../docs/11-planificateur-orchestration.html">11 · Planifier & orchestrer</a><a href="../docs/12-workflows-agentiques.html">12 · Workflows & Actions</a><a href="../../revisions/index.html">Révisions GH-600</a><div class="grp">Ressources</div><a href="../docs/Aide_Memoire_Participant.pdf">Aide-mémoire (PDF)</a></nav>
+<main><header class="hero"><h1>Bonus 10 — Les hooks, pas à pas</h1></header>
+<h2 id="à-quoi-ça-sert">À quoi ça sert<a class="a" href="#à-quoi-ça-sert">#</a></h2>
+<p>Une instruction <strong>demande</strong> à l'agent de respecter une règle. Un hook <strong>l'impose</strong>.</p>
+<p>Un hook est un petit programme lancé automatiquement à un moment précis de la vie d'un agent : démarrage de session, avant un outil, après un outil, fin de tour. Il reçoit un événement en JSON et peut répondre : refuser une action, ajouter du contexte, forcer l'agent à continuer.</p>
+<div class="tablewrap"><table><thead><tr><th></th><th>Instruction (<code>copilot-instructions.md</code>, agent, skill)</th><th>Hook</th></tr></thead><tbody><tr><td>Nature</td><td>Texte lu par le modèle</td><td>Programme exécuté par le runtime</td></tr><tr><td>Garantie</td><td>Probable : le modèle peut l'oublier ou mal l'interpréter</td><td>Déterministe : le script s'exécute à chaque fois</td></tr><tr><td>Exemple SprintDesk</td><td>« Ne modifie pas <code>sprintdesk/contexte/</code> »</td><td>Toute écriture dans <code>sprintdesk/contexte/</code> est refusée</td></tr><tr><td>Coût d'une erreur</td><td>L'agent écrit quand même</td><td>Le script se trompe : il faut le tester</td></tr></tbody></table></div>
+<p>Règle simple : <strong>ce qui ne doit jamais arriver</strong> va dans un hook ; <strong>ce qui guide le travail</strong> reste dans les instructions.</p>
+<blockquote><p>Le dépôt contient un jeu complet de hooks prêts à l'emploi dans <code>.github/hooks-exemples/</code>. Ils ne sont <strong>pas actifs</strong> tant qu'ils ne sont pas copiés dans <code>.github/hooks/</code>. Ce guide les construit et les explique un par un.</p></blockquote>
+<h2 id="1-les-notions-à-connaître">1. Les notions à connaître<a class="a" href="#1-les-notions-à-connaître">#</a></h2>
+<h3 id="où-vivent-les-hooks">Où vivent les hooks<a class="a" href="#où-vivent-les-hooks">#</a></h3>
+<div class="tablewrap"><table><thead><tr><th>Surface</th><th>Emplacement lu</th><th>Particularités</th></tr></thead><tbody><tr><td>VS Code (session cible « Copilot »)</td><td><code>.github/hooks/*.json</code>, <code>~/.copilot/hooks/</code></td><td>Même format que la CLI (harness partagé). En préversion.</td></tr><tr><td>Copilot CLI</td><td>Idem + <code>.github/copilot/settings.json</code>, hooks de plugin, <strong>hooks de politique</strong> machine</td><td>Tous les événements. Les hooks de politique (administrateur) ne se désactivent pas.</td></tr><tr><td>Copilot cloud agent (sur GitHub)</td><td><code>.github/hooks/*.json</code> du dépôt cloné <strong>uniquement</strong></td><td>Linux : seul <code>bash</code> (ou <code>command</code>) est exécuté, <code>powershell</code> est ignoré. Disque éphémère. <code>ask</code> vaut <code>deny</code>.</td></tr></tbody></table></div>
+<h3 id="les-événements-utiles-pour-sprintdesk">Les événements utiles pour SprintDesk<a class="a" href="#les-événements-utiles-pour-sprintdesk">#</a></h3>
+<div class="tablewrap"><table><thead><tr><th>Événement</th><th>Moment</th><th>Ce que le hook peut faire</th><th>Usage dans ce guide</th></tr></thead><tbody><tr><td><code>sessionStart</code></td><td>Début ou reprise de session</td><td>Ajouter du contexte (<code>additionalContext</code>)</td><td>Rappeler les ND-xx à jour</td></tr><tr><td><code>preToolUse</code></td><td>Avant chaque outil</td><td>Refuser (<code>deny</code>), autoriser, modifier les arguments</td><td>Protéger <code>entree/</code> et <code>contexte/</code>, bloquer <code>git push</code></td></tr><tr><td><code>postToolUse</code></td><td>Après un outil réussi</td><td>Ajouter un retour au modèle</td><td>Contrôler une US juste après son écriture</td></tr><tr><td><code>subagentStart</code></td><td>Avant un sous-agent</td><td>Préfixer sa consigne (ne peut pas bloquer)</td><td>Transmettre les interdits aux sous-agents</td></tr><tr><td><code>agentStop</code></td><td>Fin de tour de l'agent principal</td><td><code>decision: "block"</code> : forcer un tour de plus</td><td>Refuser de finir avec une US non conforme</td></tr><tr><td><code>preCompact</code></td><td>Avant le résumé automatique du contexte</td><td>Rien (notification)</td><td>Sauvegarder un état (exercice)</td></tr></tbody></table></div>
+<h3 id="le-contrat-dun-hook--commande">Le contrat d'un hook « commande »<a class="a" href="#le-contrat-dun-hook--commande">#</a></h3>
+<ul><li><strong>Entrée</strong> : un objet JSON sur l'entrée standard (stdin).</li><li><strong>Sortie</strong> : <strong>un seul</strong> objet JSON sur la sortie standard (stdout). <code>{}</code> signifie « pas d'avis ».</li><li><strong>Deux formats d'événement</strong>, choisis par le nom de l'événement dans la configuration :<ul><li><code>preToolUse</code> (camelCase) : champs <code>toolName</code>, <code>toolArgs</code> ;</li><li><code>PreToolUse</code> (PascalCase, « compatible VS Code ») : champs <code>tool_name</code>, <code>tool_input</code>, et noms d'outils façon Claude (<code>Bash</code>, <code>Edit</code>).</li></ul><p>Les scripts du dépôt acceptent les deux.</p></li></ul>
+<h3 id="échec-ouvert-ou-fermé--le-piège-principal">Échec ouvert ou fermé : le piège principal<a class="a" href="#échec-ouvert-ou-fermé--le-piège-principal">#</a></h3>
+<div class="tablewrap"><table><thead><tr><th>Situation</th><th><code>preToolUse</code> (commande)</th><th>Autres événements</th></tr></thead><tbody><tr><td>Le script plante ou sort avec un code non nul</td><td><strong>Refus</strong> (fail-closed)</td><td>Ignoré, l'agent continue</td></tr><tr><td>Code de sortie 2</td><td><strong>Refus</strong>, même si stdout dit <code>allow</code></td><td>Avertissement</td></tr><tr><td>Délai dépassé (<code>timeoutSec</code>, 30 s par défaut)</td><td><strong>Autorisé</strong> : circuit normal (fail-open)</td><td>Ignoré</td></tr><tr><td>Hook HTTP en erreur</td><td>Autorisé (fail-open)</td><td>Ignoré</td></tr></tbody></table></div>
+<p>Conséquence : un garde-fou lent n'est <strong>pas</strong> un garde-fou. Gardez les hooks sous quelques secondes.</p>
+<h2 id="2-pas-à-pas">2. Pas à pas<a class="a" href="#2-pas-à-pas">#</a></h2>
+<h3 id="étape-1--observer-avant-dinterdire--un-hook-daudit">Étape 1 — Observer avant d'interdire : un hook d'audit<a class="a" href="#étape-1--observer-avant-dinterdire--un-hook-daudit">#</a></h3>
+<p>Objectif : voir quels outils l'agent appelle, sans rien bloquer.</p>
+<p>Créer <code>.github/hooks/audit.json</code> :</p>
+<div class="code"><span class="lang">json</span><button type="button">Copier</button><pre><code>{
+  &quot;version&quot;: 1,
+  &quot;hooks&quot;: {
+    &quot;preToolUse&quot;: [
+      { &quot;type&quot;: &quot;command&quot;, &quot;command&quot;: &quot;node .github/hooks/log-tool-use.cjs&quot;, &quot;timeoutSec&quot;: 10 }
+    ]
+  }
+}</code></pre></div>
+<p>Créer <code>.github/hooks/log-tool-use.cjs</code> :</p>
+<div class="code"><span class="lang">js</span><button type="button">Copier</button><pre><code>const fs = require(&#x27;node:fs&#x27;);
+const path = require(&#x27;node:path&#x27;);
+const evt = JSON.parse(fs.readFileSync(0, &#x27;utf8&#x27;));
+const outil = evt.toolName || evt.tool_name || &#x27;inconnu&#x27;;
+fs.appendFileSync(path.join(__dirname, &#x27;tool-use.log&#x27;), `${new Date().toISOString()} ${outil}\n`);
+process.stdout.write(&#x27;{}&#x27;); // pas d&#x27;avis : la demande suit le circuit normal</code></pre></div>
+<p>Vérifier : nouvelle session, demander « Lis sprintdesk/contexte/produit.md ». Le fichier <code>tool-use.log</code> contient <code>view</code> (ou le nom de l'outil de lecture).</p>
+<p>Pourquoi <code>{}</code> et pas <code>allow</code> ? <code>allow</code> court-circuiterait la demande d'approbation. Un hook d'audit ne doit rien décider.</p>
+<p>Le journal ne contient que le <strong>nom</strong> de l'outil, jamais ses arguments : ils peuvent contenir des données sensibles. <code>.github/hooks/*.log</code> est déjà dans <code>.gitignore</code>.</p>
+<h3 id="étape-2--le-garde-fou--pretooluse-qui-refuse">Étape 2 — Le garde-fou : <code>preToolUse</code> qui refuse<a class="a" href="#étape-2--le-garde-fou--pretooluse-qui-refuse">#</a></h3>
+<p>Objectif : rendre impossibles les écritures dans <code>sprintdesk/backlog/entree/</code> et <code>sprintdesk/contexte/</code>, et les actions irréversibles (<code>git push</code>, <code>git reset --hard</code>, <code>gh pr merge</code>, <code>gh release</code>).</p>
+<p>Lire <code>.github/hooks-exemples/scripts/protege-sources.cjs</code>. Les points clés :</p>
+<div class="tablewrap"><table><thead><tr><th>Choix</th><th>Raison</th></tr></thead><tbody><tr><td>Filtrer les outils <strong>dans le script</strong> plutôt qu'avec <code>matcher</code></td><td>Les noms d'outils varient selon la surface (<code>edit</code>, <code>Edit</code>, <code>str_replace_editor</code>). Un <code>matcher</code> trop étroit laisse passer une écriture.</td></tr><tr><td>Répondre <code>deny</code> + <code>permissionDecisionReason</code></td><td>La raison est <strong>obligatoire</strong> pour un refus. Elle est montrée à l'agent, qui peut changer d'approche.</td></tr><tr><td>Ne jamais répondre <code>allow</code></td><td>Le hook ajoute une barrière, il n'en retire aucune.</td></tr><tr><td>Événement illisible → <code>deny</code></td><td>Choix volontaire d'échec fermé pour un garde-fou.</td></tr></tbody></table></div>
+<p>Tester <strong>sans agent</strong>, depuis un terminal PowerShell à la racine du dépôt :</p>
+<div class="code"><span class="lang">powershell</span><button type="button">Copier</button><pre><code>&#x27;{&quot;toolName&quot;:&quot;edit&quot;,&quot;toolArgs&quot;:{&quot;path&quot;:&quot;sprintdesk/contexte/regles-metier.md&quot;}}&#x27; | node .github/hooks-exemples/scripts/protege-sources.cjs
+&#x27;{&quot;toolName&quot;:&quot;bash&quot;,&quot;toolArgs&quot;:{&quot;command&quot;:&quot;git push origin main&quot;}}&#x27; | node .github/hooks-exemples/scripts/protege-sources.cjs
+&#x27;{&quot;toolName&quot;:&quot;create&quot;,&quot;toolArgs&quot;:{&quot;path&quot;:&quot;sprintdesk/backlog/sortie/lot1/US-101.md&quot;}}&#x27; | node .github/hooks-exemples/scripts/protege-sources.cjs</code></pre></div>
+<p>Attendu : deux <code>deny</code> avec une raison, puis <code>{}</code>.</p>
+<h3 id="étape-3--donner-le-bon-contexte-au-démarrage--sessionstart">Étape 3 — Donner le bon contexte au démarrage : <code>sessionStart</code><a class="a" href="#étape-3--donner-le-bon-contexte-au-démarrage--sessionstart">#</a></h3>
+<p>Objectif : à chaque session, rappeler les zones protégées et la liste <strong>à jour</strong> des décisions non prises.</p>
+<p><code>contexte-session.cjs</code> lit <code>sprintdesk/contexte/regles-metier.md</code> et en extrait les lignes <code>ND-xx</code>. Il n'y a donc <strong>aucune copie</strong> à maintenir : si le référent tranche ND-05 demain, le hook suit.</p>
+<p>Lors d'une <strong>reprise</strong> de session (<code>source: "resume"</code>), il ajoute une consigne : relire le plan et le journal avant d'agir, ne pas refaire une étape validée. C'est la base de la reprise sans répétition (voir <a href="../docs/11-planificateur-orchestration.html">11-planificateur-orchestration.md</a>).</p>
+<p>Tester :</p>
+<div class="code"><span class="lang">powershell</span><button type="button">Copier</button><pre><code>&#x27;{&quot;source&quot;:&quot;resume&quot;}&#x27; | node .github/hooks-exemples/scripts/contexte-session.cjs</code></pre></div>
+<h3 id="étape-4--contrôler-juste-après-lécriture--posttooluse">Étape 4 — Contrôler juste après l'écriture : <code>postToolUse</code><a class="a" href="#étape-4--contrôler-juste-après-lécriture--posttooluse">#</a></h3>
+<p>Objectif : dès que l'agent écrit une US dans <code>sprintdesk/backlog/sortie/</code>, la contrôler et lui renvoyer les écarts.</p>
+<p><code>controle-apres-ecriture.cjs</code> appelle <strong>le même script que la CI</strong> : <code>.github/scripts/verifier-us.cjs</code>. Même règle, même verdict, plus tôt. C'est le principe du « shift left » : l'erreur est corrigée pendant la session, pas découverte dans la PR.</p>
+<p>Limite à retenir : <code>postToolUse</code> ne peut <strong>pas annuler</strong> l'écriture, l'outil a déjà agi. Il ajoute un <code>additionalContext</code> que le modèle lit dans le même tour.</p>
+<p>Contrôles appliqués par <code>verifier-us.cjs</code> :</p>
+<ul><li>nom de fichier et titre <code># US-XXX — Titre</code> cohérents ;</li><li>les cinq sections du modèle présentes et non vides ;</li><li>besoin « En tant que … je souhaite … afin de … » ;</li><li>chaque critère d'acceptation sous la forme « Étant donné … quand … alors … » ;</li><li>aucune ND-xx dans un critère, et chaque ND-xx citée reprise en « Questions ouvertes » ;</li><li>une US découpée (<code>US-104a.md</code>, <code>US-104-1.md</code>) cite son US d'origine.</li></ul>
+<h3 id="étape-5--transmettre-les-interdits-aux-sous-agents--subagentstart">Étape 5 — Transmettre les interdits aux sous-agents : <code>subagentStart</code><a class="a" href="#étape-5--transmettre-les-interdits-aux-sous-agents--subagentstart">#</a></h3>
+<p>Un sous-agent ne voit pas la conversation de l'orchestrateur. Une règle dite à l'orchestrateur peut être perdue à la délégation.</p>
+<p><code>rappel-sous-agent.cjs</code> ajoute les interdits du projet <strong>en tête de la consigne</strong> de chaque sous-agent, plus une consigne propre à certains agents (le rédacteur doit lancer <code>verifier-us.cjs</code> après chaque US).</p>
+<p>Dans <code>garde-fous.json</code>, ce hook a un <code>matcher</code> : il ne s'applique qu'aux agents SprintDesk. Le <code>matcher</code> est une expression régulière ancrée (<code>^(?:...)$</code>) qui doit correspondre au nom <strong>entier</strong>.</p>
+<h3 id="étape-6--ne-pas-finir-un-travail-incomplet--agentstop">Étape 6 — Ne pas finir un travail incomplet : <code>agentStop</code><a class="a" href="#étape-6--ne-pas-finir-un-travail-incomplet--agentstop">#</a></h3>
+<p>Objectif : l'agent ne rend pas la main tant qu'une US modifiée n'est pas conforme.</p>
+<p><code>verifier-avant-arret.cjs</code> contrôle les US nouvelles ou modifiées (via <code>git status</code>). S'il reste des écarts, il répond :</p>
+<div class="code"><span class="lang">json</span><button type="button">Copier</button><pre><code>{ &quot;decision&quot;: &quot;block&quot;, &quot;reason&quot;: &quot;Avant de terminer, corrige les US non conformes : ...&quot; }</code></pre></div>
+<p>L'agent reçoit <code>reason</code> comme nouvelle consigne et repart pour un tour.</p>
+<p>Le risque est la <strong>boucle sans fin</strong>. Deux protections :</p>
+<div class="tablewrap"><table><thead><tr><th>Protection</th><th>Qui</th><th>Comportement</th></tr></thead><tbody><tr><td><code>stop_hook_active</code></td><td>Le script</td><td>Vaut <code>true</code> si le tour a déjà été forcé : le script laisse finir et rend la main à l'humain</td></tr><tr><td>Garde-fou du runtime</td><td>Copilot</td><td>Après 8 blocages consécutifs, le blocage est ignoré</td></tr></tbody></table></div>
+<p>Sur cloud agent, chaque tour forcé consomme du temps sur la durée maximale de la tâche.</p>
+<h3 id="étape-7--activer-lensemble-et-le-tester">Étape 7 — Activer l'ensemble et le tester<a class="a" href="#étape-7--activer-lensemble-et-le-tester">#</a></h3>
+<ol><li>Lancer les tests automatiques (aucun agent, aucun réseau) : Attendu : <code>Tous les tests passent.</code><div class="code"><span class="lang">powershell</span><button type="button">Copier</button><pre><code>node .github/scripts/tester-harness.cjs</code></pre></div></li><li>Activer les hooks :<div class="code"><span class="lang">powershell</span><button type="button">Copier</button><pre><code>New-Item -ItemType Directory -Force .github/hooks | Out-Null
+Copy-Item .github/hooks-exemples/garde-fous.json .github/hooks/
+Copy-Item .github/hooks-exemples/scripts .github/hooks/ -Recurse -Force</code></pre></div></li><li>Nouvelle session. Demander : « Corrige la coquille dans sprintdesk/contexte/produit.md ». Attendu : refus avec la raison du hook.</li><li>Demander au rédacteur d'écrire une US volontairement incomplète. Attendu : retour du hook <code>postToolUse</code>, puis correction.</li><li>Pour suspendre tous les hooks d'un fichier sans le supprimer : <code>"disableAllHooks": true</code> dans ce fichier.</li></ol>
+<h3 id="étape-8--la-variante-cloud-agent">Étape 8 — La variante cloud agent<a class="a" href="#étape-8--la-variante-cloud-agent">#</a></h3>
+<p>Les mêmes fichiers <code>.github/hooks/*.json</code> sont lus par Copilot cloud agent quand il travaille sur une issue. Différences à connaître :</p>
+<div class="tablewrap"><table><thead><tr><th>Point</th><th>Conséquence</th></tr></thead><tbody><tr><td>Linux uniquement</td><td>Utiliser <code>command</code> ou <code>bash</code>. Une entrée <code>powershell</code> seule est ignorée.</td></tr><tr><td>Dossier de travail <code>/workspace</code></td><td>Les chemins relatifs à la racine du dépôt fonctionnent.</td></tr><tr><td>Disque éphémère</td><td>Un journal écrit sur disque disparaît en fin de tâche : utiliser un hook <code>http</code> vers un serveur autorisé par le pare-feu.</td></tr><tr><td>Pas d'utilisateur</td><td><code>ask</code> est traité comme <code>deny</code>. <code>notification</code> et <code>permissionRequest</code> ne s'appliquent pas.</td></tr><tr><td><code>GITHUB_TOKEN</code> absent</td><td>Un hook ne peut pas appeler l'API GitHub avec ce jeton.</td></tr><tr><td>Node.js nécessaire</td><td>Installé par <code>.github/workflows/copilot-setup-steps.yml</code>.</td></tr></tbody></table></div>
+<h2 id="3-défense-en-profondeur">3. Défense en profondeur<a class="a" href="#3-défense-en-profondeur">#</a></h2>
+<p>Un hook protège la session locale ou la session de l'agent. Il ne protège pas un humain qui modifie un fichier à la main, ni un hook désactivé. D'où trois couches, chacune utile seule :</p>
+<div class="tablewrap"><table><thead><tr><th>Couche</th><th>Où</th><th>Exemple SprintDesk</th><th>Contournable par</th></tr></thead><tbody><tr><td>Instructions</td><td>Texte lu par l'agent</td><td><code>copilot-instructions.md</code> : « ne pas modifier <code>contexte/</code> »</td><td>Un oubli du modèle</td></tr><tr><td>Hook</td><td>Runtime de l'agent</td><td><code>protege-sources.cjs</code></td><td>Un humain, un hook désactivé</td></tr><tr><td>Contrôle de PR</td><td>GitHub</td><td>Check requis « Politique - sources protégées », revue Code Owners</td><td>Un administrateur qui contourne le ruleset</td></tr></tbody></table></div>
+<p>Voir <a href="../docs/12-workflows-agentiques.html">12-workflows-agentiques.md</a> pour la troisième couche.</p>
+<h2 id="checklist">Checklist<a class="a" href="#checklist">#</a></h2>
+<ul class="check"><li>☐ <code>node .github/scripts/tester-harness.cjs</code> passe.</li><li>☐ Le hook <code>preToolUse</code> ne renvoie jamais <code>allow</code>.</li><li>☐ Chaque refus a une raison compréhensible par l'agent.</li><li>☐ Aucun hook ne journalise les arguments, les prompts ou les variables d'environnement.</li><li>☐ Chaque hook s'exécute en moins de 5 secondes.</li><li>☐ Le hook <code>agentStop</code> lit <code>stop_hook_active</code>.</li><li>☐ Les fichiers de hooks sont protégés par <code>CODEOWNERS</code>.</li></ul>
+<h2 id="pièges">Pièges<a class="a" href="#pièges">#</a></h2>
+<ul><li><strong>Croire qu'un délai dépassé bloque</strong> : c'est l'inverse, le délai dépassé laisse passer.</li><li><strong>Deux objets JSON sur stdout</strong> : la sortie devient invalide et elle est ignorée. Un seul <code>process.stdout.write</code> final.</li><li><strong>Message de débogage sur stdout</strong> : même effet. Écrire les diagnostics sur stderr.</li><li><strong><code>matcher</code> trop étroit</strong> : <code>edit</code> ne couvre pas <code>create</code>. Un garde-fou filtre plutôt dans le script.</li><li><strong>Hook seulement en <code>powershell</code></strong> : ignoré par cloud agent.</li><li><strong>Interpoler un argument d'outil dans une commande shell</strong> : risque d'injection. Traiter l'événement comme une donnée.</li><li><strong>Hook qui « corrige » à la place de l'agent</strong> : un hook vérifie et signale ; il ne réécrit pas une US.</li></ul>
+<h2 id="aller-plus-loin">Aller plus loin<a class="a" href="#aller-plus-loin">#</a></h2>
+<ul><li><strong><code>preCompact</code></strong> : écrire un script qui ajoute à <code>sprintdesk/resultats/journal-lot&lt;N&gt;.md</code> l'étape en cours avant le résumé automatique du contexte.</li><li><strong>Hook propre à un agent</strong> (CLI) : déclarer <code>hooks:</code> dans l'en-tête de <code>redacteur-backlog.agent.md</code> pour que le contrôle <code>postToolUse</code> ne tourne que pendant la rédaction.</li><li><strong>Hook de politique</strong> : demander à l'équipe poste de travail de déployer <code>protege-sources</code> comme hook machine, non désactivable.</li></ul>
+<blockquote><p>Le format évolue. Références : <a href="https://docs.github.com/en/copilot/reference/hooks-reference">hooks Copilot</a> et <a href="https://code.visualstudio.com/docs/agent-customization/hooks">hooks dans VS Code</a>.</p></blockquote><div class="pager"><a href="../docs/07-evaluation.html"><small>← Précédent</small>7 · Évaluer & ajuster</a><a class="n" href="../docs/11-planificateur-orchestration.html"><small>Suivant →</small>11 · Planifier & orchestrer</a></div><footer>SprintDesk · HabiOuest (cas fictif)</footer></main></div>
+<script>document.querySelectorAll('.code button').forEach(function(b){b.addEventListener('click',function(){
+var t=b.parentElement.querySelector('code').innerText;
+(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier'},1500)}).catch(function(){});
+})});</script></body></html>

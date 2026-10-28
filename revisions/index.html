@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Révisions GH-600 — Accueil</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a class="on" href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>GH-600 — Developing in Agentic AI Systems</h1>
+<p>Réviser toute la certification avec le fil rouge SprintDesk : concepts à mémoriser, pièges, astuces, exemples concrets et mises en situation.</p>
+<div class="tags"><span>Score de réussite : 700 / 1000</span><span>6 domaines</span><span>Fonctionnalités GA surtout, préversions si courantes</span></div></header>
+
+<h2>Ce que l'examen évalue</h2>
+<p>Le profil visé <em>(audience profile)</em> : opérer, intégrer, superviser et gouverner des agents IA dans un cycle de développement réel, avec GitHub comme <strong>système de référence</strong> <em>(system of record)</em> et <strong>plan de contrôle</strong> <em>(control plane)</em>.</p>
+<div class="grid">
+<a class="card" href="01-architecture-sdlc.html"><span class="poids">15–20 %</span><b>1 · Architecture & SDLC</b><small>Étapes, entrées/sorties, anti-patterns, séparer planifier / raisonner / agir, niveaux d'autonomie, artefacts inspectables.</small><div class="bar"><i style="width:72%"></i></div></a>
+<a class="card" href="02-outils-mcp-environnements.html"><span class="poids">20–25 %</span><b>2 · Outils, MCP & environnements</b><small>Outils et permissions, serveurs MCP, registre et liste d'autorisation, CI, branches, erreurs, retries, rollback, escalade.</small><div class="bar"><i style="width:90%"></i></div></a>
+<a class="card" href="03-memoire-etat.html"><span class="poids">10–15 %</span><b>3 · Mémoire, état & exécution</b><small>Mémoire court / long terme / externe, expiration, artefacts durables, reprise, dérive, contexte périmé ou contradictoire.</small><div class="bar"><i style="width:50%"></i></div></a>
+<a class="card" href="04-evaluation-tuning.html"><span class="poids">15–20 %</span><b>4 · Évaluation & ajustement</b><small>Critères de succès, signaux qualitatifs et quantitatifs, scans automatiques, causes racines, ajuster instructions / outils / mémoire.</small><div class="bar"><i style="width:72%"></i></div></a>
+<a class="card" href="05-multi-agents.html"><span class="poids">15–20 %</span><b>5 · Orchestration multi-agents</b><small>Schémas d'orchestration, isolation, conflits, observabilité, échecs partiels, reprise, cycle de vie des agents.</small><div class="bar"><i style="width:72%"></i></div></a>
+<a class="card" href="06-garde-fous.html"><span class="poids">10–15 %</span><b>6 · Garde-fous & responsabilité</b><small>Classer les actions par risque, niveaux d'autonomie, humain dans la boucle, moindre privilège, chemins contrôlés, vitesse.</small><div class="bar"><i style="width:50%"></i></div></a>
+</div>
+
+<h2>Méthode de révision conseillée</h2>
+<div class="tablewrap"><table><thead><tr><th>Étape</th><th>Quoi</th><th>Objectif</th></tr></thead><tbody>
+<tr><td>1</td><td>Lire les 6 pages de domaine, en commençant par le domaine 2 (le plus lourd)</td><td>Connaître les mécanismes et les chiffres</td></tr>
+<tr><td>2</td><td>Refaire le parcours de la formation : <a href="../docs/10-hooks.md">hooks</a>, <a href="../docs/11-planificateur-orchestration.md">planificateur</a>, <a href="../docs/12-workflows-agentiques.md">workflows</a></td><td>Ancrer chaque concept dans un exemple manipulé</td></tr>
+<tr><td>3</td><td><a href="07-scenarios.html">Scénarios d'examen</a> : répondre <strong>avant</strong> d'ouvrir la correction</td><td>S'entraîner à raisonner sur des situations concrètes</td></tr>
+<tr><td>4</td><td><a href="08-quiz.html">Quiz</a> par domaine, puis en entier, mélangé</td><td>Mesurer, viser 80 % pour avoir de la marge</td></tr>
+<tr><td>5</td><td>La veille : <a href="09-fiche-memo.html">fiche mémo</a></td><td>Revoir chiffres, noms exacts, pièges</td></tr>
+</tbody></table></div>
+
+<h2>Sept réflexes qui répondent à une majorité de questions</h2>
+<div class="box memo"><b>Quand vous hésitez entre deux réponses, choisissez celle qui :</b>
+<ol>
+<li><strong>Impose par un mécanisme</strong> plutôt que par une consigne : ruleset, check requis, hook, permission, environnement protégé &gt; phrase dans les instructions.</li>
+<li><strong>Donne le moindre privilège</strong> : outils listés, jeton en lecture, permissions par job, MCP en lecture seule.</li>
+<li><strong>Garde un humain sur l'irréversible</strong> (fusion, déploiement, suppression, secrets, droits) et <strong>seulement là</strong> : une approbation qui ne réduit aucun risque est une mauvaise réponse.</li>
+<li><strong>Laisse une trace durable et inspectable</strong> : fichier de plan, PR, commit, journal de session, artefact de workflow &gt; « l'agent s'en souviendra ».</li>
+<li><strong>Se fonde sur des preuves</strong> : résultat CI, scan, journal &gt; affirmation de l'agent (« les tests passent »).</li>
+<li><strong>Annule sans réécrire l'histoire</strong> : <code>git revert</code>, redéploiement d'un SHA sain &gt; <code>reset --hard</code>, <code>push --force</code>.</li>
+<li><strong>Corrige la cause</strong>, une chose à la fois : classer (raisonnement, outil, contexte, environnement) avant d'ajuster.</li>
+</ol></div>
+
+<h2>Correspondance avec la formation</h2>
+<div class="tablewrap"><table><thead><tr><th>Domaine</th><th>Chapitres de la formation</th><th>Fichiers du dépôt à relire</th></tr></thead><tbody>
+<tr><td>1</td><td>02 Plan, 03 Architecture, 11 Planificateur</td><td><code>.github/agents/planificateur-backlog.agent.md</code></td></tr>
+<tr><td>2</td><td>04 Agents, 08 Environnements, 12 Workflows</td><td><code>.github/workflows/*.yml</code>, <code>copilot-setup-steps.yml</code></td></tr>
+<tr><td>3</td><td>01 Instructions, 11 (journal, reprise)</td><td><code>PLAN.md</code>, <code>journal-lot&lt;N&gt;.md</code></td></tr>
+<tr><td>4</td><td>07 Évaluation, 10 Hooks (postToolUse)</td><td><code>.github/scripts/verifier-us.cjs</code></td></tr>
+<tr><td>5</td><td>09 Orchestration, 11 (parallélisme, conflits)</td><td><code>.github/agents/*.agent.md</code></td></tr>
+<tr><td>6</td><td>10 Hooks, 12 (rulesets, environnements)</td><td><code>.github/hooks-exemples/</code>, <code>CODEOWNERS</code>, <code>rollback-backlog.yml</code></td></tr>
+</tbody></table></div>
+<div class="box piege"><b>Attention aux noms qui changent.</b> « Copilot coding agent » s'appelle désormais <strong>Copilot cloud agent</strong>. Les questions peuvent employer l'un ou l'autre. Même chose pour certains réglages : raisonnez sur le mécanisme, pas sur le libellé exact.</div>
+
+<div class="pager"><a href="../html/index.html"><small>← Formation</small>Accueil de la formation</a><a class="n" href="01-architecture-sdlc.html"><small>Suivant →</small>1 · Architecture & SDLC</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif). Sources : guide d'étude Microsoft Learn GH-600 et documentation GitHub Copilot.</footer>
+</main></div></body></html>

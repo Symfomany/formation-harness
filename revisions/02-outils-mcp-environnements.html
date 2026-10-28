@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · 2 — Outils, MCP et environnements</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a class="on" href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>2 · Outils, MCP et environnements d'exécution</h1>
+<p><em>Implement tool use and environment interaction</em></p>
+<div class="tags"><span>20–25 % de l'examen : le plus gros domaine</span><span>Formation : chapitres 04, 08, 12</span></div></header>
+
+<h2>Ce que dit le guide d'étude</h2>
+<div class="tablewrap"><table><thead><tr><th>Compétence</th><th>Points évalués</th></tr></thead><tbody>
+<tr><td>Choisir et configurer les outils</td><td>Outils nécessaires ; configuration ; permissions des outils.</td></tr>
+<tr><td>Configurer les serveurs MCP</td><td>Ajouter un serveur MCP à un agent ; serveur MCP GitHub distant ; registres MCP ; listes d'autorisation <em>(allow lists)</em>.</td></tr>
+<tr><td>Intégrer les agents aux environnements</td><td>Contexte d'exécution ; portée à un dépôt ; invocation en CI ; portée par branche ; actions autonomes (branches, PR) ; contraintes propres à l'environnement.</td></tr>
+<tr><td>Exécution sûre et gestion d'erreurs</td><td>Gestion d'erreurs ; retries ; rollbacks ; chemins d'escalade ; traçabilité et responsabilité.</td></tr>
+</tbody></table></div>
+
+<h2>1. Les outils d'un agent personnalisé</h2>
+<div class="tablewrap"><table><thead><tr><th>Alias (insensible à la casse)</th><th>Alias compatibles</th><th>Rôle</th></tr></thead><tbody>
+<tr><td><code>read</code></td><td><code>Read</code>, <code>NotebookRead</code></td><td>Lire des fichiers</td></tr>
+<tr><td><code>search</code></td><td><code>Grep</code>, <code>Glob</code></td><td>Chercher des fichiers ou du texte</td></tr>
+<tr><td><code>edit</code></td><td><code>Edit</code>, <code>MultiEdit</code>, <code>Write</code>, <code>NotebookEdit</code></td><td>Modifier des fichiers</td></tr>
+<tr><td><code>execute</code></td><td><code>shell</code>, <code>Bash</code>, <code>powershell</code></td><td>Lancer des commandes</td></tr>
+<tr><td><code>agent</code></td><td><code>custom-agent</code>, <code>Task</code></td><td>Appeler un autre agent</td></tr>
+<tr><td><code>web</code></td><td><code>WebSearch</code>, <code>WebFetch</code></td><td>Web (pas pour le cloud agent)</td></tr>
+<tr><td><code>todo</code></td><td><code>TodoWrite</code></td><td>Liste de tâches (VS Code, pas le cloud agent)</td></tr>
+</tbody></table></div>
+<div class="box memo"><b>Règles de la propriété <code>tools</code></b><ul>
+<li>Absente ou <code>["*"]</code> : <strong>tous</strong> les outils, y compris MCP.</li>
+<li><code>[]</code> : <strong>aucun</strong> outil.</li>
+<li>Liste : seulement ceux-là. Un nom inconnu est <strong>ignoré</strong> sans erreur.</li>
+<li>Outil MCP : <code>serveur/outil</code> ; tous les outils d'un serveur : <code>serveur/*</code>.</li>
+<li>Serveurs MCP intégrés au cloud agent : <code>github</code> (lecture seule, jeton limité au dépôt) et <code>playwright</code> (localhost seulement).</li>
+</ul></div>
+
+<h3>Le profil d'agent (<code>.agent.md</code>)</h3>
+<div class="tablewrap"><table><thead><tr><th>Propriété</th><th>À retenir</th></tr></thead><tbody>
+<tr><td><code>description</code></td><td><strong>Seule propriété obligatoire</strong></td></tr>
+<tr><td><code>name</code>, <code>model</code></td><td>Facultatifs ; sans <code>model</code>, modèle par défaut</td></tr>
+<tr><td><code>target</code></td><td><code>vscode</code> ou <code>github-copilot</code> ; absent = les deux</td></tr>
+<tr><td><code>disable-model-invocation</code></td><td><code>true</code> : le cloud agent ne choisit pas l'agent tout seul, il faut le sélectionner (remplace <code>infer: false</code>, retiré)</td></tr>
+<tr><td><code>user-invocable</code></td><td><code>false</code> : non sélectionnable par l'utilisateur, appel programmatique seulement</td></tr>
+<tr><td><code>mcp-servers</code>, <code>metadata</code></td><td>GitHub.com et CLI ; <strong>ignorés dans VS Code</strong></td></tr>
+<tr><td><code>handoffs</code>, <code>argument-hint</code></td><td>VS Code ; <strong>ignorés sur GitHub.com</strong></td></tr>
+<tr><td>Corps (prompt)</td><td>30 000 caractères maximum</td></tr>
+</tbody></table></div>
+<p>Emplacements : dépôt <code>.github/agents/</code> ; organisation ou entreprise : dépôt <code>.github-private</code>, dossier <code>agents/</code>. En cas de conflit de nom, <strong>le niveau le plus bas gagne</strong> (dépôt &gt; organisation &gt; entreprise). Version d'un agent = SHA du commit du fichier ; une PR garde la même version de l'agent pendant toute sa vie.</p>
+
+<h3>Permissions des outils selon la surface</h3>
+<div class="tablewrap"><table><thead><tr><th>Surface</th><th>Mécanisme</th></tr></thead><tbody>
+<tr><td>VS Code</td><td>Approbation par appel, par session, par espace de travail ; règles d'approbation automatique des commandes terminal ; hooks <code>preToolUse</code></td></tr>
+<tr><td>Copilot CLI</td><td><code>--allow-tool</code>, <code>--deny-tool</code> (<strong>le refus l'emporte</strong>), <code>--allow-all-tools</code> ; motifs <code>shell(git:*)</code>, <code>write</code>, <code>NomServeur(outil)</code> ; répertoires de confiance</td></tr>
+<tr><td>Cloud agent</td><td>Pas d'approbation interactive : les outils MCP s'exécutent <strong>sans demander</strong> → liste <code>tools</code> stricte ; hooks du dépôt ; pare-feu</td></tr>
+</tbody></table></div>
+
+<h2>2. Serveurs MCP</h2>
+<div class="tablewrap"><table><thead><tr><th></th><th>VS Code</th><th>Cloud agent (réglages du dépôt)</th></tr></thead><tbody>
+<tr><td>Fichier / lieu</td><td><code>.vscode/mcp.json</code></td><td><em>Settings</em> du dépôt, section Copilot (cloud agent), configuration MCP en JSON</td></tr>
+<tr><td>Clé racine</td><td><code>servers</code> (+ <code>inputs</code> pour les secrets saisis)</td><td><code>mcpServers</code></td></tr>
+<tr><td>Types</td><td><code>stdio</code>, <code>http</code>, <code>sse</code></td><td><code>local</code> (= <code>stdio</code>), <code>http</code>, <code>sse</code></td></tr>
+<tr><td>Secrets</td><td>Variables d'entrée, fichier <code>.env</code></td><td>Secrets <em>Agents</em> préfixés <code>COPILOT_MCP_</code></td></tr>
+<tr><td>Liste d'outils</td><td>Choix dans l'interface</td><td><code>tools</code> : liste explicite (préférer des outils en lecture) ou <code>*</code></td></tr>
+<tr><td>Limites</td><td>—</td><td>Outils seulement (pas de <em>resources</em> ni de <em>prompts</em>) ; pas de serveur distant à authentification OAuth</td></tr>
+</tbody></table></div>
+<pre class="code"><code>{
+  "mcpServers": {
+    "referentiel": {
+      "type": "http",
+      "url": "https://mcp.exemple.fr/mcp",
+      "headers": { "Authorization": "Bearer $COPILOT_MCP_REFERENTIEL_TOKEN" },
+      "tools": ["lire_service", "lister_agences"]
+    }
+  }
+}</code></pre>
+<p>Vérifier : journal de session du cloud agent, étape <strong>Start MCP Servers</strong> (outils réellement chargés).</p>
+
+<h3>Serveur MCP GitHub</h3>
+<ul>
+<li>Distant : <code>https://api.githubcopilot.com/mcp/</code>. Lecture seule : <code>/mcp/readonly</code> (ou en-tête dédié). Limiter les jeux d'outils : en-tête <code>X-MCP-Toolsets</code>.</li>
+<li>Dans le cloud agent : intégré, <strong>lecture seule, limité au dépôt courant</strong>. Pour l'élargir : jeton dédié (ex. secret <code>COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN</code>) avec le minimum de droits, ou une GitHub App.</li>
+</ul>
+
+<h3>Registre et liste d'autorisation</h3>
+<ul>
+<li>Politique organisation / entreprise : activer ou non les serveurs MCP dans Copilot.</li>
+<li>Registre MCP : URL d'un registre approuvé ; politique <strong>Allow all</strong> ou <strong>Registry only</strong> (seuls les serveurs du registre sont utilisables).</li>
+<li>Copilot code review n'utilise que des outils MCP marqués en lecture (<code>readOnlyHint: true</code>).</li>
+</ul>
+
+<h2>3. Contextes d'exécution</h2>
+<div class="tablewrap"><table><thead><tr><th>Contexte</th><th>Où ça tourne</th><th>Identité et droits</th><th>Contraintes clés</th></tr></thead><tbody>
+<tr><td>VS Code (agent local)</td><td>Votre poste</td><td>Vos droits locaux</td><td>Approbations, hooks, outils de l'agent</td></tr>
+<tr><td>Copilot CLI</td><td>Votre poste ou un runner</td><td>Votre compte ou un jeton</td><td>Répertoires de confiance, <code>--allow-tool</code></td></tr>
+<tr><td>Cloud agent</td><td>Runner GitHub Actions éphémère</td><td>Jeton limité, une branche</td><td>Un seul dépôt, une branche, une PR par tâche, 59 min max, pare-feu</td></tr>
+<tr><td>Workflow agentique</td><td>Runner Actions</td><td>Lecture seule ; écritures par <em>safe outputs</em></td><td>Sorties autorisées listées</td></tr>
+</tbody></table></div>
+
+<h3><code>copilot-setup-steps.yml</code></h3>
+<div class="box memo"><b>À connaître par cœur</b><ul>
+<li>Chemin <code>.github/workflows/copilot-setup-steps.yml</code>, <strong>sur la branche par défaut</strong>.</li>
+<li>Un seul job, nommé exactement <code>copilot-setup-steps</code>.</li>
+<li>Clés prises en compte : <code>steps</code>, <code>permissions</code>, <code>runs-on</code>, <code>services</code>, <code>snapshot</code>, <code>timeout-minutes</code> (max 59).</li>
+<li>Étape en échec : les suivantes sont sautées, <strong>l'agent démarre quand même</strong>.</li>
+<li><code>fetch-depth</code> de checkout : remplacé par Copilot.</li>
+<li>Runners : Ubuntu x64, Windows 64 bits, plus grands runners ; pas de macOS.</li>
+<li>Secrets et variables utilisés : ceux de type <em>Agents</em>.</li>
+</ul></div>
+
+<h3>Portée par dépôt et par branche</h3>
+<ul>
+<li>Le cloud agent ne modifie que le dépôt où la tâche a démarré.</li>
+<li>Nouvelle tâche : branche <code>copilot/...</code> créée, seule branche où il peut pousser. <code>@copilot</code> sur une PR existante : il pousse sur la branche de cette PR.</li>
+<li>Il est soumis aux protections de branche et checks requis. Un ruleset incompatible (ex. auteurs de commit restreints) bloque l'agent : ajouter Copilot en <em>bypass actor</em> si c'est voulu.</li>
+</ul>
+
+<h3>Invoquer un agent en CI</h3>
+<pre class="code"><code>- run: npm install -g @github/copilot
+- env:
+    COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
+  run: copilot -p "..." --allow-tool='shell(git:*)' --allow-tool=write --no-ask-user</code></pre>
+<p>Jeton : PAT fin avec la permission <em>Copilot Requests</em>. Alternative recommandée : GitHub Agentic Workflows (<code>engine: copilot</code>, agent en lecture, <em>safe outputs</em>).</p>
+
+<h2>4. Exécution sûre et erreurs</h2>
+<div class="tablewrap"><table><thead><tr><th>Besoin</th><th>Bonne pratique</th><th>Exemple SprintDesk</th></tr></thead><tbody>
+<tr><td>Gestion d'erreurs</td><td>Échouer clairement, message exploitable, état cohérent</td><td><code>::error</code> par US non conforme ; code de sortie 1</td></tr>
+<tr><td>Retries</td><td>Seulement pour les erreurs <strong>transitoires</strong> (réseau, limite de débit), nombre borné, délai croissant ; opérations idempotentes</td><td>Pas de retry sur une US non conforme : ce n'est pas transitoire</td></tr>
+<tr><td>Rollback</td><td><code>git revert</code> via PR ; redéployer un SHA sain</td><td><code>rollback-backlog.yml</code>, <code>publication-backlog.yml</code> avec <code>sha</code></td></tr>
+<tr><td>Escalade</td><td>Condition d'arrêt explicite → humain (label, assignation, commentaire)</td><td>ND-xx rencontrée → question ouverte, arrêt</td></tr>
+<tr><td>Traçabilité</td><td>Qui a demandé, quel agent, quelle version, quels outils, quel résultat</td><td>Commits signés, co-auteur = demandeur, lien vers le journal de session, audit log</td></tr>
+</tbody></table></div>
+
+<h2>Pièges</h2>
+<div class="box piege"><b>Les erreurs classiques</b><ul>
+<li><code>servers</code> (VS Code) vs <code>mcpServers</code> (cloud agent) : la question peut piéger sur la clé.</li>
+<li>Croire qu'un secret de dépôt classique est visible par la configuration MCP : il faut un secret <em>Agents</em> préfixé <code>COPILOT_MCP_</code>.</li>
+<li>Mettre <code>tools: ["*"]</code> sur un serveur MCP qui a des outils d'écriture : le cloud agent les utilisera <strong>sans approbation</strong>.</li>
+<li>Nommer le job autrement que <code>copilot-setup-steps</code>, ou laisser le fichier sur une branche de travail : ignoré.</li>
+<li>Penser qu'une étape de setup en échec bloque l'agent : il démarre quand même (et risque d'échouer plus loin).</li>
+<li>Attendre <code>timeout-minutes: 90</code> : plafond à 59.</li>
+<li>Réessayer en boucle une erreur déterministe (test cassé, droit manquant) : il faut escalader.</li>
+<li><code>handoffs</code> dans un agent destiné au cloud agent : ignoré.</li>
+</ul></div>
+
+<h2>Trucs et astuces</h2>
+<div class="box astuce"><b>Raisonnements rapides</b><ul>
+<li>« L'agent n'arrive pas à installer une dépendance » : la préinstaller dans <code>copilot-setup-steps</code>, ou ajouter le domaine à la liste du pare-feu.</li>
+<li>« L'agent doit lire des issues d'un autre dépôt » : le MCP GitHub par défaut ne le permet pas ; jeton dédié en lecture seule.</li>
+<li>« Limiter l'agent à la lecture d'un outil externe » : <code>tools</code> listant uniquement les outils en lecture + serveur en mode lecture seule.</li>
+<li>Toute question « CI + agent » : demandez-vous <strong>quel jeton</strong>, <strong>quelles permissions</strong>, <strong>qui approuve</strong>.</li>
+</ul></div>
+
+<p><a href="08-quiz.html#D2">S'entraîner : questions du domaine 2 →</a></p>
+<div class="pager"><a href="01-architecture-sdlc.html"><small>← Précédent</small>1 · Architecture & SDLC</a><a class="n" href="03-memoire-etat.html"><small>Suivant →</small>3 · Mémoire, état & exécution</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

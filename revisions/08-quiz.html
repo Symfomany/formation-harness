@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · Quiz (examen blanc)</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a class="on" href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>Quiz — examen blanc</h1>
+<p>Questions par domaine, au style de l'examen. Filtrez un domaine, répondez, puis « Corriger ». Le seuil de 70 % est indicatif (l'examen se note sur 1 000, réussite à 700).</p>
+<div class="tags"><span>Choix unique ou multiple</span><span>Explication après correction</span></div></header>
+
+<div class="box memo"><b>Avant de commencer</b><p>Au vrai examen, une question « choisissez deux réponses » ne rapporte des points que si les deux sont justes. Le quiz applique la même règle.</p></div>
+
+<div id="quiz"></div>
+
+<script>
+window.QUIZ_DOMAINES = {
+  D1: "1 · Architecture & SDLC",
+  D2: "2 · Outils, MCP & environnements",
+  D3: "3 · Mémoire, état & exécution",
+  D4: "4 · Évaluation & ajustement",
+  D5: "5 · Orchestration multi-agents",
+  D6: "6 · Garde-fous & responsabilité"
+};
+window.QUIZ = [
+/* ---------- D1 ---------- */
+{d:"D1", q:"Une équipe veut confier à un agent des tâches bien délimitées (corriger un bug décrit dans une issue) et recevoir une PR à relire, sans bloquer un poste de travail. Quelle surface choisir ?",
+ o:["Le mode agent de l'IDE","Le cloud agent de Copilot (assignation d'issue)","Les complétions en ligne","Copilot Chat sans outils"], r:[1],
+ e:"Le cloud agent travaille en arrière-plan dans un environnement GitHub Actions et livre une PR. L'IDE convient au travail interactif."},
+{d:"D1", q:"Quelle séquence réduit le plus le risque sur une tâche multi-fichiers ?",
+ o:["Exécuter, puis planifier si besoin","Planifier, faire valider le plan par un humain, exécuter, contrôler","Exécuter en parallèle sur tous les fichiers","Demander à l'agent d'auto-évaluer son travail"], r:[1],
+ e:"Séparer planification et exécution permet de corriger le cap avant d'écrire. Le contrôle final doit être indépendant de l'agent qui a produit."},
+{d:"D1", q:"Où placer une règle qui doit s'appliquer à tous les agents et à Copilot code review sur un dépôt ?",
+ o:["Dans le prompt de chaque session","Dans <code>.github/copilot-instructions.md</code>","Dans la mémoire personnelle d'un développeur","Dans un commentaire de l'issue"], r:[1],
+ e:"Les instructions de dépôt sont versionnées et lues par les agents et par code review (attention : code review ne lit que les 4 000 premiers caractères)."},
+{d:"D1", q:"Un fichier d'instructions doit s'appliquer uniquement aux fichiers de test. Quel mécanisme ?",
+ o:["Un fichier <code>.instructions.md</code> avec <code>applyTo</code>","Un hook <code>sessionStart</code>","Un agent dédié sans outils","Un ruleset"], r:[0],
+ e:"<code>applyTo</code> associe les instructions à un motif de chemins."},
+{d:"D1", q:"Quel livrable rend le travail du cloud agent intégrable au SDLC existant ?",
+ o:["Un commit poussé directement sur <code>main</code>","Une PR en brouillon, soumise aux mêmes revues et checks que celles des humains","Un fichier zip en artefact","Un message dans le chat"], r:[1],
+ e:"Le cloud agent ouvre une PR brouillon ; les protections de branche et les checks s'appliquent comme pour un humain."},
+{d:"D1", q:"Quelles tâches sont de bons candidats pour un agent autonome ? (deux réponses)",
+ o:["Ajouter des tests sur un module bien couvert par des conventions","Décider de la politique de rétention des données clients","Mettre à jour une dépendance et corriger la compilation","Choisir la priorité des demandes métier"], r:[0,2],
+ e:"Tâches délimitées, vérifiables par des tests. Les décisions de politique et de priorité restent humaines."},
+{d:"D1", q:"Combien de dépôts, branches et PR une tâche du cloud agent peut-elle produire ?",
+ o:["Plusieurs dépôts, une PR par dépôt","Un dépôt, une branche, une PR","Un dépôt, plusieurs branches, plusieurs PR","Illimité"], r:[1],
+ e:"Une tâche = un dépôt, une branche, une PR. Pour plusieurs dépôts : plusieurs tâches."},
+{d:"D1", q:"Le profil d'agent personnalisé doit absolument contenir quelle propriété ?",
+ o:["<code>name</code>","<code>tools</code>","<code>description</code>","<code>model</code>"], r:[2],
+ e:"<code>description</code> est obligatoire. Sans <code>name</code>, le nom du fichier est utilisé ; sans <code>tools</code>, tous les outils sont disponibles."},
+
+/* ---------- D2 ---------- */
+{d:"D2", q:"Quel est le nom obligatoire du job dans <code>.github/workflows/copilot-setup-steps.yml</code> ?",
+ o:["<code>setup</code>","<code>copilot-setup-steps</code>","<code>copilot</code>","Libre"], r:[1],
+ e:"Le job doit s'appeler <code>copilot-setup-steps</code>, sinon il n'est pas pris en compte. Le fichier doit être sur la branche par défaut."},
+{d:"D2", q:"Une étape de <code>copilot-setup-steps</code> échoue. Que se passe-t-il ?",
+ o:["La session de l'agent est annulée","L'agent démarre quand même avec l'environnement dans son état courant","La PR est fermée","Le dépôt est verrouillé"], r:[1],
+ e:"Les étapes suivantes sont sautées, mais l'agent démarre. Il faut surveiller le journal pour ne pas croire que l'environnement est complet."},
+{d:"D2", q:"Quelle valeur maximale pour <code>timeout-minutes</code> dans le job de préparation ?",
+ o:["30","59","60","360"], r:[1],
+ e:"59 minutes au maximum."},
+{d:"D2", q:"Un serveur MCP du cloud agent a besoin d'une clé API. Comment la nommer dans l'environnement <code>copilot</code> ?",
+ o:["<code>MCP_API_KEY</code>","<code>COPILOT_MCP_API_KEY</code>","<code>GITHUB_API_KEY</code>","<code>SECRET_API_KEY</code>"], r:[1],
+ e:"Seuls les secrets et variables préfixés <code>COPILOT_MCP_</code> sont exposés à la configuration MCP."},
+{d:"D2", q:"Dans un profil d'agent, <code>tools: []</code> signifie :",
+ o:["Tous les outils","Aucun outil","Les outils par défaut","Erreur de syntaxe"], r:[1],
+ e:"Liste vide = aucun outil. Propriété absente ou <code>*</code> = tous les outils."},
+{d:"D2", q:"Comment autoriser tous les outils d'un serveur MCP nommé <code>jira</code> dans un profil d'agent ?",
+ o:["<code>jira</code>","<code>jira/*</code>","<code>mcp:jira</code>","<code>*jira*</code>"], r:[1],
+ e:"Syntaxe <code>serveur/outil</code> ou <code>serveur/*</code>."},
+{d:"D2", q:"Quels serveurs MCP sont fournis par défaut au cloud agent ? (deux réponses)",
+ o:["GitHub (lecture seule, limité au dépôt)","Slack","Playwright (localhost uniquement)","Azure DevOps"], r:[0,2],
+ e:"GitHub en lecture seule sur le dépôt courant, et Playwright limité à localhost."},
+{d:"D2", q:"Quelle clé racine décrit les serveurs dans le fichier <code>.vscode/mcp.json</code> ?",
+ o:["<code>mcpServers</code>","<code>servers</code>","<code>tools</code>","<code>mcp</code>"], r:[1],
+ e:"VS Code utilise <code>servers</code>. La CLI et la configuration du cloud agent utilisent <code>mcpServers</code>."},
+{d:"D2", q:"L'entreprise veut que seuls les serveurs MCP approuvés soient utilisables. Quelle configuration ?",
+ o:["Désactiver MCP","Registre MCP + politique « Registry only »","Une consigne dans les instructions","Un hook <code>sessionStart</code>"], r:[1],
+ e:"Le registre liste les serveurs autorisés ; la politique « Registry only » bloque les autres."},
+
+/* ---------- D3 ---------- */
+{d:"D3", q:"Au bout de combien de jours sans utilisation un fait de Copilot Memory est-il supprimé ?",
+ o:["7","14","28","90"], r:[2],
+ e:"28 jours. Un fait utilisé et validé voit son délai repartir."},
+{d:"D3", q:"Comment Copilot évite-t-il d'appliquer un fait mémorisé devenu faux ?",
+ o:["Il ne l'évite pas","Il vérifie les citations du fait contre le code de la branche courante avant de l'utiliser","Il demande à l'utilisateur à chaque fois","Il ne garde que les faits de moins d'une heure"], r:[1],
+ e:"Les faits sont stockés avec des citations ; ils sont validés contre l'état actuel du code avant usage."},
+{d:"D3", q:"Copilot code review utilise quelle partie de la mémoire ?",
+ o:["Faits du dépôt et préférences personnelles","Uniquement les faits du dépôt","Uniquement les préférences personnelles","Aucune"], r:[1],
+ e:"Code review s'appuie sur les faits du dépôt, pas sur les préférences personnelles."},
+{d:"D3", q:"Une décision de conception doit être conservée, partagée entre outils et auditée. Où la stocker ?",
+ o:["Copilot Memory","L'historique du chat","Un fichier versionné (plan, ADR, journal) dans le dépôt","La variable d'environnement de la session"], r:[2],
+ e:"Mémoire externe explicite : durable, relisible, versionnée."},
+{d:"D3", q:"Une longue session de chat commence à « oublier » les consignes du début. Meilleure réponse ?",
+ o:["Répéter la consigne à chaque message","Démarrer une nouvelle session avec un résumé et les fichiers de référence","Augmenter la taille du dépôt","Désactiver les outils"], r:[1],
+ e:"La fenêtre de contexte est limitée et résumée. Un état explicite (fichier plan ou journal) et une session neuve repartent sur une base propre."},
+{d:"D3", q:"Une exécution longue s'interrompt à mi-lot. Qu'est-ce qui permet de reprendre sans tout refaire ?",
+ o:["Relancer le lot entier","Un journal d'exécution qui note les étapes terminées et validées","La mémoire du modèle","Un ruleset"], r:[1],
+ e:"Le journal sert de point de reprise : on ne relance que ce qui manque."},
+{d:"D3", q:"Combien de temps au maximum dure une session du cloud agent ?",
+ o:["15 minutes","59 minutes","6 heures","Illimité"], r:[1],
+ e:"59 minutes. Une tâche plus longue doit être découpée."},
+{d:"D3", q:"Quel événement de hook permet d'injecter du contexte au démarrage d'une session ?",
+ o:["<code>preToolUse</code>","<code>sessionStart</code>","<code>agentStop</code>","<code>postToolUse</code>"], r:[1],
+ e:"<code>sessionStart</code> peut renvoyer <code>additionalContext</code> (limité à 10 Ko)."},
+
+/* ---------- D4 ---------- */
+{d:"D4", q:"Pour évaluer un agent qui reformule des user stories, quel contrôle est le plus fiable pour le format ?",
+ o:["Demander à l'agent s'il a respecté le format","Un script déterministe qui vérifie les champs obligatoires","Un sondage auprès des utilisateurs","Le nombre de mots"], r:[1],
+ e:"Pour ce qui est vérifiable mécaniquement, un contrôle déterministe est reproductible et peut devenir un check requis."},
+{d:"D4", q:"Vous modifiez le prompt d'un agent. Comment savoir si c'est mieux ?",
+ o:["Essayer sur un seul cas récent","Rejouer le même jeu de cas de référence avant et après, en ne changeant qu'une chose","Demander l'avis de l'agent","Comparer la longueur des réponses"], r:[1],
+ e:"Jeu de cas fixe, une variable à la fois, comparaison des résultats : sinon on ne sait pas ce qui a produit l'effet."},
+{d:"D4", q:"L'agent échoue parce qu'une commande n'existe pas sur le runner. Quelle est la catégorie de cause ?",
+ o:["Prompt","Environnement","Modèle","Mémoire"], r:[1],
+ e:"Corriger l'environnement (<code>copilot-setup-steps</code>), pas le prompt."},
+{d:"D4", q:"Code review ignore la fin de votre long fichier d'instructions. Pourquoi ?",
+ o:["Il ne lit que les fichiers <code>.instructions.md</code>","Il ne lit que les 4 000 premiers caractères d'un fichier d'instructions","Il ignore toutes les instructions","Il faut un agent dédié"], r:[1],
+ e:"Mettre les règles importantes en tête, ou découper en fichiers ciblés."},
+{d:"D4", q:"Quels signaux montrent qu'un agent personnalisé est trop large ? (deux réponses)",
+ o:["Il utilise des outils sans rapport avec son rôle","Ses résultats varient fortement d'un cas à l'autre sur des tâches similaires","Il a une <code>description</code>","Il renvoie un fichier au format attendu"], r:[0,1],
+ e:"Réduire le rôle et la liste <code>tools</code> rend le comportement plus prévisible."},
+{d:"D4", q:"Quelle version d'un agent personnalisé une PR en cours utilise-t-elle après une mise à jour du profil ?",
+ o:["Toujours la dernière","Celle du commit de départ, pour toute la PR","Une version aléatoire","Aucune"], r:[1],
+ e:"La version est identifiée par le SHA du fichier ; une PR garde la même version de bout en bout."},
+{d:"D4", q:"Quelle est la limite de taille du prompt d'un profil d'agent personnalisé ?",
+ o:["4 000 caractères","10 000 caractères","30 000 caractères","Illimité"], r:[2],
+ e:"30 000 caractères."},
+{d:"D4", q:"Un agent produit un bon résultat sur 8 cas sur 10. Quelle étape avant d'élargir son usage ?",
+ o:["Le déployer à toute l'entreprise","Analyser les 2 échecs, classer leur cause, corriger, rejouer tout le jeu","Supprimer les 2 cas","Changer de modèle sans analyse"], r:[1],
+ e:"Analyse des échecs, correction ciblée, non-régression sur l'ensemble des cas."},
+
+/* ---------- D5 ---------- */
+{d:"D5", q:"Deux agents doivent travailler en parallèle. Quelle condition est indispensable ?",
+ o:["Le même modèle","Des périmètres de fichiers disjoints, sur des branches ou worktrees séparés","Le même prompt","Une session partagée"], r:[1],
+ e:"Sans périmètres disjoints : conflits. Sinon, séquencer."},
+{d:"D5", q:"Le reviewer et le contrôleur rendent des avis contradictoires. Que faire ?",
+ o:["Prendre l'avis majoritaire de trois agents","S'appuyer sur un critère déterministe partagé, puis arbitrage humain","Prendre l'avis du dernier agent","Relancer jusqu'à accord"], r:[1],
+ e:"Les agents ne tranchent pas entre eux. Critère commun, puis humain, et décision tracée."},
+{d:"D5", q:"Deux PR pour la même issue apparaissent. Quel conflit, et quelle prévention ?",
+ o:["Chevauchement ; worktrees","Travail en double ; un propriétaire unique par tâche (assignation)","Contradiction ; vote","Aucun conflit"], r:[1],
+ e:"Une tâche, un propriétaire. Fermer le doublon."},
+{d:"D5", q:"Un sous-agent appelé par un orchestrateur dans VS Code voit :",
+ o:["Toute la conversation de l'orchestrateur","Son propre contexte, isolé ; il ne renvoie que son résultat","Les sessions des autres utilisateurs","Rien du tout"], r:[1],
+ e:"Contexte isolé : l'orchestrateur doit transmettre dans sa demande tout ce dont le sous-agent a besoin."},
+{d:"D5", q:"Quelle propriété rend un agent appelable par un autre agent mais absent du sélecteur de l'utilisateur ?",
+ o:["<code>disable-model-invocation: true</code>","<code>user-invocable: false</code>","<code>tools: []</code>","<code>target: vscode</code>"], r:[1],
+ e:"<code>user-invocable: false</code> le masque du sélecteur. <code>disable-model-invocation: true</code> fait l'inverse : il ne peut pas être appelé automatiquement."},
+{d:"D5", q:"Une boucle producteur-critique ne converge pas. Quelles réponses sont adaptées ? (deux réponses)",
+ o:["Borner le nombre de tours","Escalader à un humain avec les versions et les motifs de refus","Supprimer le critique","Augmenter indéfiniment le délai"], r:[0,1],
+ e:"Borne + escalade : c'est la gestion d'une exécution bloquée."},
+{d:"D5", q:"Comment retirer un agent sans perdre l'auditabilité ?",
+ o:["Supprimer le fichier directement sur <code>main</code>","Retirer l'agent des orchestrations, puis le supprimer par une PR documentée ; l'historique Git conserve les versions","Le renommer en <code>.old</code> sans PR","Vider son prompt"], r:[1],
+ e:"PR + historique = traçabilité. Les PR passées gardent la référence à la version utilisée."},
+{d:"D5", q:"Quels artefacts facilitent l'analyse a posteriori d'un workflow multi-agents ? (deux réponses)",
+ o:["Le journal d'exécution par étape et les transferts documentés","Les PR et le journal de session du cloud agent","Les souvenirs du modèle","Une capture d'écran du chat"], r:[0,1],
+ e:"Des traces versionnées ou liées aux PR, relisibles par un tiers."},
+
+/* ---------- D6 ---------- */
+{d:"D6", q:"Un hook <code>preToolUse</code> de type commande dépasse son délai. Résultat ?",
+ o:["L'appel d'outil est refusé","L'appel d'outil est autorisé (fail-open)","La session s'arrête","L'utilisateur est interrogé"], r:[1],
+ e:"Un délai dépassé est toujours fail-open. Un plantage ou un code de sortie non nul refuse. Délai par défaut : 30 s."},
+{d:"D6", q:"Quels champs renvoyer pour refuser un appel dans <code>preToolUse</code> ? (deux réponses)",
+ o:["<code>permissionDecision: \"deny\"</code>","<code>permissionDecisionReason</code>","<code>decision: \"block\"</code>","<code>continue: false</code>"], r:[0,1],
+ e:"<code>decision: \"block\"</code> sert aux événements de fin (<code>agentStop</code>, <code>subagentStop</code>)."},
+{d:"D6", q:"Le développeur qui a assigné l'issue au cloud agent peut-il approuver la PR ?",
+ o:["Oui","Non, un autre relecteur doit approuver","Oui, s'il est administrateur","Oui, après 24 h"], r:[1],
+ e:"Le demandeur ne peut pas approuver. Si la PR n'est attribuée à personne, une approbation supplémentaire est exigée."},
+{d:"D6", q:"Les workflows ne démarrent pas sur la PR du cloud agent. Pourquoi ?",
+ o:["Le cloud agent n'a pas le droit de lancer des workflows","Par défaut, un humain avec accès en écriture doit cliquer « Approve and run workflows »","Les workflows sont interdits sur les branches <code>copilot/</code>","Le ruleset est mal configuré"], r:[1],
+ e:"Protection par défaut, réglable. Relire le diff avant, surtout si des workflows sont modifiés."},
+{d:"D6", q:"Quelle mesure applique le moindre privilège dans un workflow ?",
+ o:["<code>permissions: write-all</code> au niveau du workflow","<code>permissions: contents: read</code> par défaut, écriture uniquement dans le job qui en a besoin","Aucune clé <code>permissions</code>","Un PAT d'administrateur"], r:[1],
+ e:"Droits minimaux, au niveau du job."},
+{d:"D6", q:"Un workflow contient <code>run: git revert ${{ inputs.sha }}</code>. Quel risque ?",
+ o:["Aucun","Injection de commande : passer par <code>env:</code> et valider le format","Le revert sera trop lent","Le SHA sera tronqué"], r:[1],
+ e:"L'expression est remplacée dans le script avant l'exécution du shell."},
+{d:"D6", q:"Quelles actions doivent rester sous jugement humain ? (deux réponses)",
+ o:["Approuver un déploiement en production","Lire le code du dépôt","Trancher une décision métier non prise","Lancer les tests sur une branche de travail"], r:[0,2],
+ e:"Irréversible ou de conformité : humain. Lecture et tests : autonomes."},
+{d:"D6", q:"L'équipe approuve manuellement chaque commande <code>ls</code> de l'agent. Que recommander ?",
+ o:["Garder ainsi","Autoriser automatiquement la lecture, refuser le dangereux par hook, garder l'humain sur fusion et déploiement","Tout autoriser","Interdire le terminal"], r:[1],
+ e:"Le guide demande de minimiser les approbations qui ne réduisent pas le risque."},
+{d:"D6", q:"Comment le cloud agent limite-t-il l'injection de prompt via une issue ?",
+ o:["Il ne lit pas les issues","Il filtre les caractères cachés, par exemple les commentaires HTML","Il demande une confirmation à chaque phrase","Il traduit l'issue"], r:[1],
+ e:"Les contenus cachés ne sont pas transmis à l'agent. Les commentaires d'utilisateurs sans accès en écriture ne le sont pas non plus."}
+];
+</script>
+<script src="assets/quiz.js"></script>
+
+<div class="pager"><a href="07-scenarios.html"><small>← Précédent</small>Scénarios d'examen</a><a class="n" href="09-fiche-memo.html"><small>Suivant →</small>Fiche mémo</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

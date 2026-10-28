@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · Scénarios d'examen</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a class="on" href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>Scénarios d'examen</h1>
+<p>Vingt situations concrètes, au format des examens blancs : mémoire, contrôles de politique, relecteurs, workflow multi-agents, workflow de rollback, workflow « les tests passent », PR de déploiement générée par Copilot, rollback par SHA.</p>
+<div class="tags"><span>Répondre avant d'ouvrir la correction</span><span>Chaque correction : réponse, pourquoi, piège</span></div></header>
+
+<div class="box astuce"><b>Méthode pour chaque cas</b><ol><li>Identifier le domaine et le <strong>risque</strong> réel.</li><li>Éliminer les réponses qui reposent sur une consigne, un souvenir de l'agent ou une approbation inutile.</li><li>Choisir le mécanisme qui <strong>impose</strong>, avec le <strong>moindre privilège</strong> et une <strong>trace</strong>.</li></ol></div>
+
+<h2>Mémoire</h2>
+
+<details class="cas"><summary>Cas 1 · Un fait mémorisé est devenu faux</summary><div class="corps">
+<p>Après une refonte, Copilot code review continue de recommander l'ancienne convention de journalisation, mémorisée comme fait du dépôt. Que faire en premier ?</p>
+<ul class="opts"><li>A. Ajouter « ignore ta mémoire » dans <code>copilot-instructions.md</code></li><li>B. Supprimer le fait erroné dans les réglages Copilot Memory du dépôt, et documenter la nouvelle convention dans les instructions</li><li>C. Désactiver Copilot code review</li><li>D. Attendre 28 jours que le fait expire</li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>B.</strong> Les propriétaires du dépôt peuvent supprimer un fait. Écrire la convention dans les instructions évite qu'elle soit réapprise à tort.</p><p><strong>Piège :</strong> D est vrai en théorie (28 jours sans usage), mais le fait est justement utilisé, donc son délai repart. Et attendre n'est pas une correction.</p></details></div></details>
+
+<details class="cas"><summary>Cas 2 · Une migration sur plusieurs jours et plusieurs outils</summary><div class="corps">
+<p>Une migration dure trois jours. Elle passe de VS Code à la CLI, puis au cloud agent. Les décisions doivent être reprises sans être rediscutées, et auditées. Quelle mémoire ?</p>
+<ul class="opts"><li>A. Copilot Memory</li><li>B. Une longue session de chat jamais fermée</li><li>C. Un plan et un journal versionnés dans le dépôt (ou la description de la PR)</li><li>D. Les préférences personnelles de l'utilisateur</li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>C.</strong> Mémoire <strong>externe</strong>, durable, partagée par tous les outils, auditable.</p><p><strong>Piège :</strong> A semble séduisant, mais Copilot Memory est inférée par Copilot, expire et n'est pas un registre de décisions. B est résumée automatiquement et non partageable.</p></details></div></details>
+
+<details class="cas"><summary>Cas 3 · La préférence personnelle ignorée en revue</summary><div class="corps">
+<p>Une développeuse a une préférence mémorisée (« tests en style Given/When/Then »). Copilot code review ne l'applique pas sur ses PR. Pourquoi ?</p>
+<details class="rep"><summary>Correction</summary><p>Copilot code review n'utilise que les <strong>faits du dépôt</strong>, pas les préférences personnelles. Pour une règle d'équipe : fichier d'instructions (<code>applyTo</code> sur les tests), en gardant à l'esprit que code review ne lit que les 4 000 premiers caractères.</p></details></div></details>
+
+<h2>Contrôles de politique</h2>
+
+<details class="cas"><summary>Cas 4 · Le check requis reste « en attente »</summary><div class="corps">
+<p>Le check « Tests » est requis par un ruleset. Une PR qui ne modifie que la documentation est bloquée : le check reste <em>Expected — Waiting for status to be reported</em>. Cause ?</p>
+<ul class="opts"><li>A. Le runner est saturé</li><li>B. Le workflow a un filtre <code>paths</code> : il ne démarre pas, le statut n'arrive jamais</li><li>C. Copilot n'a pas approuvé la PR</li><li>D. Il manque <code>contents: write</code></li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>B.</strong> Retirer le filtre <code>paths</code> du workflow requis, ou filtrer à l'intérieur du job (un job qui se termine en succès reste un statut).</p><p><strong>Piège :</strong> un job <em>sauté par une condition</em> rapporte un succès ; un workflow <em>jamais déclenché</em> ne rapporte rien.</p></details></div></details>
+
+<details class="cas"><summary>Cas 5 · Empêcher un agent de modifier les workflows</summary><div class="corps">
+<p>Vous voulez qu'aucune modification de <code>.github/workflows/</code> ne soit fusionnée sans l'équipe plateforme, qu'elle vienne d'un agent ou d'un humain. Quelles mesures <strong>imposent</strong> cette règle ? (deux réponses)</p>
+<ul class="opts"><li>A. Une phrase dans <code>copilot-instructions.md</code></li><li>B. <code>CODEOWNERS</code> sur <code>.github/workflows/</code> + ruleset « Require review from Code Owners »</li><li>C. Un ruleset qui exige une PR et bloque le push direct et le push forcé sur la branche par défaut</li><li>D. Demander à Copilot code review de surveiller ces fichiers</li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>B et C.</strong> Un hook <code>preToolUse</code> peut s'ajouter en défense en profondeur côté agent.</p><p><strong>Piège :</strong> A et D guident ou commentent, ils n'empêchent rien.</p></details></div></details>
+
+<details class="cas"><summary>Cas 6 · N'autoriser que des serveurs MCP approuvés</summary><div class="corps">
+<p>L'entreprise veut que les développeurs n'utilisent que des serveurs MCP validés par la sécurité. Que configurer ?</p>
+<details class="rep"><summary>Correction</summary><p>Un <strong>registre MCP</strong> contenant les serveurs approuvés, et la politique <strong>Registry only</strong> au niveau organisation ou entreprise (au lieu de <em>Allow all</em>). Côté cloud agent : liste <code>tools</code> explicite et secrets <code>COPILOT_MCP_</code>.</p><p><strong>Piège :</strong> désactiver complètement MCP « par sécurité » bloque aussi les usages légitimes : réponse trop large.</p></details></div></details>
+
+<h2>Relecteurs</h2>
+
+<details class="cas"><summary>Cas 7 · « Je ne peux pas approuver ma PR »</summary><div class="corps">
+<p>Paul a assigné une issue à Copilot. La PR est prête, Paul est le seul relecteur de l'équipe ce jour-là, le bouton d'approbation est inopérant. Pourquoi, et que faire ?</p>
+<details class="rep"><summary>Correction</summary><p>Celui qui a demandé la tâche au cloud agent <strong>ne peut pas approuver</strong> la PR : cela préserve la règle « approbations requises ». Il faut un autre relecteur. Si la PR n'est attribuée à personne (ouverte sous l'identité de l'application), une approbation <strong>supplémentaire</strong> est exigée.</p><p><strong>Piège :</strong> contourner via un bypass ou en désactivant la règle.</p></details></div></details>
+
+<details class="cas"><summary>Cas 8 · La revue de Copilot compte-t-elle ?</summary><div class="corps">
+<p>Le ruleset exige 1 approbation. Copilot code review a relu la PR sans rien trouver. La PR peut-elle être fusionnée ?</p>
+<details class="rep"><summary>Correction</summary><p><strong>Non.</strong> Copilot code review laisse une revue de type <strong>Comment</strong>, jamais <em>Approve</em> ni <em>Request changes</em>. Elle ne compte pas dans les approbations requises.</p></details></div></details>
+
+<h2>Workflow multi-agents</h2>
+
+<details class="cas"><summary>Cas 9 · Deux agents, un même fichier</summary><div class="corps">
+<p>Deux issues sont assignées en parallèle au cloud agent. Les deux PR modifient <code>config/routes.ts</code> et entrent en conflit. Quelle est la meilleure prévention pour la suite ?</p>
+<ul class="opts"><li>A. Lancer plus d'agents pour finir plus vite</li><li>B. Découper les tâches par périmètres de fichiers disjoints, ou séquencer celles qui touchent la même zone</li><li>C. Laisser le second agent forcer sa version</li><li>D. Fusionner les deux PR sans revue pour éviter le conflit</li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>B.</strong> Résolution immédiate : fusionner la première, puis mettre à jour la seconde sur la base à jour (par exemple en demandant à <code>@copilot</code> de résoudre le conflit) et la relire.</p></details></div></details>
+
+<details class="cas"><summary>Cas 10 · Deux agents se contredisent</summary><div class="corps">
+<p>Le reviewer déclare US-204 conforme ; le contrôleur la déclare non conforme. L'orchestrateur propose de garder l'avis majoritaire de trois agents.</p>
+<details class="rep"><summary>Correction</summary><p>Mauvaise idée. Bonne réponse : <strong>critère déterministe commun</strong> (ici <code>verifier-us.cjs</code>), puis <strong>arbitrage humain</strong> si le désaccord porte sur le fond. Documenter la décision dans le journal.</p></details></div></details>
+
+<details class="cas"><summary>Cas 11 · L'orchestrateur tourne en rond</summary><div class="corps">
+<p>Un schéma producteur-critique tourne depuis 40 minutes : le critique refuse, le producteur reformule, sans fin.</p>
+<details class="rep"><summary>Correction</summary><p>Exécution <strong>bloquée</strong>. Borner le nombre de tours (2 ou 3), puis <strong>escalader</strong> à un humain avec les deux versions et la raison du refus. Côté hooks : le blocage de fin (<code>agentStop</code>) est limité à 8 fois, et <code>stop_hook_active</code> doit être respecté.</p></details></div></details>
+
+<h2>Workflow « les tests passent »</h2>
+
+<details class="cas"><summary>Cas 12 · « Tous les tests passent », dit l'agent</summary><div class="corps">
+<p>La PR du cloud agent indique « tous les tests passent ». Aucun check n'apparaît dans l'onglet des checks.</p>
+<ul class="opts"><li>A. Fusionner : l'agent a lancé les tests</li><li>B. Relire le code, puis cliquer <strong>Approve and run workflows</strong> ; fusionner seulement si les checks requis sont verts</li><li>C. Demander à l'agent de relancer les tests</li><li>D. Désactiver les checks requis pour cette PR</li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>B.</strong> Par défaut, les workflows ne tournent pas sur le code du cloud agent tant qu'un utilisateur avec accès en écriture ne les a pas approuvés. La preuve, c'est le check, pas la phrase de l'agent.</p></details></div></details>
+
+<details class="cas"><summary>Cas 13 · L'agent ne peut pas lancer les tests</summary><div class="corps">
+<p>Le journal de session montre que l'agent n'arrive pas à installer les dépendances : délai réseau sur un registre interne.</p>
+<details class="rep"><summary>Correction</summary><p>Cause d'<strong>environnement</strong>. Préinstaller les dépendances dans <code>copilot-setup-steps.yml</code> (job <code>copilot-setup-steps</code>, branche par défaut), et/ou ajouter le registre à la liste autorisée du pare-feu. Ne pas réécrire le prompt : ce n'est pas un problème de raisonnement.</p></details></div></details>
+
+<h2>PR de déploiement générée par Copilot</h2>
+
+<details class="cas"><summary>Cas 14 · Copilot modifie le workflow de déploiement</summary><div class="corps">
+<p>Le cloud agent ouvre une PR qui modifie <code>deploy.yml</code> pour ajouter une étape. Quelles protections doivent jouer avant qu'un déploiement en production ait lieu ? (trois réponses)</p>
+<ul class="opts"><li>A. Revue obligatoire des propriétaires de <code>.github/workflows/</code> (CODEOWNERS)</li><li>B. Relire le diff <strong>avant</strong> « Approve and run workflows », car le workflow modifié s'exécuterait avec les droits du dépôt</li><li>C. Environnement <code>production</code> avec approbateurs, auto-approbation interdite, branche <code>main</code> seulement</li><li>D. Laisser Copilot fusionner après les checks verts</li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>A, B et C.</strong> D est impossible : le cloud agent ne fusionne jamais.</p><p><strong>Piège :</strong> cliquer « Approve and run workflows » sans relire, c'est exécuter du code de workflow non relu.</p></details></div></details>
+
+<details class="cas"><summary>Cas 15 · Le déploiement casse la production</summary><div class="corps">
+<p>La PR de Copilot a été fusionnée et déployée. La production est en erreur. Que faire en premier ?</p>
+<ul class="opts"><li>A. <code>git reset --hard</code> sur <code>main</code> puis <code>push --force</code></li><li>B. Relancer le déploiement avec le <strong>SHA du dernier déploiement sain</strong> (approbation de l'environnement), puis ouvrir une PR de <code>git revert</code></li><li>C. Demander à Copilot de corriger directement en production</li><li>D. Supprimer l'environnement</li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>B.</strong> D'abord restaurer le service avec un état connu (SHA visible dans l'historique de déploiement), ensuite corriger l'historique proprement par revert et PR.</p></details></div></details>
+
+<h2>Workflow de rollback et rollback par SHA</h2>
+
+<details class="cas"><summary>Cas 16 · La PR de rollback n'a pas de checks</summary><div class="corps">
+<p>Le workflow de rollback crée une PR avec <code>GITHUB_TOKEN</code>. Les checks requis restent en attente, aucun workflow <code>pull_request</code> ne démarre.</p>
+<details class="rep"><summary>Correction</summary><p>Les événements créés avec <code>GITHUB_TOKEN</code> ne déclenchent pas de nouveaux workflows (sauf <code>workflow_dispatch</code> et <code>repository_dispatch</code>). Solutions : jeton d'une GitHub App dédiée, ou action humaine (commit, fermer/rouvrir). Pré-requis pour créer la PR : réglage « Allow GitHub Actions to create and approve pull requests ».</p></details></div></details>
+
+<details class="cas"><summary>Cas 17 · Annuler un commit de fusion</summary><div class="corps">
+<p>Le SHA à annuler est un commit de fusion. Quelle commande ?</p>
+<ul class="opts"><li>A. <code>git reset --hard &lt;sha&gt;~1</code></li><li>B. <code>git revert &lt;sha&gt;</code></li><li>C. <code>git revert -m 1 &lt;sha&gt;</code></li><li>D. <code>git cherry-pick &lt;sha&gt;</code></li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>C.</strong> <code>-m 1</code> indique de garder le premier parent (la branche cible). B échoue sur un commit de fusion. A réécrit l'historique.</p></details></div></details>
+
+<details class="cas"><summary>Cas 18 · Le SHA saisi dans le formulaire</summary><div class="corps">
+<p>Un workflow de rollback contient : <code>run: git revert ${{ inputs.sha }}</code>. Quel est le risque, et la correction ?</p>
+<details class="rep"><summary>Correction</summary><p><strong>Injection de commande</strong> : l'expression est remplacée avant l'exécution du shell. Correction : passer par <code>env: SHA: ${{ inputs.sha }}</code>, utiliser <code>"$SHA"</code>, valider le format (40 caractères hexadécimaux) et vérifier que le commit appartient à la branche par défaut.</p></details></div></details>
+
+<h2>Garde-fous</h2>
+
+<details class="cas"><summary>Cas 19 · Le hook de sécurité laisse passer</summary><div class="corps">
+<p>Un hook <code>preToolUse</code> scanne tout le dépôt avant chaque écriture. Sur un gros dépôt, il met 45 s. Les écritures interdites passent. Pourquoi ?</p>
+<details class="rep"><summary>Correction</summary><p>Délai par défaut de 30 s dépassé : un <strong>timeout est toujours fail-open</strong>. Rendre le hook rapide (ne regarder que l'outil et le chemin), ajuster <code>timeoutSec</code> raisonnablement. Un plantage ou un code de sortie non nul, lui, refuse.</p></details></div></details>
+
+<details class="cas"><summary>Cas 20 · Trop d'approbations</summary><div class="corps">
+<p>L'équipe exige une approbation manuelle pour chaque commande terminal de l'agent, y compris <code>ls</code> et <code>git status</code>. Les livraisons ralentissent. Meilleure réponse ?</p>
+<ul class="opts"><li>A. Tout approuver automatiquement</li><li>B. Approuver automatiquement les commandes en lecture, refuser les commandes dangereuses par hook, garder l'humain sur fusion et déploiement</li><li>C. Interdire le terminal à l'agent</li><li>D. Garder la règle actuelle</li></ul>
+<details class="rep"><summary>Correction</summary><p><strong>B.</strong> Le guide demande de « minimiser les approbations qui ne réduisent pas le risque de façon significative ».</p></details></div></details>
+
+<div class="pager"><a href="06-garde-fous.html"><small>← Précédent</small>6 · Garde-fous & responsabilité</a><a class="n" href="08-quiz.html"><small>Suivant →</small>Quiz (examen blanc)</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

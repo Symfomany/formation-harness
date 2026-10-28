@@ -1,0 +1,18 @@
+# Propriétaires du harness SprintDesk.
+# Effet : chaque PR qui touche ces chemins demande automatiquement la revue du propriétaire.
+# Pour que cette revue soit OBLIGATOIRE : ruleset de la branche par défaut >
+# « Require a pull request before merging » > « Require review from Code Owners ».
+# Les équipes ci-dessous sont des exemples : remplacez-les par vos équipes réelles.
+
+# Configuration des agents : un changement ici change le comportement de tous les agents.
+/.github/copilot-instructions.md   @habiouest/referents-harness
+/.github/agents/                   @habiouest/referents-harness
+/.github/skills/                   @habiouest/referents-harness
+/.github/hooks/                    @habiouest/referents-harness
+/.github/hooks-exemples/           @habiouest/referents-harness
+/.github/scripts/                  @habiouest/referents-harness
+/.github/workflows/                @habiouest/referents-harness
+/.github/CODEOWNERS                @habiouest/referents-harness
+
+# Règles métier validées : seul le référent produit les fait évoluer.
+/sprintdesk/contexte/              @habiouest/referent-produit

@@ -1,0 +1,96 @@
+# Publication (« déploiement ») du backlog validé, protégée par un environnement.
+# Chaîne illustrée : PR (éventuellement ouverte par Copilot) -> checks requis -> revue humaine -> fusion
+# -> ce workflow -> APPROBATION de l'environnement « publication » -> publication d'une release.
+#
+# À configurer une fois (Settings > Environments > publication) :
+#   - Required reviewers : le référent produit (et cocher « Prevent self-review ») ;
+#   - Deployment branches and tags : branche par défaut uniquement.
+#
+# Rollback d'une publication : relancer ce workflow à la main avec le SHA d'une version saine
+# (champ « sha »). On republie un état connu, on ne modifie pas l'historique.
+name: Publication backlog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - sprintdesk/backlog/sortie/**
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Optionnel : SHA complet d'une version saine à republier (rollback)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publication-backlog
+  cancel-in-progress: false
+
+jobs:
+  controler:
+    name: Contrôler la version à publier
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ref: ${{ steps.ref.outputs.ref }}
+    steps:
+      - name: Déterminer le SHA à publier
+        id: ref
+        env:
+          SHA_DEMANDE: ${{ inputs.sha }}
+        run: |
+          if [ -n "$SHA_DEMANDE" ]; then
+            if ! printf '%s' "$SHA_DEMANDE" | grep -Eq '^[0-9a-f]{40}$'; then
+              echo "::error::SHA invalide : 40 caractères hexadécimaux en minuscules attendus."
+              exit 1
+            fi
+            echo "ref=$SHA_DEMANDE" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Les US publiées doivent être conformes
+        run: node .github/scripts/verifier-us.cjs
+      - name: Empaqueter
+        run: |
+          mkdir -p paquet
+          cp -r sprintdesk/backlog/sortie paquet/backlog
+          if [ -d sprintdesk/resultats ]; then cp -r sprintdesk/resultats paquet/resultats; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backlog
+          path: paquet/
+          retention-days: 30
+
+  publier:
+    name: Publier (approbation humaine requise)
+    needs: controler
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: publication
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: backlog
+          path: paquet/
+      - name: Créer la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ needs.controler.outputs.ref }}
+        run: |
+          (cd paquet && zip -qr ../backlog.zip .)
+          etiquette="backlog-${GITHUB_RUN_NUMBER}-${REF:0:7}"
+          gh release create "$etiquette" backlog.zip \
+            --repo "$GITHUB_REPOSITORY" --target "$REF" \
+            --title "Backlog SprintDesk ${etiquette}" \
+            --notes "Publication du SHA ${REF}, approuvée dans l'environnement « publication »."

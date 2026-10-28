@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · 6 — Garde-fous et responsabilité</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a class="on" href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>6 · Garde-fous et responsabilité</h1>
+<p><em>Implement guardrails and accountability</em></p>
+<div class="tags"><span>10–15 % de l'examen</span><span>Formation : chapitres 10, 12</span></div></header>
+
+<h2>Ce que dit le guide d'étude</h2>
+<div class="tablewrap"><table><thead><tr><th>Compétence</th><th>Points évalués</th></tr></thead><tbody>
+<tr><td>Niveaux d'autonomie</td><td>Classer les actions selon le risque opérationnel, de sécurité et de conformité ; attribuer des niveaux d'autonomie qui maximisent la vitesse en restant conforme (sécurité, IA responsable).</td></tr>
+<tr><td>Garde-fous et humain dans la boucle</td><td>Identifier les actions qui exigent un jugement humain ; bloquer les actions contraires aux politiques ; moindre privilège ; autorisation explicite ou chemin contrôlé pour l'irréversible ; ne pas multiplier les approbations qui ne réduisent pas le risque.</td></tr>
+</tbody></table></div>
+
+<h2>Classer les actions par risque</h2>
+<div class="tablewrap"><table><thead><tr><th>Action</th><th>Risque</th><th>Autonomie conseillée</th><th>Mécanisme</th></tr></thead><tbody>
+<tr><td>Lire le code, les issues</td><td>Faible</td><td>Autonome</td><td>Outils en lecture, MCP en lecture seule</td></tr>
+<tr><td>Écrire sur une branche de travail</td><td>Faible à moyen</td><td>Autonome + contrôles</td><td>Branche <code>copilot/...</code>, hooks, checks</td></tr>
+<tr><td>Ouvrir une PR</td><td>Moyen</td><td>Autonome, en brouillon</td><td>Revue obligatoire</td></tr>
+<tr><td>Modifier un workflow, les instructions, un agent</td><td>Élevé (chaîne d'approvisionnement)</td><td>Revue par les propriétaires</td><td>CODEOWNERS + ruleset</td></tr>
+<tr><td>Fusionner dans <code>main</code></td><td>Élevé</td><td>Humain</td><td>Ruleset : approbations, checks requis</td></tr>
+<tr><td>Déployer, publier</td><td>Élevé / conformité</td><td>Humain</td><td>Environnement protégé, approbateurs, pas d'auto-approbation</td></tr>
+<tr><td>Secrets, droits, suppression</td><td>Critique</td><td>Humain uniquement</td><td>Hors de portée de l'agent</td></tr>
+<tr><td>Décision métier (ND-xx), priorité</td><td>Conformité / métier</td><td>Humain uniquement</td><td>Question ouverte, check « pas de ND tranchée »</td></tr>
+</tbody></table></div>
+
+<h2>Bloquer plutôt que demander</h2>
+<div class="tablewrap"><table><thead><tr><th>Mécanisme</th><th>Bloque quoi</th><th>Où</th></tr></thead><tbody>
+<tr><td>Hook <code>preToolUse</code> (<code>deny</code>)</td><td>Un appel d'outil précis</td><td>VS Code, CLI, cloud agent</td></tr>
+<tr><td>Hook de politique (administrateur)</td><td>Idem, non désactivable par l'utilisateur</td><td>CLI, au niveau machine</td></tr>
+<tr><td>Ruleset de branche</td><td>Fusion sans revue ni checks, push forcé, suppression</td><td>GitHub</td></tr>
+<tr><td>Check requis</td><td>Fusion d'un contenu non conforme</td><td>GitHub Actions + ruleset</td></tr>
+<tr><td>Protection push du secret scanning</td><td>Push d'un secret</td><td>GitHub</td></tr>
+<tr><td>Pare-feu du cloud agent</td><td>Sortie réseau non autorisée (exfiltration)</td><td>Cloud agent</td></tr>
+<tr><td>Liste <code>tools</code>, permissions du jeton</td><td>L'action elle-même n'existe pas</td><td>Profil d'agent, workflow</td></tr>
+</tbody></table></div>
+
+<h3>Hooks : échec ouvert ou fermé</h3>
+<div class="box memo"><b>À savoir par cœur</b><ul>
+<li><code>preToolUse</code> en commande qui plante ou sort avec un code non nul (dont 2) : <strong>refus</strong> (fail-closed).</li>
+<li><strong>Délai dépassé : autorisé</strong> (fail-open), quel que soit l'événement. Délai par défaut : 30 s.</li>
+<li>Hook HTTP en erreur : autorisé.</li>
+<li>Refus : <code>permissionDecision: "deny"</code> + <code>permissionDecisionReason</code> obligatoire.</li>
+<li><code>agentStop</code> / <code>subagentStop</code> : <code>decision: "block"</code> + <code>reason</code> ; garde-fou anti-boucle après 8 blocages ; <code>stop_hook_active</code> indique un tour déjà forcé.</li>
+<li>Cloud agent : <code>ask</code> vaut <code>deny</code> ; seul <code>bash</code> / <code>command</code> est exécuté.</li>
+</ul></div>
+
+<h2>Protections intégrées du cloud agent</h2>
+<div class="tablewrap"><table><thead><tr><th>Risque</th><th>Protection</th></tr></thead><tbody>
+<tr><td>Qui peut le lancer</td><td>Accès en écriture uniquement ; commentaires des autres jamais transmis</td></tr>
+<tr><td>Où il pousse</td><td>Une seule branche (<code>copilot/...</code> ou la branche de la PR) ; soumis aux protections et checks</td></tr>
+<tr><td>Fusion</td><td>PR brouillon ; ne peut ni passer « prête », ni approuver, ni fusionner</td></tr>
+<tr><td>Workflows</td><td>Ne tournent qu'après <strong>Approve and run workflows</strong> (réglable)</td></tr>
+<tr><td>Auto-approbation</td><td>Le demandeur ne peut pas approuver la PR ; approbation supplémentaire si la PR n'est attribuée à personne</td></tr>
+<tr><td>Fuite de données</td><td>Pare-feu</td></tr>
+<tr><td>Injection de prompt</td><td>Caractères cachés filtrés (ex. commentaires HTML non transmis)</td></tr>
+<tr><td>Traçabilité</td><td>Commits signés, auteur Copilot, demandeur en co-auteur, lien vers le journal de session, audit log</td></tr>
+</tbody></table></div>
+
+<h2>Moindre privilège</h2>
+<ul>
+<li>Workflows : <code>permissions:</code> au niveau du job, <code>contents: read</code> par défaut, écriture seulement dans le job qui en a besoin.</li>
+<li>Agents : <code>tools</code> listés ; MCP : outils en lecture listés ; jetons limités au dépôt.</li>
+<li>Secrets : seulement ceux nécessaires, de type <em>Agents</em> pour le cloud agent, secrets d'environnement pour le déploiement.</li>
+<li>Entrées de workflow : passer par <code>env:</code>, jamais <code>${{ ... }}</code> directement dans <code>run:</code> (injection de commande).</li>
+<li>Actions tierces épinglées par SHA complet.</li>
+</ul>
+
+<h2>Garder la vitesse</h2>
+<div class="box astuce"><b>Approuver moins, mais mieux</b><ul>
+<li>Pas d'approbation sur la lecture ni sur l'écriture en branche isolée : contrôles automatiques à la place.</li>
+<li>Une approbation là où elle réduit un risque réel : fusion, déploiement, configuration des agents.</li>
+<li>Les contrôles déterministes (hooks, checks) remplacent des relectures manuelles répétitives.</li>
+<li>Regrouper les retours sur une PR en une seule revue.</li>
+</ul></div>
+
+<h2>Exemple concret</h2>
+<p>SprintDesk : le rédacteur peut écrire dans <code>sortie/</code> (autonome). <code>preToolUse</code> refuse <code>entree/</code>, <code>contexte/</code>, <code>git push</code>. Le check « Politique - sources protégées » bloque une PR qui touche <code>entree/</code>. La publication passe par l'environnement <code>publication</code> avec approbateur et interdiction de s'auto-approuver. Les ND-xx restent des questions ouvertes.</p>
+
+<h2>Pièges</h2>
+<div class="box piege"><b>Les erreurs classiques</b><ul>
+<li>Un hook de sécurité lent : s'il dépasse le délai, l'action <strong>passe</strong>.</li>
+<li>Répondre <code>allow</code> dans un hook de sécurité : on court-circuite l'approbation normale. Répondre <code>{}</code> quand on n'a pas d'objection.</li>
+<li>Croire qu'un label suffit comme autorisation : un rôle <em>triage</em> peut poser des labels. La vraie barrière est la revue.</li>
+<li>Choisir « approbation humaine de chaque commande » : non conforme à l'objectif de vitesse.</li>
+<li>Donner <code>contents: write</code> au niveau du workflow entier.</li>
+</ul></div>
+
+<p><a href="08-quiz.html#D6">S'entraîner : questions du domaine 6 →</a></p>
+<div class="pager"><a href="05-multi-agents.html"><small>← Précédent</small>5 · Orchestration multi-agents</a><a class="n" href="07-scenarios.html"><small>Suivant →</small>Scénarios d'examen</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

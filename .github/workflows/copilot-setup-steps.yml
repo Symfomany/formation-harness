@@ -1,0 +1,38 @@
+# Environnement de travail de Copilot cloud agent pour SprintDesk.
+# Règles à connaître :
+#   - fichier exactement à cet emplacement, sur la branche par défaut, pour être pris en compte ;
+#   - un seul job, obligatoirement nommé « copilot-setup-steps » ;
+#   - seules ces clés du job sont prises en compte : steps, permissions, runs-on, services, snapshot,
+#     timeout-minutes (59 maximum). Le reste est ignoré ;
+#   - si une étape échoue, les suivantes sont sautées et l'agent démarre quand même ;
+#   - fetch-depth de actions/checkout est imposé par Copilot (il doit pouvoir revenir sur ses commits).
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Moindre privilège : ce jeton ne sert qu'à préparer l'environnement.
+    # Il est distinct du jeton de session de Copilot.
+    permissions:
+      contents: read
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v6
+
+      - name: Installer Node.js (scripts de contrôle et hooks)
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Vérifier que les outils de contrôle fonctionnent
+        run: node .github/scripts/tester-harness.cjs

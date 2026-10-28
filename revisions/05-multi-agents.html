@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · 5 — Orchestration multi-agents</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a class="on" href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>5 · Orchestration multi-agents</h1>
+<p><em>Orchestrate multi-agent coordination</em></p>
+<div class="tags"><span>15–20 % de l'examen</span><span>Formation : chapitres 09, 11</span></div></header>
+
+<h2>Ce que dit le guide d'étude</h2>
+<div class="tablewrap"><table><thead><tr><th>Compétence</th><th>Points évalués</th></tr></thead><tbody>
+<tr><td>Opérer des workflows multi-agents</td><td>Appliquer un schéma d'orchestration ; isoler les agents en parallèle ; détecter et résoudre les conflits : modifications qui se chevauchent, travail en double, résultats contradictoires.</td></tr>
+<tr><td>Observabilité</td><td>Artefacts adaptés à la revue et à l'audit ; documenter décisions, transferts <em>(handoffs)</em> et résultats ; analyse a posteriori <em>(post-hoc)</em>.</td></tr>
+<tr><td>Échecs et dégradation</td><td>Repérer les exécutions échouées, partielles ou bloquées ; réagir à une coordination dégradée ; schémas de reprise : rollback et humain dans la boucle.</td></tr>
+<tr><td>Cycle de vie</td><td>Ajouter un agent ; le mettre à jour ou le remplacer sans perturber ; le retirer en gardant l'auditabilité et la continuité.</td></tr>
+</tbody></table></div>
+
+<h2>Schémas d'orchestration</h2>
+<div class="tablewrap"><table><thead><tr><th>Schéma</th><th>Principe</th><th>Bon usage</th><th>Risque</th></tr></thead><tbody>
+<tr><td>Séquentiel <em>(pipeline)</em></td><td>A → B → C</td><td>Dépendances fortes entre étapes</td><td>Erreur propagée</td></tr>
+<tr><td>Superviseur / orchestrateur</td><td>Un agent délègue à des sous-agents et consolide</td><td>Déroulé variable</td><td>Superviseur qui fait le travail lui-même</td></tr>
+<tr><td>Parallèle <em>(fan-out / fan-in)</em></td><td>Sous-tâches indépendantes, puis fusion</td><td>Gros volume, périmètres disjoints</td><td>Conflits à la fusion</td></tr>
+<tr><td>Producteur-critique <em>(generator / evaluator)</em></td><td>L'un produit, l'autre évalue, on boucle</td><td>Qualité exigeante</td><td>Boucle infinie : borner</td></tr>
+<tr><td>Transfert <em>(handoff)</em></td><td>La main passe d'un agent à l'autre avec un résumé</td><td>Enchaînement guidé par l'humain</td><td>Contexte perdu si le transfert est pauvre</td></tr>
+</tbody></table></div>
+
+<h3>Mécanismes à connaître</h3>
+<ul>
+<li><strong>Sous-agents</strong> (VS Code, CLI) : outil <code>agent</code> ; chaque sous-agent a un <strong>contexte isolé</strong> et ne renvoie que son résultat. Liste fermée d'agents appelables dans le profil de l'orchestrateur.</li>
+<li><code>user-invocable: false</code> : agent réservé à l'appel par un autre agent.</li>
+<li><strong>Handoffs</strong> (VS Code) : boutons de transfert avec prompt prérempli ; <code>send: false</code> pour laisser l'humain relire.</li>
+<li><strong>Cloud agent</strong> : une tâche = une branche = une PR ; plusieurs tâches en parallèle = plusieurs issues assignées.</li>
+<li>Hook <code>subagentStart</code> : injecter les interdits dans chaque sous-agent (il ne peut pas bloquer). Hook <code>subagentStop</code> : bloquer une fin prématurée.</li>
+</ul>
+
+<h2>Isolation en parallèle</h2>
+<div class="tablewrap"><table><thead><tr><th>Dimension</th><th>Isolation</th></tr></thead><tbody>
+<tr><td>Fichiers</td><td>Périmètres disjoints (un lot par agent)</td></tr>
+<tr><td>Espace de travail</td><td>Une branche ou un worktree Git par agent ; cloud agent : branche <code>copilot/...</code> par tâche</td></tr>
+<tr><td>Contexte</td><td>Sous-agents à contexte isolé ; pas de conversation partagée</td></tr>
+<tr><td>Fichier commun</td><td>Un seul écrivain ; les autres écrivent leur fichier, une étape fusionne</td></tr>
+<tr><td>Droits</td><td>Outils et jetons propres à chaque rôle</td></tr>
+</tbody></table></div>
+
+<h2>Les trois conflits</h2>
+<div class="tablewrap"><table><thead><tr><th>Conflit</th><th>Détection</th><th>Résolution</th></tr></thead><tbody>
+<tr><td>Modifications qui se chevauchent</td><td>Conflit Git, deux PR sur le même fichier</td><td>Repartitionner ; l'un rejoue sur la base à jour ; fusion séquentielle</td></tr>
+<tr><td>Travail en double</td><td>Deux PR pour la même issue</td><td>Propriétaire unique par tâche (assignation) ; fermer le doublon</td></tr>
+<tr><td>Résultats contradictoires</td><td>Reviewer « OK », contrôleur « KO »</td><td>Critères communs et déterministes ; arbitrage humain</td></tr>
+</tbody></table></div>
+
+<h2>Observabilité</h2>
+<ul>
+<li>Chaque agent produit un artefact relisible : PR, revue, fichier de synthèse, journal.</li>
+<li>Chaque transfert est documenté : qui passe la main, avec quel livrable, quelle décision humaine.</li>
+<li>Analyse a posteriori : journaux de session, historique de la PR, check runs, audit log, journal d'exécution.</li>
+</ul>
+
+<h2>Échecs et reprise</h2>
+<div class="tablewrap"><table><thead><tr><th>Exécution</th><th>Signal</th><th>Réponse</th></tr></thead><tbody>
+<tr><td>Échouée</td><td>Erreur, pas de livrable</td><td>Classer la cause, corriger, relancer l'étape</td></tr>
+<tr><td>Partielle</td><td>Une partie des livrables</td><td>Relancer seulement le manquant, depuis le dernier point validé</td></tr>
+<tr><td>Bloquée <em>(stalled)</em></td><td>Pas de progrès, appels répétés, délai atteint (59 min pour le cloud agent)</td><td>Arrêter, borner les boucles, escalader</td></tr>
+<tr><td>Dégradée</td><td>Qualité en baisse, agents qui se contredisent</td><td>Revenir au séquentiel, réduire l'autonomie, humain dans la boucle</td></tr>
+</tbody></table></div>
+<p>Schémas de reprise : <strong>rollback</strong> (revert du commit de l'étape, redéploiement d'un SHA sain), <strong>point de reprise</strong> (journal), <strong>humain dans la boucle</strong> (validation avant de continuer).</p>
+
+<h2>Cycle de vie des agents</h2>
+<div class="tablewrap"><table><thead><tr><th>Action</th><th>Comment, sans casser</th></tr></thead><tbody>
+<tr><td>Ajouter</td><td>PR + revue Code Owners + jeu d'évaluation ; ajouter à la liste des agents appelables</td></tr>
+<tr><td>Mettre à jour</td><td>PR ; la version d'un agent = SHA du fichier ; une PR en cours garde sa version</td></tr>
+<tr><td>Remplacer</td><td>Nouvel agent à côté, comparaison sur les mêmes cas, puis bascule de l'orchestrateur</td></tr>
+<tr><td>Retirer</td><td>Retirer de la liste, supprimer par PR documentée ; l'historique Git garde l'audit</td></tr>
+</tbody></table></div>
+
+<h2>Pièges</h2>
+<div class="box piege"><b>Les erreurs classiques</b><ul>
+<li>Lancer plusieurs agents sur le même fichier « pour aller plus vite ».</li>
+<li>Laisser un agent trancher entre deux résultats contradictoires.</li>
+<li>Croire qu'un sous-agent voit tout l'historique de l'agent principal : son contexte est isolé.</li>
+<li>Supprimer un agent sans PR ni trace : perte d'auditabilité.</li>
+<li>Croire qu'une tâche cloud agent peut toucher plusieurs dépôts ou ouvrir plusieurs PR : non.</li>
+</ul></div>
+
+<h2>Trucs et astuces</h2>
+<div class="box astuce"><b>Réflexes</b><ul>
+<li>Parallèle ? Demandez-vous d'abord : <strong>périmètres disjoints ?</strong> Sinon, séquentiel.</li>
+<li>Contradiction ? <strong>Critère déterministe partagé</strong>, puis humain.</li>
+<li>Bloqué ? <strong>Borne + escalade</strong>, jamais « relancer jusqu'à ce que ça passe ».</li>
+</ul></div>
+
+<p><a href="08-quiz.html#D5">S'entraîner : questions du domaine 5 →</a></p>
+<div class="pager"><a href="04-evaluation-tuning.html"><small>← Précédent</small>4 · Évaluation & ajustement</a><a class="n" href="06-garde-fous.html"><small>Suivant →</small>6 · Garde-fous & responsabilité</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

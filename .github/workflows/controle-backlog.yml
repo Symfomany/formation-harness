@@ -1,0 +1,68 @@
+# Contrôle backlog : les vérifications automatiques à rendre OBLIGATOIRES avant fusion
+# (ruleset de la branche par défaut > « Require status checks to pass »).
+# Noms de checks à déclarer : « Politique - sources protégées », « Format des US de sortie »,
+# « Tests du harness ».
+#
+# Pourquoi pas de filtre « paths » sur pull_request ? Un check requis dont le workflow est filtré
+# ne démarre jamais : la PR reste bloquée en « Expected — Waiting for status to be reported ».
+name: Contrôle backlog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: controle-backlog-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  politique-sources:
+    name: Politique - sources protégées
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Aucune modification de entree/ ni de contexte/ (sauf décision du référent)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DECISION_REFERENT: ${{ contains(github.event.pull_request.labels.*.name, 'decision-referent') }}
+        run: |
+          option=""
+          if [ "$DECISION_REFERENT" = "true" ]; then option="--autoriser-contexte"; fi
+          node .github/scripts/verifier-sources.cjs --base "$BASE_SHA" $option
+
+  format-us:
+    name: Format des US de sortie
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Contrôler sprintdesk/backlog/sortie/
+        run: node .github/scripts/verifier-us.cjs
+
+  tests-harness:
+    name: Tests du harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Scripts de contrôle et hooks d'exemple
+        run: node .github/scripts/tester-harness.cjs

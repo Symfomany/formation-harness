@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · 1 — Architecture des agents et SDLC</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a class="on" href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>1 · Préparer l'architecture des agents et le SDLC</h1>
+<p><em>Prepare agent architecture and SDLC processes</em></p>
+<div class="tags"><span>15–20 % de l'examen</span><span>Formation : chapitres 02, 03, 11</span></div></header>
+
+<h2>Ce que dit le guide d'étude</h2>
+<div class="tablewrap"><table><thead><tr><th>Compétence</th><th>Ce qu'on attend de vous</th></tr></thead><tbody>
+<tr><td>Intégrer les agents dans le SDLC <em>(integrate agents into the SDLC)</em></td><td>Choisir les étapes confiées à un agent ; repérer et corriger les anti-patterns ; définir entrées, sorties et critères de succès.</td></tr>
+<tr><td>Séparer planification, raisonnement et action <em>(boundaries between planning, reasoning, and action)</em></td><td>Planification distincte de l'exécution ; plan structuré en sortie ; valider le plan ; empêcher toute action avant vérification et approbation.</td></tr>
+<tr><td>Observabilité et contrôle <em>(observability and control)</em></td><td>Choisir le degré d'autonomie et ses garde-fous ; produire des artefacts inspectables dans l'outillage standard ; prévoir l'intervention humaine sans ralentir la livraison.</td></tr>
+</tbody></table></div>
+
+<h2>Concepts à mémoriser</h2>
+<h3>Quelle étape du SDLC pour quel agent ?</h3>
+<div class="tablewrap"><table><thead><tr><th>Étape</th><th>Mécanisme GitHub</th><th>Sortie inspectable</th><th>Décision humaine</th></tr></thead><tbody>
+<tr><td>Cadrer / planifier</td><td>Agent planificateur (VS Code, CLI en mode plan, cloud agent en mode recherche et plan)</td><td>Plan en Markdown, commentaire d'issue</td><td>Approuver le plan</td></tr>
+<tr><td>Coder</td><td>Copilot cloud agent (issue assignée, <code>@copilot</code>), agent VS Code</td><td>Branche <code>copilot/...</code>, PR brouillon, commits signés</td><td>Revue de PR</td></tr>
+<tr><td>Relire</td><td>Copilot code review</td><td>Commentaires de revue (type <em>Comment</em>)</td><td>Approbation : toujours humaine</td></tr>
+<tr><td>Tester</td><td>GitHub Actions, checks requis</td><td>Check runs, artefacts, résumé de job</td><td>Aucune si vert ; analyse si rouge</td></tr>
+<tr><td>Déployer</td><td>Workflow + environnement protégé</td><td>Historique de déploiement, SHA déployé</td><td>Approbation de l'environnement</td></tr>
+<tr><td>Exploiter / trier</td><td>Workflow agentique, automation</td><td>Labels, commentaires (sorties contrôlées)</td><td>Selon le risque</td></tr>
+</tbody></table></div>
+
+<h3>Une bonne tâche pour un agent autonome</h3>
+<div class="box memo"><b>Bonnes candidates</b> <em>(well-scoped tasks)</em> : corrections de bugs, tests manquants, documentation, accessibilité, dette technique, petites évolutions avec critères d'acceptation clairs.
+<br><b>Mauvaises candidates</b> : tâches larges et transverses, ambiguës, sensibles (sécurité, données personnelles, authentification), incidents de production, tâches qui exigent une connaissance métier non écrite.</div>
+<p>Une issue bien écrite pour un agent contient : le problème, le résultat attendu, les critères d'acceptation, les fichiers ou zones concernés, les contraintes (ce qu'il ne faut pas toucher), comment vérifier.</p>
+
+<h3>Entrées, sorties, critères de succès</h3>
+<div class="tablewrap"><table><thead><tr><th></th><th>Exemple SprintDesk (agent rédacteur)</th></tr></thead><tbody>
+<tr><td>Entrées</td><td>US du lot, <code>revue.md</code>, <code>regles-metier.md</code>, plan approuvé</td></tr>
+<tr><td>Sorties</td><td>Fichiers <code>sortie/lot&lt;N&gt;/US-*.md</code>, <code>synthese-actions.md</code></td></tr>
+<tr><td>Critères de succès</td><td><code>verifier-us.cjs</code> sans erreur ; aucune ND-xx tranchée ; US correcte inchangée ; traçabilité conservée</td></tr>
+<tr><td>Contraintes</td><td>Pas d'écriture dans <code>entree/</code> ni <code>contexte/</code> ; pas de priorité fixée (RM-05)</td></tr>
+</tbody></table></div>
+
+<h3>Séparer planifier, raisonner, agir</h3>
+<div class="tablewrap"><table><thead><tr><th>Technique</th><th>Comment</th></tr></thead><tbody>
+<tr><td>Outils restreints pour le planificateur</td><td><code>tools: ['read', 'search']</code> (ou <code>edit</code> limité à un seul fichier de plan, imposé par la consigne et vérifié par hook)</td></tr>
+<tr><td>Plan structuré</td><td>Étapes numérotées, agent responsable, livrable, critère de fin, autonomie, retour arrière, risques, conditions d'arrêt</td></tr>
+<tr><td>Porte d'approbation</td><td>Statut <code>PROPOSÉ</code> → <code>APPROUVÉ</code> écrit par un humain ; l'orchestrateur refuse d'agir sinon</td></tr>
+<tr><td>Transfert sans envoi automatique</td><td>Handoff VS Code avec <code>send: false</code> : l'humain relit avant de lancer</td></tr>
+<tr><td>Sur GitHub.com</td><td>Demander au cloud agent de rechercher et planifier, itérer sur le plan, puis seulement créer la PR</td></tr>
+</tbody></table></div>
+
+<h3>Degré d'autonomie</h3>
+<div class="tablewrap"><table><thead><tr><th>Niveau</th><th>L'agent…</th><th>Exemple</th></tr></thead><tbody>
+<tr><td>Suggérer</td><td>Propose, l'humain applique</td><td>Copilot code review : commentaires uniquement</td></tr>
+<tr><td>Agir en isolement</td><td>Écrit sur sa branche, ouvre une PR brouillon</td><td>Cloud agent</td></tr>
+<tr><td>Agir avec contrôles automatiques</td><td>Écrit ; checks et hooks valident</td><td>Rédacteur + <code>postToolUse</code> + check « Format des US »</td></tr>
+<tr><td>Actions irréversibles</td><td>Jamais seul</td><td>Fusion, déploiement, suppression, droits, secrets</td></tr>
+</tbody></table></div>
+
+<h2>Exemple concret</h2>
+<p>Le lot 2 doit être réécrit. Architecture retenue dans la formation :</p>
+<ol>
+<li><code>planificateur-backlog</code> produit <code>plan-lot2.md</code> (PROPOSÉ). Il ne lance rien.</li>
+<li>Le chef de projet relit avec la grille et écrit <code>APPROUVÉ par … le …</code>.</li>
+<li>Le reviewer diagnostique (lecture seule + <code>revue.md</code>). Point de validation.</li>
+<li>Le rédacteur réécrit. Le hook <code>postToolUse</code> renvoie les erreurs de format immédiatement.</li>
+<li>PR ; checks requis ; revue humaine ; fusion ; publication après approbation de l'environnement.</li>
+</ol>
+<p>Chaque étape laisse une trace dans l'outillage standard : fichier, commit, PR, check run, release.</p>
+
+<h2>Anti-patterns à reconnaître</h2>
+<div class="tablewrap"><table><thead><tr><th>Anti-pattern</th><th>Symptôme</th><th>Correction attendue</th></tr></thead><tbody>
+<tr><td>Agent « couteau suisse »</td><td>Tous les outils, toutes les missions</td><td>Un rôle, des outils listés</td></tr>
+<tr><td>Planifier et agir dans le même tour</td><td>Fichiers modifiés pendant le « plan »</td><td>Planificateur sans écriture + porte d'approbation</td></tr>
+<tr><td>Sécurité par consigne</td><td>« Ne pousse jamais sur main » dans les instructions, rien d'autre</td><td>Ruleset, hook <code>preToolUse</code>, permissions</td></tr>
+<tr><td>Tâche vague</td><td>« Améliore le backlog »</td><td>Entrées, sorties, critères de succès</td></tr>
+<tr><td>Auto-validation</td><td>L'agent déclare « tests OK »</td><td>Check CI requis, artefacts</td></tr>
+<tr><td>Boucle sans fin</td><td>Producteur-critique sans limite</td><td>Nombre de tours borné, escalade</td></tr>
+<tr><td>Fatigue d'approbation</td><td>Approbation demandée pour chaque lecture</td><td>Approbations réservées aux actions risquées</td></tr>
+</tbody></table></div>
+
+<h2>Pièges</h2>
+<div class="box piege"><b>Les erreurs classiques à l'examen</b><ul>
+<li>Croire que le cloud agent peut fusionner, approuver ou passer sa PR en « prête » : <strong>non</strong>, jamais.</li>
+<li>Croire que Copilot code review peut « Approuver » ou « Demander des changements » : il laisse toujours une revue de type <em>Comment</em>, qui ne compte pas dans les approbations requises.</li>
+<li>Choisir « ajouter une phrase aux instructions » pour empêcher une action dangereuse : une instruction guide, elle n'impose pas.</li>
+<li>Choisir « exiger une approbation humaine à chaque étape » : cela ralentit sans réduire le risque. L'examen valorise les approbations <strong>ciblées</strong>.</li>
+<li>Confondre plan dans le chat et plan inspectable : le bon plan est un artefact (fichier, commentaire, PR).</li>
+</ul></div>
+
+<h2>Trucs et astuces</h2>
+<div class="box astuce"><b>Pour aller vite le jour J</b><ul>
+<li>Question « où placer l'humain ? » : sur ce qui est <strong>irréversible</strong> ou <strong>conforme / sensible</strong>. Ailleurs, des contrôles automatiques.</li>
+<li>Question « comment rendre observable ? » : la réponse cite un objet GitHub standard (PR, commit, check, artefact, journal de session, audit log).</li>
+<li>Pour itérer sur une PR de Copilot sans le relancer à chaque commentaire : regrouper les commentaires dans une revue (<em>Start a review</em>), puis la soumettre.</li>
+</ul></div>
+
+<p><a href="08-quiz.html#D1">S'entraîner : questions du domaine 1 →</a></p>
+<div class="pager"><a href="index.html"><small>← Précédent</small>Accueil révisions</a><a class="n" href="02-outils-mcp-environnements.html"><small>Suivant →</small>2 · Outils, MCP & environnements</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

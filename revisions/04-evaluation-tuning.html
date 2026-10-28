@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · 4 — Évaluation, analyse des erreurs et ajustement</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a class="on" href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>4 · Évaluation, analyse des erreurs et ajustement</h1>
+<p><em>Perform evaluation, error analysis, and tuning</em></p>
+<div class="tags"><span>15–20 % de l'examen</span><span>Formation : chapitres 07, 10</span></div></header>
+
+<h2>Ce que dit le guide d'étude</h2>
+<div class="tablewrap"><table><thead><tr><th>Compétence</th><th>Points évalués</th></tr></thead><tbody>
+<tr><td>Critères de succès et signaux</td><td>Résultats attendus et contraintes opérationnelles ; signaux qualitatifs et quantitatifs ; critères alignés sur l'intention ; signaux produits par des outils de scan automatiques.</td></tr>
+<tr><td>Analyser les échecs</td><td>Trouver les échecs dans les journaux, plans, traces, sorties et artefacts de workflow ; classer la cause racine : raisonnement, mauvais usage d'outil, contexte ou environnement.</td></tr>
+<tr><td>Ajuster</td><td>Réviser instructions, workflows ou contraintes ; affiner l'usage de la mémoire ; affiner l'usage et l'accès aux outils.</td></tr>
+</tbody></table></div>
+
+<h2>Définir le succès avant de mesurer</h2>
+<div class="tablewrap"><table><thead><tr><th>Élément</th><th>Exemple SprintDesk</th></tr></thead><tbody>
+<tr><td>Résultat attendu</td><td>5 US du lot traitées : créée, modifiée, inchangée ou bloquée</td></tr>
+<tr><td>Contraintes opérationnelles</td><td>Pas d'écriture hors <code>sortie/</code> ; aucune ND-xx tranchée ; 59 min max pour une tâche cloud agent</td></tr>
+<tr><td>Alignement sur l'intention</td><td>On mesure « US exploitable et traçable », pas « nombre de lignes écrites »</td></tr>
+</tbody></table></div>
+
+<h3>Signaux</h3>
+<div class="tablewrap"><table><thead><tr><th>Quantitatifs</th><th>Qualitatifs</th></tr></thead><tbody>
+<tr><td>Checks verts / rouges ; nombre d'erreurs de <code>verifier-us</code> ; alertes de scan ; nombre d'itérations sur la PR ; taux de PR fusionnées ; délai jusqu'à la fusion ; US inchangées à tort</td><td>Clarté des critères d'acceptation ; pertinence des questions ouvertes ; respect des conventions ; qualité du plan ; jugement du relecteur</td></tr>
+</tbody></table></div>
+
+<h3>Signaux produits automatiquement</h3>
+<div class="box memo"><b>Ce que le cloud agent lance seul, sur son propre code</b> (sans licence GitHub Advanced Security) :<ul>
+<li><strong>CodeQL</strong> : problèmes de sécurité du code ;</li>
+<li><strong>GitHub Advisory Database</strong> : nouvelles dépendances avec avis de malware ou vulnérabilité CVSS élevée ou critique ;</li>
+<li><strong>Secret scanning</strong> : clés, jetons ;</li>
+<li><strong>Copilot code review</strong> : second avis.</li>
+</ul>Ces validations sont désactivables une par une dans les réglages du cloud agent. Le détail est dans le journal de session.</div>
+<p>À ajouter soi-même : tests, linters, scripts métier (<code>verifier-us.cjs</code>) en checks requis ; Dependabot ; code scanning sur toutes les PR.</p>
+
+<h2>Où chercher les preuves</h2>
+<div class="tablewrap"><table><thead><tr><th>Source</th><th>Ce qu'on y trouve</th></tr></thead><tbody>
+<tr><td>Journal de session du cloud agent</td><td>Raisonnement, outils appelés, commandes, setup, serveurs MCP démarrés, validations</td></tr>
+<tr><td>Plan</td><td>Ce qui était prévu : écart = dérive ou plan faux</td></tr>
+<tr><td>Traces VS Code (vue de débogage du chat, références)</td><td>Fichiers réellement lus, outils et arguments</td></tr>
+<tr><td>Sorties</td><td>Le résultat, comparé aux critères</td></tr>
+<tr><td>Artefacts et journaux de workflow, check runs, résumé de job</td><td>Preuve objective : tests, scans, contrôles</td></tr>
+<tr><td>Historique Git, PR, audit log</td><td>Qui, quand, quelle version d'agent</td></tr>
+</tbody></table></div>
+
+<h2>Classer la cause racine</h2>
+<div class="tablewrap"><table><thead><tr><th>Cause</th><th>Signature</th><th>Exemple</th><th>Ajustement</th></tr></thead><tbody>
+<tr><td><strong>Raisonnement</strong> <em>(reasoning error)</em></td><td>Bonnes infos disponibles et lues, mauvaise conclusion</td><td>A lu RM-05 et fixe quand même une priorité</td><td>Préciser la procédure, exemple et contre-exemple, découper la tâche</td></tr>
+<tr><td><strong>Mauvais usage d'outil</strong> <em>(tool misuse)</em></td><td>Mauvais outil, mauvais arguments, outil absent ou en trop</td><td>Écrit dans <code>entree/</code> au lieu de <code>sortie/</code> ; boucle de recherche</td><td>Retirer / ajouter l'outil, consigne d'usage, hook</td></tr>
+<tr><td><strong>Contexte</strong> <em>(context issue)</em></td><td>Information absente, ambiguë, contradictoire ou périmée</td><td><code>regles-metier.md</code> jamais lu ; deux instructions contradictoires</td><td>Citer la source, supprimer la contradiction, corriger la mémoire</td></tr>
+<tr><td><strong>Environnement</strong> <em>(environment issue)</em></td><td>Dépendance absente, pare-feu, droits, mauvais emplacement de fichier</td><td>Node absent : hook en échec ; domaine bloqué par le pare-feu</td><td><code>copilot-setup-steps</code>, liste du pare-feu, chemin corrigé</td></tr>
+</tbody></table></div>
+
+<h2>Ajuster une chose à la fois</h2>
+<pre class="code"><code>1 défaut → 1 cause → 1 modification → rejouer le même jeu d'essai → vérifier l'absence de régression</code></pre>
+<div class="tablewrap"><table><thead><tr><th>Levier</th><th>Exemple</th></tr></thead><tbody>
+<tr><td>Instructions / workflow / contraintes</td><td>Ajouter la condition d'arrêt « ND-xx rencontrée » ; rendre un check requis</td></tr>
+<tr><td>Mémoire</td><td>Supprimer un fait erroné ; passer une règle en <code>applyTo</code> ; versionner le plan</td></tr>
+<tr><td>Outils et accès</td><td>Retirer <code>execute</code> du reviewer ; MCP en lecture seule ; préinstaller une dépendance</td></tr>
+</tbody></table></div>
+
+<h2>Pièges</h2>
+<div class="box piege"><b>Les erreurs classiques</b><ul>
+<li>Faire confiance au résumé de l'agent (« tous les tests passent ») sans regarder les checks.</li>
+<li>Corriger le prompt alors que la cause est l'environnement (dépendance absente, pare-feu).</li>
+<li>Modifier plusieurs leviers en même temps : on ne sait plus ce qui a corrigé ou cassé.</li>
+<li>Mesurer un indicateur facile mais non aligné (volume de code, nombre de fichiers).</li>
+<li>Croire que les scans du cloud agent exigent une licence GHAS : non.</li>
+</ul></div>
+
+<h2>Trucs et astuces</h2>
+<div class="box astuce"><b>Méthode express</b><ul>
+<li>Trois questions : qu'a-t-on donné à l'agent ? qu'a-t-il fait ? qu'attendait-on ?</li>
+<li>« Il avait l'info et s'est trompé » = raisonnement. « Il n'avait pas l'info » = contexte. « Il ne pouvait pas » = outil ou environnement.</li>
+<li>Rejouer aussi un cas qui marchait (US déjà correcte) pour détecter la régression.</li>
+</ul></div>
+
+<p><a href="08-quiz.html#D4">S'entraîner : questions du domaine 4 →</a></p>
+<div class="pager"><a href="03-memoire-etat.html"><small>← Précédent</small>3 · Mémoire, état & exécution</a><a class="n" href="05-multi-agents.html"><small>Suivant →</small>5 · Orchestration multi-agents</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div></body></html>

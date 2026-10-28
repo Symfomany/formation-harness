@@ -1,0 +1,2 @@
+# Journaux produits localement par les hooks
+.github/hooks/*.log

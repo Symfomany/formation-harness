@@ -1,0 +1,100 @@
+# Rollback par SHA : annule un commit de la branche par défaut en ouvrant une PR de revert.
+# Principes illustrés :
+#   - on ne réécrit jamais l'historique partagé (pas de reset --hard, pas de push --force) :
+#     git revert crée un NOUVEAU commit qui annule l'ancien, traçable et lui-même réversible ;
+#   - le rollback passe par une PR : mêmes contrôles requis et même revue humaine qu'un changement normal ;
+#   - l'entrée utilisateur (SHA, motif) n'est jamais interpolée dans le script : elle passe par env.
+# Prérequis : Settings > Actions > General > « Allow GitHub Actions to create and approve pull requests ».
+# Attention : une PR ouverte avec GITHUB_TOKEN ne déclenche pas les workflows « pull_request ».
+# Pour que les checks requis tournent, un humain pousse un commit vide, ou ferme/rouvre la PR,
+# ou l'on utilise le jeton d'une GitHub App à la place de GITHUB_TOKEN.
+name: Rollback backlog (revert par SHA)
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "SHA complet (40 caractères) du commit à annuler"
+        required: true
+        type: string
+      motif:
+        description: "Motif du rollback (conservé dans la PR pour l'audit)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rollback-backlog
+  cancel-in-progress: false
+
+jobs:
+  preparer-revert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Valider le SHA
+        env:
+          SHA: ${{ inputs.sha }}
+        run: |
+          if ! printf '%s' "$SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::SHA invalide : 40 caractères hexadécimaux en minuscules attendus."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Vérifier que le commit appartient à la branche par défaut
+        env:
+          SHA: ${{ inputs.sha }}
+        run: |
+          if ! git merge-base --is-ancestor "$SHA" HEAD; then
+            echo "::error::Le commit $SHA n'est pas dans l'historique de la branche par défaut."
+            exit 1
+          fi
+
+      - name: Créer la branche de revert et ouvrir la PR
+        env:
+          SHA: ${{ inputs.sha }}
+          MOTIF: ${{ inputs.motif }}
+          ACTEUR: ${{ github.actor }}
+          BRANCHE_DEFAUT: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          court="${SHA:0:7}"
+          branche="rollback/${court}-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branche"
+          # Commit de fusion : annuler par rapport au premier parent (-m 1).
+          if [ "$(git rev-list --parents -n 1 "$SHA" | wc -w)" -gt 2 ]; then
+            git revert --no-edit -m 1 "$SHA"
+          else
+            git revert --no-edit "$SHA"
+          fi
+          git push origin "$branche"
+          {
+            printf 'Annulation du commit %s.\n\n' "$SHA"
+            printf -- '- Motif : %s\n' "$MOTIF"
+            printf -- '- Demandé par : @%s\n' "$ACTEUR"
+            printf -- '- Exécution : %s/%s/actions/runs/%s\n\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            printf 'Cette PR doit passer les contrôles requis et être approuvée par un humain avant fusion.\n'
+          } > corps-pr.md
+          gh pr create --draft --base "$BRANCHE_DEFAUT" --head "$branche" \
+            --title "Rollback : annulation de ${court}" --body-file corps-pr.md
+
+      - name: En cas d'échec, indiquer la marche à suivre
+        if: failure()
+        run: |
+          {
+            echo "### Rollback non préparé"
+            echo "- SHA invalide ou absent de la branche par défaut : corriger l'entrée et relancer."
+            echo "- Conflit de revert : un commit plus récent modifie les mêmes lignes. Escalade humaine :"
+            echo "  annuler d'abord les commits plus récents, ou faire le revert à la main dans une PR."
+          } >> "$GITHUB_STEP_SUMMARY"

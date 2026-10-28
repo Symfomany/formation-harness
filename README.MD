@@ -48,8 +48,9 @@ flowchart LR
  │   ├─ 📁 entree/        20 US par lot (lot1..lot4)
  │   └─ 📁 sortie/        production des groupes
  └─ 📁 resultats/         revue, synthèse, ANALYSE
-📁 .github/               squelettes : instructions, 2 agents, 2 skills
+📁 .github/               squelettes : instructions, agents, skills ; bonus : hooks-exemples, scripts, workflows
 📁 docs/                  guides pas à pas par atelier + aide-mémoire PDF
+📁 revisions/             révision GH-600 en HTML
 📁 animateur/             fiches-groupes.md, corrige.md (🔒 à ne pas distribuer)
 📄 PLAN.md                produit par chaque groupe à la racine
 ```
@@ -79,6 +80,12 @@ L'humain décide, Copilot exécute dans un cadre explicite, et chaque tour de cy
 
 ## 📚 Guides pratiques
 Voir [`docs/README.md`](docs/README.md) : instructions, plan, architecture des agents, agents, skills, prompts et évaluation.
+
+Bonus avancés :
+- [`docs/10-hooks.md`](docs/10-hooks.md) : hooks pas à pas (exemples prêts dans `.github/hooks-exemples/`, inactifs par défaut).
+- [`docs/11-planificateur-orchestration.md`](docs/11-planificateur-orchestration.md) : agent `planificateur-backlog`, plan approuvé, journal, parallélisme, reprise.
+- [`docs/12-workflows-agentiques.md`](docs/12-workflows-agentiques.md) : Copilot cloud agent, checks requis, rollback par SHA, publication avec approbation, workflows agentiques (`.github/workflows/`).
+- [`revisions/index.html`](revisions/index.html) : révision de la certification GH-600 (concepts, pièges, scénarios, quiz, fiche mémo).
 
 ## 🛠️ Avant la formation
 1. 📤 Distribuer une copie du dépôt par groupe, avec son seul lot dans `entree/`, sans `animateur/`.
