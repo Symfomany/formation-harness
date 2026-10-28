@@ -50,8 +50,13 @@ flowchart LR
  └─ 📁 resultats/         revue, synthèse, ANALYSE
 📁 .github/               squelettes : instructions, agents, skills ; bonus : hooks-exemples, scripts, workflows
 📁 docs/                  guides pas à pas par atelier + aide-mémoire PDF
+<<<<<<< HEAD
 📁 revisions/             révision GH-600 en HTML
 📁 animateur/             fiches-groupes.md, corrige.md (🔒 à ne pas distribuer)
+=======
+📁 animateur/             fiches-groupes.md, corrige.md, correction-*.md (🔒 à ne pas distribuer)
+📁 .github/prompts/       un prompt par phase : /planifier-lot, /acter-reviewer, /acter-redacteur, /analyser-lot
+>>>>>>> 1c1002a643ed389a7831e4cfe39864c6d9a7f4ab
 📄 PLAN.md                produit par chaque groupe à la racine
 ```
 
