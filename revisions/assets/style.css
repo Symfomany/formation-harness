@@ -78,3 +78,7 @@ footer{margin-top:32px;color:var(--muted);font-size:13px;text-align:center}
 @media(max-width:860px){.layout{grid-template-columns:1fr}nav.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px;border-right:0;border-bottom:1px solid var(--line)}
 nav.side .brand,nav.side .grp{width:100%}nav.side a{margin:0}}
 @media print{nav.side{display:none}.layout{display:block}details.cas,details.rep{display:block}details>*{display:block}}
+/* Coloration syntaxique (assets/highlight.js) */
+.t-c{color:#8b93b8;font-style:italic}.t-k{color:#7dd3fc}.t-s{color:#86efac}.t-v{color:#f0abfc}.t-n{color:#fbbf24}.t-b{color:#fb923c}
+.t-h{color:#c4b5fd;font-weight:700}.t-m{color:#fca5a5;background:rgba(248,113,113,.18);border-radius:4px;padding:0 3px}
+pre.code[data-lang]::before{content:attr(data-file);display:block;margin:-4px 0 10px;font:600 12px system-ui,sans-serif;color:#9aa2c0}

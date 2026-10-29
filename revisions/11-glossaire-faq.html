@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · Glossaire et FAQ</title><link rel="stylesheet" href="assets/style.css">
+<style>
+.search{width:100%;font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);margin:8px 0}
+.count{color:var(--muted);font-size:13.5px;margin:4px 0 12px}
+td.en{color:var(--muted)}td.en b{color:var(--text)}
+tr.hide{display:none}
+.faq-q{margin:0 0 6px;font-weight:600}
+</style></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><a href="10-exemples-yaml-md.html">Exemples YAML &amp; MD</a><a class="on" href="11-glossaire-faq.html">Glossaire &amp; FAQ</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>Glossaire, index et FAQ</h1>
+<p>Les termes à connaître avec leur définition en français, leur traduction en anglais, un index inversé anglais → français et une FAQ par thème.</p>
+<div class="tags"><span>Glossaire FR → EN</span><span>Index EN → FR</span><span>FAQ complète</span></div></header>
+
+<div class="box memo"><b>Sur cette page</b><ul>
+<li><a href="#glossaire">Glossaire français → anglais</a> (avec recherche)</li>
+<li><a href="#index-en">Index anglais → français</a></li>
+<li><a href="#faq">FAQ</a> : SDLC, workflows, agents, MCP, politiques, mémoire, évaluation, multi-agents, autonomie, examen</li>
+</ul></div>
+
+<h2 id="glossaire">Glossaire français → anglais</h2>
+<input id="filtre" class="search" type="search" placeholder="Rechercher un terme, une définition, un mot anglais…" aria-label="Rechercher dans le glossaire">
+<div class="count" id="compte"></div>
+<div class="tablewrap"><table id="gloss"><thead><tr><th>Terme</th><th>Définition à savoir</th><th>English</th><th>Definition (EN)</th></tr></thead><tbody>
+<tr><td><b>Agent</b></td><td>Programme piloté par un modèle qui planifie, utilise des outils et agit vers un objectif, avec un niveau d'autonomie défini.</td><td class="en"><b>Agent</b></td><td class="en">Model-driven program that plans, uses tools and acts toward a goal within a defined autonomy level.</td></tr>
+<tr><td><b>Agentique</b> (système)</td><td>Système où des agents exécutent des tâches de bout en bout, avec outils, mémoire et supervision.</td><td class="en"><b>Agentic system</b></td><td class="en">System in which agents carry out tasks end to end, with tools, memory and oversight.</td></tr>
+<tr><td><b>Approbation</b></td><td>Validation explicite par un humain avant une action sensible. Utile seulement si elle réduit un risque réel.</td><td class="en"><b>Approval</b></td><td class="en">Explicit human sign-off before a sensitive action; only valuable if it reduces real risk.</td></tr>
+<tr><td><b>Artefact</b></td><td>Fichier ou sortie durable et inspectable (plan, journal, rapport) servant de trace et de passation.</td><td class="en"><b>Artifact</b></td><td class="en">Durable, inspectable output (plan, log, report) used as a record and for handoffs.</td></tr>
+<tr><td><b>Audit log</b> (journal d'audit)</td><td>Historique des actions et décisions au niveau de l'organisation, conservé pour la conformité et les enquêtes.</td><td class="en"><b>Audit log</b></td><td class="en">Organization-level history of actions and decisions kept for compliance and investigations.</td></tr>
+<tr><td><b>Autonomie</b> (niveau d')</td><td>Degré de liberté de l'agent, gradué selon le risque : lire, écrire en branche, proposer, jamais fusionner ni déployer seul.</td><td class="en"><b>Autonomy level</b></td><td class="en">Degree of freedom granted to an agent, graded by risk.</td></tr>
+<tr><td><b>Branche de travail</b></td><td>Branche isolée où l'agent écrit (ex. <code>copilot/...</code>), soumise aux protections et checks.</td><td class="en"><b>Working branch</b></td><td class="en">Isolated branch where the agent writes, subject to protections and checks.</td></tr>
+<tr><td><b>Brouillon</b> (PR)</td><td>Pull request non prête à la revue. Le cloud agent l'ouvre ainsi et ne peut pas la passer « prête ».</td><td class="en"><b>Draft pull request</b></td><td class="en">PR not yet ready for review; the cloud agent opens it as a draft and cannot mark it ready.</td></tr>
+<tr><td><b>Cause racine</b></td><td>Origine réelle d'un échec : raisonnement, outil, contexte ou environnement. On corrige elle, pas le symptôme.</td><td class="en"><b>Root cause</b></td><td class="en">Underlying origin of a failure (reasoning, tool, context or environment).</td></tr>
+<tr><td><b>Chaîne d'approvisionnement</b></td><td>Tout ce qui influence le code livré : dépendances, actions, workflows, instructions, profils d'agent, MCP.</td><td class="en"><b>Supply chain</b></td><td class="en">Everything that influences shipped code: dependencies, actions, workflows, instructions, agents, MCP.</td></tr>
+<tr><td><b>Check requis</b></td><td>Contrôle automatique qui doit réussir avant la fusion. Son nom est celui du <strong>job</strong>.</td><td class="en"><b>Required status check</b></td><td class="en">Automated check that must pass before merging; its name is the job name.</td></tr>
+<tr><td><b>CODEOWNERS</b></td><td>Fichier qui désigne les propriétaires de chemins ; leur revue est exigée si l'option du ruleset est active.</td><td class="en"><b>CODEOWNERS</b></td><td class="en">File assigning owners to paths; their review is required when enabled in branch protection.</td></tr>
+<tr><td><b>Commit signé</b></td><td>Commit dont l'auteur est vérifié cryptographiquement ; base de la traçabilité des actions de l'agent.</td><td class="en"><b>Signed commit</b></td><td class="en">Commit whose author is cryptographically verified; basis of traceability.</td></tr>
+<tr><td><b>Concurrence</b> (<code>concurrency</code>)</td><td>Clé de workflow qui évite les exécutions simultanées d'un même groupe.</td><td class="en"><b>Concurrency</b></td><td class="en">Workflow setting preventing simultaneous runs within the same group.</td></tr>
+<tr><td><b>Conflit</b></td><td>Modifications incompatibles du même fichier par plusieurs agents ou branches. Prévenu par l'isolation.</td><td class="en"><b>Conflict</b></td><td class="en">Incompatible changes to the same file from several agents or branches.</td></tr>
+<tr><td><b>Consolidation</b></td><td>Étape qui agrège les sorties de plusieurs agents ou lots avant revue.</td><td class="en"><b>Consolidation</b></td><td class="en">Step that aggregates outputs from several agents or batches before review.</td></tr>
+<tr><td><b>Contexte</b></td><td>Informations dont l'agent dispose pour raisonner : instructions, fichiers, historique, résultats d'outils.</td><td class="en"><b>Context</b></td><td class="en">Information available to the agent to reason: instructions, files, history, tool results.</td></tr>
+<tr><td><b>Contexte périmé</b></td><td>Information devenue fausse mais encore utilisée. Se traite par expiration, datation et revalidation.</td><td class="en"><b>Stale context</b></td><td class="en">Information that is no longer true but is still used.</td></tr>
+<tr><td><b>Copilot CLI</b></td><td>Agent Copilot en ligne de commande ; permissions par outil (<code>--allow-tool</code>, <code>--deny-tool</code>) et hooks.</td><td class="en"><b>Copilot CLI</b></td><td class="en">Copilot agent in the terminal, with per-tool permissions and hooks.</td></tr>
+<tr><td><b>Copilot cloud agent</b></td><td>Nouveau nom du « coding agent » : agent qui travaille dans un environnement GitHub Actions et ouvre une PR brouillon.</td><td class="en"><b>Copilot cloud agent</b></td><td class="en">Formerly “coding agent”: works in a GitHub Actions environment and opens a draft PR.</td></tr>
+<tr><td><b>copilot-instructions.md</b></td><td>Fichier <code>.github/copilot-instructions.md</code> d'instructions de dépôt. Guide l'agent mais n'impose rien.</td><td class="en"><b>Repository custom instructions</b></td><td class="en">Repository-wide guidance file; it guides but does not enforce.</td></tr>
+<tr><td><b>copilot-setup-steps</b></td><td>Workflow dont le job du même nom prépare l'environnement du cloud agent (outils, dépendances).</td><td class="en"><b>Copilot setup steps</b></td><td class="en">Workflow whose job of the same name prepares the cloud agent environment.</td></tr>
+<tr><td><b>Critères d'acceptation</b></td><td>Conditions mesurables à remplir pour considérer le travail terminé, posées avant d'agir.</td><td class="en"><b>Acceptance criteria</b></td><td class="en">Measurable conditions that define done, set before work starts.</td></tr>
+<tr><td><b>Dérive</b></td><td>Éloignement progressif de l'objectif, du plan ou des instructions au fil d'une longue session.</td><td class="en"><b>Drift</b></td><td class="en">Gradual departure from the goal, plan or instructions over a long session.</td></tr>
+<tr><td><b>Échec fermé</b></td><td>En cas d'erreur, l'action est refusée. Cas d'un hook <code>preToolUse</code> qui plante.</td><td class="en"><b>Fail-closed</b></td><td class="en">On error the action is denied.</td></tr>
+<tr><td><b>Échec ouvert</b></td><td>En cas d'erreur ou de délai dépassé, l'action est autorisée. Cas d'un hook trop lent.</td><td class="en"><b>Fail-open</b></td><td class="en">On error or timeout the action is allowed.</td></tr>
+<tr><td><b>Échec partiel</b></td><td>Une partie des agents ou lots échoue, les autres aboutissent. Géré par reprise sélective et <code>fail-fast: false</code>.</td><td class="en"><b>Partial failure</b></td><td class="en">Some agents or batches fail while others succeed.</td></tr>
+<tr><td><b>Environnement</b> (protégé)</td><td>Cible de déploiement GitHub avec approbateurs, secrets propres et règles de protection.</td><td class="en"><b>Protected environment</b></td><td class="en">GitHub deployment target with required reviewers, own secrets and protection rules.</td></tr>
+<tr><td><b>Escalade</b></td><td>Renvoi à un humain quand l'action est irréversible, ambiguë ou après des échecs répétés.</td><td class="en"><b>Escalation</b></td><td class="en">Handing a decision to a human when action is irreversible, ambiguous or repeatedly failing.</td></tr>
+<tr><td><b>Évaluation</b></td><td>Mesure de la qualité d'un agent par critères, signaux qualitatifs et quantitatifs, et scans automatiques.</td><td class="en"><b>Evaluation</b></td><td class="en">Measuring agent quality with criteria, qualitative and quantitative signals, and automated scans.</td></tr>
+<tr><td><b>Exfiltration</b></td><td>Sortie non autorisée de données. Limitée par le pare-feu, les secrets restreints et le MCP en lecture seule.</td><td class="en"><b>Exfiltration</b></td><td class="en">Unauthorized transfer of data out of a system.</td></tr>
+<tr><td><b>Garde-fou</b></td><td>Mécanisme qui limite ou bloque une action (hook, ruleset, permission, environnement protégé).</td><td class="en"><b>Guardrail</b></td><td class="en">Mechanism that limits or blocks an action.</td></tr>
+<tr><td><b>Hallucination</b></td><td>Affirmation plausible mais fausse produite par le modèle. D'où l'exigence de preuves.</td><td class="en"><b>Hallucination</b></td><td class="en">Plausible but false statement produced by a model.</td></tr>
+<tr><td><b>Hook</b></td><td>Commande ou appel exécuté à un évènement de l'agent (<code>preToolUse</code>, <code>postToolUse</code>, <code>agentStop</code>) pour contrôler ou enrichir.</td><td class="en"><b>Hook</b></td><td class="en">Command or call run at an agent event to control or augment behavior.</td></tr>
+<tr><td><b>Humain dans la boucle</b></td><td>Intervention humaine placée sur les décisions qui exigent jugement ou touchent l'irréversible.</td><td class="en"><b>Human in the loop</b></td><td class="en">Human involvement at decisions requiring judgment or affecting irreversible outcomes.</td></tr>
+<tr><td><b>Idempotence</b></td><td>Propriété d'une opération qui, répétée, produit le même résultat. Condition d'un retry sûr.</td><td class="en"><b>Idempotency</b></td><td class="en">Property of an operation that yields the same result when repeated.</td></tr>
+<tr><td><b>Implémenteur</b></td><td>Agent qui réalise les modifications selon le plan reçu.</td><td class="en"><b>Implementer</b></td><td class="en">Agent that makes changes according to the received plan.</td></tr>
+<tr><td><b>Injection de commande</b></td><td>Exécution de code via une entrée non fiable placée dans un <code>run:</code> ; évitée avec <code>env:</code>.</td><td class="en"><b>Command injection</b></td><td class="en">Running attacker-supplied code via untrusted input inserted in a shell step.</td></tr>
+<tr><td><b>Injection de prompt</b></td><td>Instruction malveillante cachée dans une donnée (issue, page, sortie d'outil) pour détourner l'agent.</td><td class="en"><b>Prompt injection</b></td><td class="en">Malicious instruction hidden in data to hijack an agent.</td></tr>
+<tr><td><b>Instructions personnalisées</b></td><td>Consignes persistantes données à l'agent (dépôt, chemin, organisation, profil).</td><td class="en"><b>Custom instructions</b></td><td class="en">Persistent guidance supplied to the agent.</td></tr>
+<tr><td><b>Isolation</b></td><td>Séparation des agents (branche, périmètre, environnement) pour éviter conflits et propagation d'erreurs.</td><td class="en"><b>Isolation</b></td><td class="en">Separating agents to avoid conflicts and error propagation.</td></tr>
+<tr><td><b>Jeton</b> (token)</td><td>Identifiant d'accès d'un workflow ou d'un agent, aux droits à limiter au strict nécessaire.</td><td class="en"><b>Token</b></td><td class="en">Credential used by a workflow or agent; scope should be minimal.</td></tr>
+<tr><td><b>Journal de session</b></td><td>Trace détaillée des étapes de l'agent, liée à la PR pour la revue et l'audit.</td><td class="en"><b>Session log</b></td><td class="en">Detailed trace of agent steps, linked to the PR for review and audit.</td></tr>
+<tr><td><b>Liste d'autorisation</b></td><td>Ensemble explicite de ce qui est permis (serveurs MCP, commandes, hôtes) ; tout le reste est refusé.</td><td class="en"><b>Allowlist</b></td><td class="en">Explicit set of permitted items; everything else is denied.</td></tr>
+<tr><td><b>Matrice</b> (<code>matrix</code>)</td><td>Stratégie de workflow qui lance un job par combinaison de valeurs (ex. un par lot).</td><td class="en"><b>Matrix strategy</b></td><td class="en">Workflow strategy running one job per combination of values.</td></tr>
+<tr><td><b>MCP</b> (Model Context Protocol)</td><td>Protocole standard qui expose des outils et données à un agent via des serveurs.</td><td class="en"><b>Model Context Protocol</b></td><td class="en">Standard protocol exposing tools and data to agents through servers.</td></tr>
+<tr><td><b>Mémoire court terme</b></td><td>Contexte de la session en cours ; perdu à la fin.</td><td class="en"><b>Short-term memory</b></td><td class="en">Current session context; lost when it ends.</td></tr>
+<tr><td><b>Mémoire long terme</b></td><td>Faits conservés entre sessions, datés, sourcés, avec expiration.</td><td class="en"><b>Long-term memory</b></td><td class="en">Facts kept across sessions with date, source and expiry.</td></tr>
+<tr><td><b>Mémoire externe</b></td><td>État stocké hors du modèle (fichier, base, artefact) ; fiable et inspectable.</td><td class="en"><b>External memory</b></td><td class="en">State stored outside the model (file, database, artifact).</td></tr>
+<tr><td><b>Merge queue</b> (file de fusion)</td><td>File qui fusionne les PR après revalidation ; les workflows doivent écouter <code>merge_group</code>.</td><td class="en"><b>Merge queue</b></td><td class="en">Queue that merges PRs after revalidation; workflows must listen to <code>merge_group</code>.</td></tr>
+<tr><td><b>Moindre privilège</b></td><td>Donner uniquement les droits nécessaires : outils listés, <code>permissions</code> par job, MCP en lecture.</td><td class="en"><b>Least privilege</b></td><td class="en">Granting only the permissions strictly required.</td></tr>
+<tr><td><b>Observabilité</b></td><td>Capacité à comprendre ce qu'ont fait les agents : journaux, métriques, traces, corrélation.</td><td class="en"><b>Observability</b></td><td class="en">Ability to understand what agents did via logs, metrics, traces and correlation.</td></tr>
+<tr><td><b>Orchestration</b></td><td>Coordination de plusieurs agents : séquentielle, parallèle, hiérarchique, avec passations.</td><td class="en"><b>Orchestration</b></td><td class="en">Coordination of several agents: sequential, parallel, hierarchical, with handoffs.</td></tr>
+<tr><td><b>Outil</b></td><td>Capacité qu'un agent peut appeler : lire, chercher, éditer, exécuter, outil MCP.</td><td class="en"><b>Tool</b></td><td class="en">Capability an agent can call: read, search, edit, execute, MCP tool.</td></tr>
+<tr><td><b>Pare-feu</b> (cloud agent)</td><td>Limite les hôtes joignables par l'agent pour empêcher l'exfiltration.</td><td class="en"><b>Firewall</b></td><td class="en">Restricts hosts the agent can reach to prevent exfiltration.</td></tr>
+<tr><td><b>Passation</b></td><td>Transfert d'un travail d'un agent à un autre via un artefact explicite.</td><td class="en"><b>Handoff</b></td><td class="en">Transfer of work between agents through an explicit artifact.</td></tr>
+<tr><td><b>Permission</b></td><td>Droit accordé ou refusé : <code>permissions</code> d'un workflow, outil autorisé, décision de hook.</td><td class="en"><b>Permission</b></td><td class="en">Granted or denied right: workflow permissions, allowed tool, hook decision.</td></tr>
+<tr><td><b>Plan</b> (d'implémentation)</td><td>Document écrit avant de coder : scope, fichiers, risques de sécurité, tests, rollback.</td><td class="en"><b>Implementation plan</b></td><td class="en">Written document before coding: scope, files, security risks, tests, rollback.</td></tr>
+<tr><td><b>Plan de contrôle</b></td><td>Couche où l'on gouverne les agents : GitHub (PR, rulesets, checks, politiques).</td><td class="en"><b>Control plane</b></td><td class="en">Layer where agents are governed.</td></tr>
+<tr><td><b>Planificateur</b></td><td>Agent qui décompose le travail et produit le plan, sans le réaliser.</td><td class="en"><b>Planner</b></td><td class="en">Agent that decomposes work and produces the plan without executing it.</td></tr>
+<tr><td><b>Politique</b></td><td>Règle de gouvernance appliquée à l'organisation ou au dépôt (registre MCP, hooks admin, rulesets).</td><td class="en"><b>Policy</b></td><td class="en">Governance rule applied at organization or repository level.</td></tr>
+<tr><td><b>Profil d'agent</b></td><td>Fichier <code>.agent.md</code> définissant rôle, outils, serveurs MCP et consignes d'un agent personnalisé.</td><td class="en"><b>Custom agent profile</b></td><td class="en">An <code>.agent.md</code> file defining role, tools, MCP servers and guidance.</td></tr>
+<tr><td><b>Protection push</b> (secret scanning)</td><td>Bloque un push contenant un secret détecté.</td><td class="en"><b>Push protection</b></td><td class="en">Blocks a push containing a detected secret.</td></tr>
+<tr><td><b>Pull request</b></td><td>Demande de fusion : lieu de revue, de checks et de traçabilité.</td><td class="en"><b>Pull request</b></td><td class="en">Merge request: place for review, checks and traceability.</td></tr>
+<tr><td><b>Raisonnement</b></td><td>Étape où l'agent analyse et décide ; à distinguer de planifier et d'agir.</td><td class="en"><b>Reasoning</b></td><td class="en">Step where the agent analyzes and decides.</td></tr>
+<tr><td><b>Registre MCP</b></td><td>Catalogue de serveurs MCP approuvés par l'organisation.</td><td class="en"><b>MCP registry</b></td><td class="en">Organization-approved catalog of MCP servers.</td></tr>
+<tr><td><b>Reprise</b></td><td>Redémarrage d'un travail interrompu à partir de l'état sauvegardé.</td><td class="en"><b>Resumption</b></td><td class="en">Restarting interrupted work from saved state.</td></tr>
+<tr><td><b>Retry</b> (nouvelle tentative)</td><td>Répétition d'une action échouée, bornée et réservée aux opérations idempotentes.</td><td class="en"><b>Retry</b></td><td class="en">Repeating a failed action, bounded and safe only for idempotent operations.</td></tr>
+<tr><td><b>Revert</b></td><td>Commit qui annule un commit précédent sans réécrire l'historique.</td><td class="en"><b>Revert</b></td><td class="en">Commit that undoes a prior commit without rewriting history.</td></tr>
+<tr><td><b>Réviseur</b></td><td>Agent ou humain qui compare le résultat au plan et aux règles.</td><td class="en"><b>Reviewer</b></td><td class="en">Agent or human comparing the result to the plan and rules.</td></tr>
+<tr><td><b>Rollback</b> (retour arrière)</td><td>Retour à un état sain : <code>revert</code> ou redéploiement d'un SHA connu.</td><td class="en"><b>Rollback</b></td><td class="en">Returning to a known good state.</td></tr>
+<tr><td><b>Ruleset</b> (règles de branche)</td><td>Règles qui imposent PR, revues, checks requis, interdisent push forcé et suppression.</td><td class="en"><b>Ruleset / branch protection</b></td><td class="en">Rules enforcing PRs, reviews, required checks and blocking force push and deletion.</td></tr>
+<tr><td><b>Scan automatique</b></td><td>Analyse déterministe (sécurité, qualité, secrets) lancée par la CI.</td><td class="en"><b>Automated scan</b></td><td class="en">Deterministic analysis (security, quality, secrets) run by CI.</td></tr>
+<tr><td><b>SDLC</b></td><td>Cycle de vie du développement logiciel : planifier, construire, tester, revoir, déployer, exploiter.</td><td class="en"><b>Software Development Life Cycle</b></td><td class="en">Plan, build, test, review, deploy, operate.</td></tr>
+<tr><td><b>Secret</b></td><td>Donnée sensible (clé, jeton). Type <em>Agents</em> pour le cloud agent, secrets d'environnement pour le déploiement.</td><td class="en"><b>Secret</b></td><td class="en">Sensitive value such as a key or token.</td></tr>
+<tr><td><b>Secret scanning</b></td><td>Détection de secrets dans le dépôt, avec protection push.</td><td class="en"><b>Secret scanning</b></td><td class="en">Detection of secrets in a repository, with push protection.</td></tr>
+<tr><td><b>Serveur MCP</b></td><td>Service qui expose des outils à l'agent ; déclaré avec type, URL et outils autorisés.</td><td class="en"><b>MCP server</b></td><td class="en">Service exposing tools to the agent.</td></tr>
+<tr><td><b>SHA épinglé</b></td><td>Référence d'action par empreinte de commit complète, non déplaçable contrairement à un tag.</td><td class="en"><b>Pinned SHA</b></td><td class="en">Referencing an action by full commit hash, immutable unlike a tag.</td></tr>
+<tr><td><b>Sous-agent</b></td><td>Agent lancé par un autre pour une sous-tâche, avec son propre contexte et ses outils.</td><td class="en"><b>Subagent</b></td><td class="en">Agent started by another for a subtask, with its own context and tools.</td></tr>
+<tr><td><b>Système de référence</b></td><td>Source qui fait foi : ici GitHub (code, PR, historique, décisions).</td><td class="en"><b>System of record</b></td><td class="en">Authoritative source of truth.</td></tr>
+<tr><td><b>Traçabilité</b></td><td>Capacité à retrouver qui a fait quoi, quand et pourquoi : commits signés, PR, journal, audit log.</td><td class="en"><b>Traceability</b></td><td class="en">Ability to find who did what, when and why.</td></tr>
+<tr><td><b>Workflow</b></td><td>Fichier YAML de GitHub Actions qui définit déclencheurs, jobs et étapes.</td><td class="en"><b>Workflow</b></td><td class="en">GitHub Actions YAML file defining triggers, jobs and steps.</td></tr>
+</tbody></table></div>
+
+<h2 id="index-en">Index anglais → français</h2>
+<p>Généré automatiquement depuis le glossaire ci-dessus, en ordre alphabétique anglais.</p>
+<div class="tablewrap"><table id="indexen"><thead><tr><th>English</th><th>Français</th></tr></thead><tbody></tbody></table></div>
+
+<h2 id="faq">FAQ</h2>
+
+<h3>SDLC et architecture</h3>
+<details class="cas"><summary>Pourquoi séparer planifier, raisonner et agir ?</summary><div class="corps"><p>Chaque fonction a son artefact et son point de contrôle. Un plan écrit peut être relu avant l'action, et l'agent qui agit ne s'auto-valide pas. On évite les erreurs en cascade et on garde une trace.</p></div></details>
+<details class="cas"><summary>Que doit contenir un plan d'implémentation ?</summary><div class="corps"><p>Scope, fichiers concernés, risques de sécurité, stratégie de test, notes de rollback, et critères d'acceptation. Un check peut vérifier la présence de ces sections.</p></div></details>
+<details class="cas"><summary>Des tests verts suffisent-ils pour fusionner ?</summary><div class="corps"><p>Non. Ils sont une preuve parmi d'autres. La fusion exige la revue (dont Code Owners) et les checks requis ; la décision reste humaine.</p></div></details>
+<details class="cas"><summary>Qu'est-ce qu'un anti-pattern typique ?</summary><div class="corps"><p>Un agent unique qui planifie, code, teste et fusionne ; l'absence de plan ; des étapes sans entrées/sorties ; une autonomie identique pour toutes les actions.</p></div></details>
+<details class="cas"><summary>Pourquoi GitHub est-il le « système de référence » ?</summary><div class="corps"><p>Code, PR, revues, checks et historique y sont centralisés et auditables. C'est aussi le plan de contrôle : rulesets, CODEOWNERS et politiques y gouvernent les agents.</p></div></details>
+
+<h3>Workflows et CI</h3>
+<details class="cas"><summary>Pourquoi mon check requis ne s'affiche-t-il jamais ?</summary><div class="corps"><p>Le nom requis doit être celui du <strong>job</strong>, pas du workflow. Vérifiez aussi que le workflow se déclenche sur <code>pull_request</code> (et <code>merge_group</code> pour la file de fusion).</p></div></details>
+<details class="cas"><summary>Comment donner le moins de droits à un workflow ?</summary><div class="corps"><p><code>permissions: contents: read</code> par défaut et au niveau du job, avec écriture seulement dans le job qui en a besoin. Ne jamais mettre <code>write</code> sur tout le workflow.</p></div></details>
+<details class="cas"><summary>Comment éviter l'injection de commande ?</summary><div class="corps"><p>Passer les valeurs externes (titre d'issue, nom de branche, corps de PR) par <code>env:</code> et les référencer comme variables shell, jamais <code>${{ ... }}</code> directement dans <code>run:</code>.</p></div></details>
+<details class="cas"><summary>Pourquoi épingler les actions par SHA ?</summary><div class="corps"><p>Un tag peut être déplacé vers du code malveillant ; un SHA complet ne change pas. C'est une protection de la chaîne d'approvisionnement.</p></div></details>
+<details class="cas"><summary>À quoi sert <code>copilot-setup-steps.yml</code> ?</summary><div class="corps"><p>À préparer l'environnement du cloud agent (Node, dépendances, outils de test). Le job doit s'appeler exactement <code>copilot-setup-steps</code>.</p></div></details>
+<details class="cas"><summary>Les workflows se lancent-ils tout seuls sur la PR de l'agent ?</summary><div class="corps"><p>Non par défaut : ils attendent « Approve and run workflows » par un humain. C'est un garde-fou, réglable.</p></div></details>
+<details class="cas"><summary>Que fait <code>fail-fast: false</code> ?</summary><div class="corps"><p>Un job de la matrice en échec n'annule pas les autres. Utile pour les lots d'agents parallèles : on garde le travail réussi (échec partiel).</p></div></details>
+
+<h3>Agents et profils</h3>
+<details class="cas"><summary>Quelle différence entre instructions et profil d'agent ?</summary><div class="corps"><p><code>copilot-instructions.md</code> guide tout le dépôt. Un profil <code>.agent.md</code> définit un agent spécialisé : rôle, <code>tools</code>, serveurs MCP et consignes.</p></div></details>
+<details class="cas"><summary>Une instruction suffit-elle à empêcher une action ?</summary><div class="corps"><p>Non. Une instruction guide, elle n'impose pas. Pour empêcher : retirer l'outil de <code>tools</code>, ajouter un hook <code>deny</code>, une permission ou un check requis.</p></div></details>
+<details class="cas"><summary>Quelles protections intégrées a le cloud agent ?</summary><div class="corps"><p>Lancement réservé à l'accès en écriture, une seule branche de travail, PR brouillon qu'il ne peut ni approuver ni fusionner, workflows soumis à approbation, pare-feu, caractères cachés filtrés, commits signés et lien vers la session.</p></div></details>
+<details class="cas"><summary>Pourquoi restreindre <code>execute</code> ?</summary><div class="corps"><p>C'est un accès shell large. On le garde derrière un hook <code>preToolUse</code> ou une liste de commandes autorisées.</p></div></details>
+
+<h3>MCP et outils</h3>
+<details class="cas"><summary>Qu'est-ce que MCP ?</summary><div class="corps"><p>Protocole qui expose outils et données à un agent via des serveurs. Chaque serveur doit être déclaré (type, URL, outils) et approuvé.</p></div></details>
+<details class="cas"><summary>Comment appliquer le moindre privilège à un serveur MCP ?</summary><div class="corps"><p>Serveur en lecture seule si possible, liste <code>tools</code> énumérée (pas <code>*</code>), secrets de type Agents référencés par nom, serveur présent dans le registre / la liste d'autorisation de l'organisation.</p></div></details>
+<details class="cas"><summary>Un outil est listé dans l'agent mais ne fonctionne pas : pourquoi ?</summary><div class="corps"><p>Probablement absent de la liste <code>tools</code> du serveur MCP. Les deux listes doivent être cohérentes.</p></div></details>
+<details class="cas"><summary>Faut-il faire confiance à la sortie d'un outil ?</summary><div class="corps"><p>Non. Elle peut contenir une injection de prompt. On la traite comme une donnée non fiable.</p></div></details>
+<details class="cas"><summary>Qui doit relire <code>mcp.json</code> ?</summary><div class="corps"><p>Des propriétaires sécurité (CODEOWNERS). Ajouter un serveur est une décision de sécurité.</p></div></details>
+
+<h3>Politiques, hooks et CLI</h3>
+<details class="cas"><summary>Que renvoyer d'un hook de sécurité sans objection ?</summary><div class="corps"><p><code>{}</code> (ou rien). Répondre <code>allow</code> court-circuite l'approbation normale.</p></div></details>
+<details class="cas"><summary>Quand un hook autorise-t-il par défaut ?</summary><div class="corps"><p>Au dépassement du délai (30 s par défaut), et pour un hook HTTP en erreur : fail-open. Une commande <code>preToolUse</code> qui plante ou sort non nul : refus.</p></div></details>
+<details class="cas"><summary>Allow ou deny : lequel gagne ?</summary><div class="corps"><p>Le refus l'emporte. <code>--deny-tool</code> prime sur <code>--allow-tool</code> et sur <code>--allow-all-tools</code>.</p></div></details>
+<details class="cas"><summary>Comment rendre un refus non contournable par l'utilisateur ?</summary><div class="corps"><p>Politique administrateur (hook de niveau machine ou organisation). Une option de ligne de commande peut être retirée.</p></div></details>
+<details class="cas"><summary>Que devient <code>ask</code> dans le cloud agent ?</summary><div class="corps"><p>Il vaut <code>deny</code>, faute d'humain pour répondre.</p></div></details>
+<details class="cas"><summary>Qu'est-ce qu'un ruleset apporte de plus qu'une consigne ?</summary><div class="corps"><p>Il impose : PR obligatoire, revue Code Owners, checks requis, blocage du push forcé et de la suppression, sans contournement si l'option est désactivée.</p></div></details>
+
+<h3>Mémoire et état</h3>
+<details class="cas"><summary>Que faire pour qu'un agent « se souvienne » d'une décision ?</summary><div class="corps"><p>L'écrire dans un artefact durable (<code>PLAN.md</code>, journal, PR). La mémoire de session disparaît.</p></div></details>
+<details class="cas"><summary>Comment gérer un contexte périmé ou contradictoire ?</summary><div class="corps"><p>Dater et sourcer les faits, les faire expirer, définir une hiérarchie de sources, et remonter le conflit à un humain plutôt que choisir au hasard.</p></div></details>
+<details class="cas"><summary>Comment reprendre un travail interrompu ?</summary><div class="corps"><p>Relire l'état externe (plan, journal par lot), vérifier l'état réel du dépôt, puis reprendre au dernier point validé.</p></div></details>
+<details class="cas"><summary>Peut-on stocker des secrets en mémoire ?</summary><div class="corps"><p>Non. Ni secrets ni données personnelles inutiles.</p></div></details>
+
+<h3>Évaluation et observabilité</h3>
+<details class="cas"><summary>Quels signaux utiliser pour évaluer un agent ?</summary><div class="corps"><p>Quantitatifs (taux de checks verts, durée, coût, reprises) et qualitatifs (relecture, conformité au plan), avec des critères définis avant.</p></div></details>
+<details class="cas"><summary>L'agent dit « les tests passent » : que faire ?</summary><div class="corps"><p>Vérifier le résultat de la CI. La preuve prime sur l'affirmation.</p></div></details>
+<details class="cas"><summary>Comment diagnostiquer un échec ?</summary><div class="corps"><p>Classer la cause racine : raisonnement, outil, contexte ou environnement. Corriger une chose à la fois, comparer avant / après.</p></div></details>
+<details class="cas"><summary>Que journaliser en multi-agents ?</summary><div class="corps"><p>Un journal par agent et par lot, avec identifiant de corrélation, artefacts de passation et décisions.</p></div></details>
+
+<h3>Multi-agents</h3>
+<details class="cas"><summary>Comment éviter les conflits entre agents parallèles ?</summary><div class="corps"><p>Isolation : une branche et un périmètre de fichiers par agent, puis une étape de consolidation.</p></div></details>
+<details class="cas"><summary>Qu'est-ce qu'une violation de passation ?</summary><div class="corps"><p>Un agent ignore la contrainte d'un artefact reçu (ex. migration créée alors que le plan interdit un changement de schéma). On la détecte par comparaison plan / résultat et on la prévient par un check.</p></div></details>
+<details class="cas"><summary>Quand utiliser plusieurs agents ?</summary><div class="corps"><p>Quand les tâches sont séparables et bénéficient du parallélisme ou d'un regard indépendant. Sinon, le schéma le plus simple suffit.</p></div></details>
+
+<h3>Autonomie, garde-fous et traçabilité</h3>
+<details class="cas"><summary>Quelle autonomie pour quelle action ?</summary><div class="corps"><p>Lire : autonome. Écrire en branche : autonome + contrôles. Ouvrir une PR : brouillon. Modifier workflows / agents : revue des propriétaires. Fusionner, déployer : humain. Secrets, droits, suppression : humain seul.</p></div></details>
+<details class="cas"><summary>Faut-il approuver chaque commande ?</summary><div class="corps"><p>Non : cela ruine la vitesse sans réduire le risque. Utiliser des contrôles automatiques et réserver l'humain à l'irréversible.</p></div></details>
+<details class="cas"><summary>Comment annuler une fusion défectueuse ?</summary><div class="corps"><p><code>git revert</code> via une PR, ou redéploiement d'un SHA sain. Pas de <code>reset --hard</code> ni de push forcé.</p></div></details>
+<details class="cas"><summary>Qu'est-ce qui garantit la traçabilité d'une action d'agent ?</summary><div class="corps"><p>Commits signés avec auteur Copilot et demandeur en co-auteur, lien vers le journal de session, PR, audit log, approbations tracées.</p></div></details>
+<details class="cas"><summary>Un label peut-il servir d'autorisation ?</summary><div class="corps"><p>Non, un rôle <em>triage</em> peut en poser. La vraie barrière est une revue protégée.</p></div></details>
+
+<h3>Examen</h3>
+<details class="cas"><summary>Quel est le score de réussite ?</summary><div class="corps"><p>700 sur 1000. Visez 80 % en entraînement.</p></div></details>
+<details class="cas"><summary>Quel domaine pèse le plus ?</summary><div class="corps"><p>Le domaine 2, outils, MCP et environnements (20–25 %). Commencez par lui.</p></div></details>
+<details class="cas"><summary>Les noms de fonctionnalités peuvent-ils changer ?</summary><div class="corps"><p>Oui (ex. coding agent devenu cloud agent). Raisonnez sur le mécanisme, pas sur le libellé.</p></div></details>
+<details class="cas"><summary>Comment choisir entre deux réponses proches ?</summary><div class="corps"><p>Celle qui impose par un mécanisme, avec moindre privilège, une trace durable, un humain seulement sur l'irréversible et une preuve. Voir <a href="10-exemples-yaml-md.html">Exemples YAML &amp; MD</a>, section Trucs et astuces.</p></div></details>
+
+<div class="pager"><a href="10-exemples-yaml-md.html"><small>← Précédent</small>Exemples YAML &amp; MD</a><a class="n" href="index.html"><small>Retour →</small>Accueil révisions</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div>
+<script>
+(function () {
+  var body = document.querySelector('#gloss tbody');
+  var rows = Array.prototype.slice.call(body.rows);
+  var key = function (r) { return r.cells[0].textContent.trim(); };
+  rows.sort(function (a, b) { return key(a).localeCompare(key(b), 'fr', { sensitivity: 'base' }); })
+      .forEach(function (r) { body.appendChild(r); });
+
+  var idx = document.querySelector('#indexen tbody');
+  rows.map(function (r) { return [r.cells[2].textContent.trim(), r.cells[0].textContent.trim()]; })
+      .sort(function (a, b) { return a[0].localeCompare(b[0], 'en', { sensitivity: 'base' }); })
+      .forEach(function (p) {
+        var tr = document.createElement('tr');
+        var a = document.createElement('td'), b = document.createElement('td');
+        a.innerHTML = '<b></b>'; a.firstChild.textContent = p[0]; b.textContent = p[1];
+        tr.appendChild(a); tr.appendChild(b); idx.appendChild(tr);
+      });
+
+  var input = document.getElementById('filtre'), count = document.getElementById('compte');
+  function filtrer() {
+    var q = input.value.trim().toLowerCase(), n = 0;
+    rows.forEach(function (r) {
+      var ok = !q || r.textContent.toLowerCase().indexOf(q) !== -1;
+      r.classList.toggle('hide', !ok);
+      if (ok) n++;
+    });
+    count.textContent = n + ' terme' + (n > 1 ? 's' : '') + ' sur ' + rows.length;
+  }
+  input.addEventListener('input', filtrer);
+  filtrer();
+})();
+</script></body></html>

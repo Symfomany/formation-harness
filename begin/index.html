@@ -470,6 +470,15 @@ const STAGES = [
 {icon:"📜",title:"Atelier 1 · Partie A — Instructions",sub:"Les règles permanentes de Copilot",
  goal:"Vous donnez à Copilot ses règles permanentes : contexte du projet, ton, style, périmètre et limites. Puis vous vérifiez qu'il les applique.",
  steps:[
+ {t:"Rappel : à quoi servent les instructions",b:[
+  {t:"p",x:"Le fichier <code>.github/copilot-instructions.md</code> est ajouté <b>automatiquement</b> à chaque conversation Copilot du dépôt. Vous ne le lancez jamais : il est simplement toujours là. Ce que vous y écrivez doit donc être vrai <b>tout le temps</b>."},
+  {t:"table",h:["Moment du workflow","Sans instructions","Avec instructions"],r:[
+   ["Vous demandez : « Réécris US-104 »","Copilot choisit un ton, un format, parfois tutoie, ajoute des émojis","Vouvoiement, identifiant <code>US-104</code> conservé, format Faits / Propositions / Questions ouvertes"],
+   ["L'US parle d'un délai de traitement absent des règles","Copilot annonce « 48 h » avec aplomb","Copilot répond : « décision non prise (ND-03), je la mets en question ouverte »"],
+   ["L'US est déjà correcte","Copilot la « améliore » quand même","Copilot la laisse inchangée et le dit"],
+   ["Vous demandez de publier le résultat","Copilot propose un <code>git push</code>","Copilot demande d'abord une validation humaine"]]},
+  {t:"mock",x:"Votre prompt (Ask)         Réponse de Copilot\n─────────────────────────   ─────────────────────────────────────────────\n« Réécris US-104 »     ->   US-104 : Faits : aucun délai dans RM-01..08\n                            Proposition : à valider par le PO\n                            Question ouverte : ND-03 (délai)\n                            Contrôles : relu contre RM-01 à RM-08\n\nSous la réponse : « Used 1 reference » -> copilot-instructions.md"},
+  {t:"why",x:"Repère : une règle y a sa place si vous la répéteriez dans <b>chaque</b> prompt (« vouvoie », « ne tranche pas »). Une méthode longue (comment formater une US) va dans une <b>skill</b>, pas ici."}]},
  {t:"Comprendre ce que vous allez construire",b:[
   {t:"table",h:["Ordre","Livrable","Analogie","Rôle"],r:[["1","<code>.github/copilot-instructions.md</code>","Règlement intérieur","Règles lues par Copilot dans <b>toutes</b> vos conversations"],["2","<code>PLAN.md</code>","Contrat de mission","Ce qu'on va faire, ce qu'on ne décidera pas, comment on jugera le résultat"]]},
   {t:"why",x:"On ne fait <b>pas</b> faire le travail à Copilot tout de suite. D'abord le cadre (instructions), ensuite la feuille de route (plan). Un cadre vague donne un travail vague."}]},
@@ -591,6 +600,21 @@ const STAGES = [
 {icon:"🧑‍💼",title:"Atelier 2 — Agents",sub:"Éditer puis créer des rôles",
  goal:"Vous transformez Copilot en équipe de rôles distincts (une « fiche de poste » par agent), puis vous les faites travailler avec validation humaine.",
  steps:[
+ {t:"Rappel : c'est quoi un agent, comment l'invoquer",b:[
+  {t:"p",x:"Un <b>agent</b> est un rôle (un fichier <code>.github/agents/nom.agent.md</code>) que <b>vous choisissez</b> pour une conversation. Il fixe la mission, les outils autorisés et la forme de la sortie. Contrairement aux instructions (toujours actives) et aux skills (chargées à la demande), un agent ne s'active que si vous le sélectionnez."},
+  {t:"table",h:["Question","Réponse","Exemple SprintDesk"],r:[
+   ["À quoi ça sert ?","Séparer les rôles et <b>limiter les droits</b> de chacun","Le Reviewer constate sans réécrire ; le Contrôleur ne peut rien modifier"],
+   ["Comment l'invoquer ?","Dans le chat, ouvrez la liste des agents (à côté du mode <code>Agent</code>) et cliquez sur son nom","Sélectionner <code>reviewer-backlog</code>, puis taper le prompt"],
+   ["Que mettre dans le prompt ?","Peu de choses : la fiche de poste fait déjà le cadrage","« Fais la revue du lot 2 »"],
+   ["Comment vérifier ?","Le nom de l'agent est affiché dans la zone de saisie ; le livrable apparaît dans le fichier prévu","<code>sprintdesk/resultats/revue.md</code> créé, US d'entrée intactes"]]},
+  {t:"mock",x:"Un lot d'US à traiter, trois conversations, trois agents :\n\n[reviewer-backlog] « Fais la revue du lot 2 »\n   -> écrit resultats/revue.md             (vous relisez, vous validez)\n\n[redacteur-us]     « Réécris le lot 2 selon la revue validée »\n   -> écrit backlog/sortie/lot2/US-xxx.md  (les ND-xx restent des questions)\n\n[controleur-us]    « Contrôle le lot 2 »\n   -> tableau Affirmation | Règle | Résultat (lecture seule)"},
+  {t:"table",h:["Situation","Agent à choisir","Pourquoi"],r:[
+   ["Vous voulez un diagnostic, pas de réécriture","Reviewer","Son interdit : ne pas réécrire"],
+   ["La revue est validée, il faut produire les US","Rédacteur","Il applique la revue sans trancher les ND-xx"],
+   ["Vous voulez un second avis indépendant","Contrôleur","Il n'a que <code>read</code> et <code>search</code> : il ne peut pas se valider lui-même"],
+   ["Renommer un fichier, chercher une info","Mode <code>Agent</code> seul","Tâche ponctuelle, pas besoin de rôle"]]},
+  {t:"warn",x:"L'agent n'apparaît pas dans la liste ? Vérifiez l'extension <code>.agent.md</code>, le dossier <code>.github/agents</code>, et les <code>---</code> et guillemets de l'en-tête. Un agent est une fiche de poste : un interdit écrit peut être ignoré, seule la restriction de <code>tools</code> l'empêche réellement."},
+  {t:"why",x:"Repère : un <b>agent</b> répond à « <b>qui</b> fait et avec quels droits ? », une <b>skill</b> à « <b>comment</b> le faire ? », les <b>instructions</b> à « qu'est-ce qui est <b>toujours</b> vrai ? »."}]},
  {t:"Comprendre ce qu'est un agent",b:[
   {t:"p",x:"Un agent est une <b>fiche de poste</b> : un fichier texte que Copilot lit avant de travailler. Sans fiche, il improvise ; avec, il connaît sa mission, ses limites et sa sortie."},
   {t:"mock",x:"---\ndescription: \"Phrase qui dit QUAND utiliser cet agent\"\ntools: ['read', 'search', 'edit']\n---\n# Nom de l'agent\n\n## Mission      <- ce qu'il fait\n## Interdits     <- ce qu'il ne décide pas\n## Sortie        <- ce qu'il rend, et où"},
@@ -680,6 +704,19 @@ const STAGES = [
 {icon:"🧰",title:"Atelier 3 — Skills",sub:"Savoir-faire réutilisables",
  goal:"Vous donnez aux agents des procédures précises (format d'US, méthode de revue), puis vous créez votre propre skill.",
  steps:[
+ {t:"Rappel : c'est quoi une skill, comment l'invoquer",b:[
+  {t:"p",x:"Une <b>skill</b> est une procédure écrite une fois (un dossier avec un fichier <code>SKILL.md</code>) que Copilot charge <b>seulement quand la tâche en a besoin</b>. Contrairement aux instructions, elle n'est pas dans chaque conversation : cela évite de noyer le contexte."},
+  {t:"table",h:["Question","Réponse","Exemple SprintDesk"],r:[
+   ["À quoi ça sert ?","Rendre une méthode <b>reproductible</b> et partagée entre agents","<code>formater-us</code> : toutes les US sortent avec le même modèle et les mêmes critères Given / When / Then"],
+   ["Quand est-elle chargée ?","Quand votre demande ressemble à sa <code>description</code>","« Contrôle cette US contre les règles » -> <code>verifier-regles-metier</code> se charge seule"],
+   ["Comment la forcer ?","La <b>nommer</b> dans le prompt (ou la choisir avec <code>/</code> si votre version de VS Code l'affiche)","« Avec la skill <code>revue-agilite</code>, relis US-104 »"],
+   ["Comment vérifier ?","Regarder « Used … references » sous la réponse : <code>SKILL.md</code> doit y figurer","<code>.github/skills/revue-agilite/SKILL.md</code>"]]},
+  {t:"mock",x:"---\nname: verifier-regles-metier        <- identique au nom du dossier\ndescription: Vérifie qu'une US respecte les règles RM-xx\n  et signale les décisions ND-xx. À utiliser quand on\n  demande de contrôler, valider ou relire une US.   <- QUAND l'utiliser\n---\n1. Liste chaque affirmation de l'US.\n2. Relie-la à une règle RM-xx, ou marque « sans règle ».\n3. Une décision ND-xx n'est jamais tranchée : question ouverte.\n4. Rends un tableau Affirmation | Règle | Résultat | Action."},
+  {t:"table",h:["Situation dans le workflow","Ce que vous tapez","Skill mobilisée"],r:[
+   ["Le Rédacteur réécrit un lot d'US","« Réécris les US du lot 2 »","<code>formater-us</code> (via la description « réécrire / formater une US »)"],
+   ["Le Reviewer contrôle la qualité","« Fais la revue du lot 2, cite la phrase fautive »","<code>revue-agilite</code>"],
+   ["Vous voulez être sûr","« Utilise explicitement la skill <code>verifier-regles-metier</code> sur US-104 »","<code>verifier-regles-metier</code>, appelée par son nom"]]},
+  {t:"why",x:"Repère : si vous recopiez le même bloc de consignes dans deux agents ou deux prompts, c'est une skill. Une règle vraie partout reste dans les <b>instructions</b> ; un rôle (qui) reste dans un <b>agent</b>."}]},
  {t:"Comprendre ce qu'est une skill",b:[
   {t:"table",h:["","Agent","Skill"],r:[["Répond à","<b>Qui</b> fait ?","<b>Comment</b> faire ?"],["Analogie","Fiche de poste","Mode d'emploi / procédure"],["Fichier","<code>.github/agents/nom.agent.md</code>","<code>.github/skills/nom/SKILL.md</code>"],["Chargée","Quand vous choisissez l'agent","Quand la tâche correspond à sa <code>description</code>"],["Partagée ?","Non","Oui : plusieurs agents peuvent s'en servir"]]},
   {t:"mock",x:".github/skills/\n  formater-us/\n    SKILL.md        <- la procédure\n    modele-us.md    <- un fichier annexe (modèle)"},
@@ -1285,6 +1322,9 @@ const EXTRA={
 "Le bon prompt en 6 blocs":{o:"Écrire un prompt qui impose sources, interdits et format, et obtenir des questions plutôt que des inventions.",c:"Le <b>prompt engineering</b> consiste à rendre la demande explicite : contexte, sources, interdits, tâche, exigences, format. Un exemple dans le prompt (<i>few-shot</i>) améliore encore la précision.",l:[L.pe,L.best]},
 "Tester sur l'US correcte":{o:"Vérifier que Copilot laisse intacte une US déjà correcte.",c:"Les modèles ont un <b>biais de complaisance</b> : ils cherchent à « aider », donc à modifier. Il faut dire explicitement « si c'est correct, ne touche à rien ». Savoir ne rien faire est une qualité à exiger.",l:[L.pe,L.us]},
 "Critiquer au lieu de tout relancer":{o:"Corriger une réponse en une phrase de critique ciblée, sans repartir de zéro.",c:"Le chat est <b>itératif</b> : chaque message s'ajoute à l'historique. Une critique précise (« retire ce point inventé ») est plus efficace qu'un nouveau prompt. Si l'historique devient trop long ou confus, ouvrez un nouveau chat.",l:[L.pe,L.chat]},
+"Rappel : à quoi servent les instructions":{o:"Se rappeler que les instructions s'appliquent seules à chaque conversation, et voir leur effet sur des demandes concrètes.",c:"Les <b>instructions</b> sont du contexte ajouté automatiquement à chaque requête. Elles cadrent le ton, le format et les interdits ; elles ne garantissent rien à 100 %, d'où la relecture humaine.",l:[L.instr,L.best]},
+"Rappel : c'est quoi une skill, comment l'invoquer":{o:"Savoir ce qu'est une skill, à quoi elle sert et comment la déclencher ou la vérifier.",c:"Une <b>skill</b> est une procédure réutilisable (<code>SKILL.md</code>) chargée à la demande, d'après sa <code>description</code>. Vous pouvez aussi la nommer dans le prompt pour la forcer.",l:[L.instr,L.best]},
+"Rappel : c'est quoi un agent, comment l'invoquer":{o:"Savoir ce qu'est un agent, à quoi il sert, comment le sélectionner dans le chat et le vérifier.",c:"Un <b>agent</b> est une fiche de poste (<code>.agent.md</code>) : mission, outils autorisés, sortie. Il s'active quand <b>vous</b> le choisissez dans le chat ; la restriction des outils est la vraie limite de ses droits.",l:[L.instr,L.best]},
 "Comprendre ce que vous allez construire":{o:"Comprendre l'ordre de l'Atelier 1 : d'abord les instructions (règles permanentes), ensuite le plan (contrat).",c:"Le <b>harness</b> (harnais) désigne tout ce qui encadre l'IA : instructions, plan, agents, skills, validations. L'idée : ne pas compter sur la bonne volonté du modèle, mais sur un cadre écrit et vérifiable.",l:[L.over,L.instr]},
 "Ouvrir le fichier d'instructions":{o:"Trouver et ouvrir .github/copilot-instructions.md.",c:"Le fichier <code>.github/copilot-instructions.md</code> est lu <b>automatiquement</b> dans chaque conversation du dossier. Le dossier <code>.github</code> (nom commençant par un point) est une convention : il regroupe la configuration du dépôt.",l:[L.instr,L.ui]},
 "Remplacer le contenu par les instructions complètes":{o:"Obtenir un fichier d'instructions complet, sans TODO, qui interdit les inventions et impose la traçabilité.",c:"De bonnes instructions sont <b>courtes, concrètes et vérifiables</b> (« ne jamais inventer de règle » plutôt que « sois rigoureux »). Mettez-y ce qui doit être vrai tout le temps ; le reste va dans les agents et skills.",l:[L.instr,L.best]},
