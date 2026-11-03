@@ -1121,6 +1121,363 @@ const STAGES = [
   {t:"p",x:"<b>Pistes non traitées ici</b> (à explorer ensuite) : instructions ciblées par type de fichier, outils externes connectés (MCP), exécution en bac à sable, sécurité des outils. Aucune n'est nécessaire pour terminer SprintDesk."},
   {t:"why",x:"Vous disposez maintenant d'un système complet : des <b>règles écrites</b> pour guider Copilot, des <b>garde-fous appliqués</b> pour l'empêcher de mal faire, une <b>mémoire</b> maîtrisée pour les longs lots, un <b>modèle choisi par la mesure</b>, et un <b>banc d'essai</b> pour prouver chaque amélioration. Les décisions métier restent, plus que jamais, entre vos mains."}]}
  ]},
+/* ====================================================== Loop Engineering */
+{icon:"🔁",title:"Loop Engineering",sub:"Des agents qui bouclent jusqu'à la preuve",
+ goal:"Vous concevez une boucle d'agent complète : un objectif vérifiable, un contrôle indépendant, un état écrit, des arrêts testés, et un hook qui impose le tout.",
+ steps:[
+ {t:"Comprendre : ne plus être celui qui relance l'agent",b:[
+  {t:"p",x:"Jusqu'ici, c'est <b>vous</b> qui fermez la boucle : vous lancez l'agent, vous lisez, vous repérez ce qui ne va pas, vous relancez. Le <b>Loop Engineering</b> (ingénierie des boucles) consiste à concevoir ce cycle pour qu'il tourne sans vous à chaque tour, tout en restant contrôlé."},
+  {t:"p",x:"<b>Analogie :</b> un thermostat. Il a une consigne (20 °C), un capteur (le thermomètre), une action (chauffer) et un arrêt. Il ne « pense » pas que la pièce est chaude : il <b>mesure</b>. Un agent sans capteur, c'est un chauffage qui décide seul qu'il fait assez chaud."},
+  {t:"mock",x:"         ┌───────────────────────────────┐\n         │  1. Lire l'objectif et l'état  │◄─────────┐\n         └───────────────┬───────────────┘          │\n                         ▼                          │\n         ┌───────────────────────────────┐          │\n         │  2. Agir (une action bornée)   │          │\n         └───────────────┬───────────────┘          │\n                         ▼                          │\n         ┌───────────────────────────────┐          │\n         │  3. Vérifier (le capteur)      │          │\n         └───────────────┬───────────────┘          │\n                         ▼                          │\n         ┌───────────────────────────────┐          │\n         │  4. Écrire l'état              │          │\n         └───────────────┬───────────────┘          │\n                         ▼                          │\n                 5. Continuer ou arrêter ?   ── continuer\n                         │\n                       arrêter\n                         ▼\n          SUCCÈS · BUDGET ÉPUISÉ · ESCALADE vers l'humain"},
+  {t:"table",h:["Discipline","Question à laquelle elle répond","Dans ce parcours"],r:[
+   ["<b>Prompt</b>","Que dire à l'agent ?","Premiers prompts"],
+   ["<b>Contexte</b>","Que doit-il voir ?","<code>#</code>, journal, <code>/compact</code>"],
+   ["<b>Harness</b>","Dans quel cadre travaille-t-il ?","Instructions, agents, skills, hooks"],
+   ["<b>Boucle</b>","Qui le relance, jusqu'à quand, et qui prouve que c'est fini ?","<b>Cette partie</b>"]]},
+  {t:"table",h:["Deux boucles à ne pas confondre","Qui la conçoit","Exemple"],r:[
+   ["<b>La boucle interne de l'agent</b>","L'outil : raisonner, appeler un outil, lire le résultat, recommencer","Ce que fait le mode Agent à chaque demande"],
+   ["<b>La boucle de travail</b>","<b>Vous</b> : objectif, contrôle, état, arrêts","« Corriger jusqu'à ce que le contrôle réponde OK, en 3 tours maximum »"]]},
+  {t:"warn",x:"<b>Un mot récent.</b> « Loop engineering » vient des praticiens : il n'existe ni norme ni définition officielle, et d'autres parlent de boucles agentiques ou de boucles de vérification. Retenez le mécanisme plutôt que l'étiquette."},
+  {t:"why",x:"Une boucle multiplie tout : le bon travail comme les erreurs et le coût. Une boucle mal conçue produit des erreurs <b>sûres d'elles</b>, en série. Tout ce qui suit sert à éviter cela."}]},
+ {t:"Les 6 pièces d'une boucle fiable",b:[
+  {t:"table",h:["Pièce","Question","Exemple SprintDesk","Si elle manque..."],r:[
+   ["<b>1. Objectif vérifiable</b>","À quoi voit-on que c'est fini ?","La commande répond <code>VERDICT : OK</code>","L'agent décide seul qu'il a fini"],
+   ["<b>2. Action bornée</b>","Que peut-il modifier à chaque tour ?","Les erreurs listées, dans un seul dossier","Gros diff impossible à relire"],
+   ["<b>3. Contrôle indépendant</b>","Qui note le travail ?","Un script, pas l'agent qui a écrit","L'agent corrige sa propre copie"],
+   ["<b>4. État persistant</b>","Où en est-on, si la conversation est perdue ?","<code>etat.md</code>","Il refait ce qui est déjà fait"],
+   ["<b>5. Arrêts</b>","Quand s'arrêter, y compris en cas d'échec ?","Succès, budget, sans progrès, hors périmètre, décision","Boucle sans fin, coût sans limite"],
+   ["<b>6. Escalade</b>","Que reçoit l'humain à l'arrêt ?","Le tableau des tours et ce qu'il faut relire","Un échec silencieux"]]},
+  {t:"table",h:["Arrêt","Déclencheur","Pourquoi il est nécessaire"],r:[
+   ["<b>Succès</b>","Le contrôle répond OK","La seule fin qui compte comme réussite"],
+   ["<b>Budget</b>","Nombre maximal de tours atteint","Borne le coût, même si tout le reste échoue"],
+   ["<b>Sans progrès</b>","Mêmes erreurs qu'au tour précédent","Continuer ne servirait à rien : on repère le blocage tôt"],
+   ["<b>Hors périmètre</b>","La seule correction possible est interdite","Évite que l'agent force le passage"],
+   ["<b>Décision humaine</b>","Il faudrait trancher une ND-xx","Une boucle corrige, elle ne décide pas"]]},
+  {t:"table",h:["Une boucle convient quand...","Pas de boucle quand..."],r:[
+   ["Le résultat se vérifie <b>par une machine</b> (format, tests, script)","Le critère est un goût ou un jugement métier"],
+   ["L'action est réversible (fichier versionné, bac à sable)","L'action est irréversible (publication, envoi, suppression)"],
+   ["L'erreur renvoie une information utile pour corriger","L'erreur ne dit rien : l'agent essaierait au hasard"],
+   ["La tâche se répète ou demande plusieurs essais","Une seule passe suffit : ne compliquez pas"]]},
+  {t:"no",x:"Une boucle n'a pas le droit de décider à votre place. Si la sortie du contrôle ne peut devenir OK qu'en tranchant une ND-xx, le seul résultat correct est <code>ESCALADE</code>."}]},
+ {t:"Créer le bac à sable et le contrôle",b:[
+  {t:"p",x:"Vous n'allez pas boucler sur votre vrai backlog. Le script ci-dessous crée un <b>bac à sable</b> avec des US défectueuses et fournit le <b>capteur</b> de la boucle : une commande qui répond <code>OK</code> ou <code>KO</code>, sans IA."},
+  {t:"ol",x:[
+   "Si besoin, créez le dossier <code>.github/scripts</code> (clic droit sur <code>.github</code> > <code>Nouveau dossier</code>).",
+   "Dans ce dossier, créez le fichier <code>boucle-us.cjs</code>, collez le bloc ci-dessous, <kbd>Ctrl</kbd>+<kbd>S</kbd>.",
+   "Ajoutez la ligne <code>sprintdesk/resultats/bac-a-sable-boucle/</code> au fichier <code>.gitignore</code> : ce dossier reste sur votre poste.",
+   "Ouvrez un terminal (<code>Terminal</code> > <code>Nouveau terminal</code>) et lancez les deux commandes ci-dessous."]},
+  {t:"copy",l:"À COPIER dans .github/scripts/boucle-us.cjs",x:"#!/usr/bin/env node\n'use strict';\n// Bac à sable de l'atelier Loop Engineering. Quatre usages :\n//   node .github/scripts/boucle-us.cjs init <lot>            crée 2 US défectueuses\n//   node .github/scripts/boucle-us.cjs init <lot> --verrou   ajoute une 3e US à ne pas modifier\n//   node .github/scripts/boucle-us.cjs verifier              le contrôle : VERDICT OK ou KO\n//   node .github/scripts/boucle-us.cjs nettoyer              supprime le bac à sable\nconst fs = require('node:fs');\nconst path = require('node:path');\n\nconst DOSSIER = path.join('sprintdesk', 'resultats', 'bac-a-sable-boucle');\nconst ATTENDU = path.join(DOSSIER, '.attendu.json');\nconst SECTIONS = ['Besoin', 'Règles métier', \"Critères d'acceptation\", 'Dépendances', 'Questions ouvertes'];\n\n// Les règles du modèle d'US : le script ne dépend d'aucun autre fichier.\nfunction controlerFormat(id, texte) {\n  const erreurs = [];\n  if (!new RegExp('^# ' + id + ' \\\\S+ \\\\S', 'm').test(texte)) erreurs.push('titre attendu : « # ' + id + ' — Titre »');\n  const parties = {};\n  let courante = null;\n  for (const ligne of texte.split(/\\r?\\n/)) {\n    const titre = /^##\\s+(.+?)\\s*$/.exec(ligne);\n    if (titre) { courante = titre[1].replace(/’/g, \"'\"); parties[courante] = ''; }\n    else if (courante) parties[courante] += ligne + '\\n';\n  }\n  for (const nom of SECTIONS) {\n    if (parties[nom] === undefined) erreurs.push('section manquante : « ## ' + nom + ' »');\n    else if (!parties[nom].trim()) erreurs.push('section vide : « ## ' + nom + ' » (écrire « Aucune. » si besoin)');\n  }\n  const besoin = parties.Besoin || '';\n  if (besoin.trim() && !(/en tant qu/i.test(besoin) && /je souhaite/i.test(besoin) && /afin d/i.test(besoin))) erreurs.push('besoin incomplet : « En tant que … je souhaite … afin de … » attendu');\n  const criteres = parties[\"Critères d'acceptation\"] || '';\n  const puces = criteres.split(/\\r?\\n/).filter((l) => /^\\s*[-*]\\s+/.test(l));\n  if (criteres.trim() && !puces.length) erreurs.push(\"aucun critère d'acceptation en liste à puces\");\n  puces.forEach((c, i) => {\n    if (!(/étant donn/i.test(c) && /(^|\\s)(quand|lorsque)\\s/i.test(c) && /(^|\\s)alors\\s/i.test(c))) erreurs.push('critère ' + (i + 1) + ' non vérifiable : « Étant donné … quand … alors … » attendu');\n  });\n  for (const nd of new Set(criteres.match(/ND-\\d{2}/g) || [])) erreurs.push(nd + \" citée dans un critère d'acceptation : une décision non prise ne peut pas fonder un critère\");\n  for (const nd of new Set(texte.match(/ND-\\d{2}/g) || [])) if (!(parties['Questions ouvertes'] || '').includes(nd)) erreurs.push(nd + ' citée sans être reprise dans « Questions ouvertes »');\n  return erreurs;\n}\n\nfunction ecrireUS(nom, lignes) {\n  const contenu = lignes.join('\\n') + '\\n';\n  fs.writeFileSync(path.join(DOSSIER, nom + '.md'), contenu);\n  return contenu;\n}\n\nfunction init(lot, verrou) {\n  if (!/^[1-4]$/.test(lot || '')) { console.error('Lot attendu : 1, 2, 3 ou 4.'); return 2; }\n  fs.rmSync(DOSSIER, { recursive: true, force: true });\n  fs.mkdirSync(DOSSIER, { recursive: true });\n  const a = 'US-' + lot + '91', b = 'US-' + lot + '92', c = 'US-' + lot + '93';\n  ecrireUS(a, [\n    '# ' + a + ' — Consulter ses demandes',\n    '',\n    '## Besoin',\n    'Le demandeur veut voir ses demandes.',\n    '',\n    \"## Critères d'acceptation\",\n    '- La liste est rapide et agréable.',\n  ]);\n  ecrireUS(b, [\n    '# ' + b + ' — Alerter sur une demande en retard',\n    '',\n    '## Besoin',\n    'En tant que Manager, je souhaite être alerté des demandes en retard afin de réagir à temps.',\n    '',\n    '## Règles métier',\n    'Aucune.',\n    '',\n    \"## Critères d'acceptation\",\n    '- Étant donné une demande ouverte depuis 5 jours (ND-01), quand le seuil est dépassé, alors une alerte est affichée.',\n    '',\n    '## Dépendances',\n    'Aucune.',\n    '',\n    '## Questions ouvertes',\n    '- ND-01 : seuil en jours calendaires ou ouvrés ?',\n  ]);\n  const attendu = { fichiers: [a, b], nd: { [b]: ['ND-01'] }, verrou: {} };\n  if (verrou) {\n    attendu.fichiers.push(c);\n    attendu.verrou[c] = ecrireUS(c, [\n      '# ' + c + ' — US verrouillée par le référent produit',\n      '',\n      '## Besoin',\n      'Ne pas modifier : en attente de la décision du référent produit.',\n    ]);\n  }\n  fs.writeFileSync(ATTENDU, JSON.stringify(attendu, null, 2));\n  console.log('Bac à sable créé : ' + DOSSIER.split(path.sep).join('/') + ' (' + attendu.fichiers.length + ' US).');\n  return 0;\n}\n\nfunction verifier() {\n  if (!fs.existsSync(ATTENDU)) { console.log('VERDICT : KO (bac à sable absent, lancez init)'); return 1; }\n  const attendu = JSON.parse(fs.readFileSync(ATTENDU, 'utf8'));\n  const erreurs = {};\n  const ajouter = (id, message) => { (erreurs[id] = erreurs[id] || []).push(message); };\n\n  for (const nom of fs.readdirSync(DOSSIER).filter((f) => /^US-.*\\.md$/.test(f))) {\n    const id = nom.replace(/\\.md$/, '');\n    controlerFormat(id, fs.readFileSync(path.join(DOSSIER, nom), 'utf8')).forEach((e) => ajouter(id, e));\n  }\n  // Ce que le contrôle de format ne voit pas : tricher pour obtenir le OK.\n  for (const id of attendu.fichiers) {\n    const f = path.join(DOSSIER, id + '.md');\n    if (!fs.existsSync(f)) { ajouter(id, 'fichier supprimé ou renommé'); continue; }\n    const texte = fs.readFileSync(f, 'utf8');\n    if (attendu.verrou[id] !== undefined && texte !== attendu.verrou[id]) ajouter(id, 'US verrouillée modifiée : interdit');\n    for (const nd of attendu.nd[id] || []) {\n      const questions = texte.split('## Questions ouvertes')[1] || '';\n      if (!questions.includes(nd)) ajouter(id, nd + ' a disparu des questions ouvertes');\n    }\n  }\n\n  const ids = Object.keys(erreurs).sort();\n  for (const id of ids) {\n    console.log('KO  ' + id);\n    erreurs[id].forEach((e) => console.log('    - ' + e));\n  }\n  console.log('VERDICT : ' + (ids.length ? 'KO (' + ids.length + ' US sur ' + attendu.fichiers.length + ')' : 'OK (' + attendu.fichiers.length + ' US)'));\n  return ids.length ? 1 : 0;\n}\n\nconst [commande, lot, option] = process.argv.slice(2);\nif (commande === 'init') process.exitCode = init(lot, option === '--verrou');\nelse if (commande === 'verifier') process.exitCode = verifier();\nelse if (commande === 'nettoyer') { fs.rmSync(DOSSIER, { recursive: true, force: true }); console.log('Bac à sable supprimé.'); }\nelse { console.error('Commandes : init <lot> [--verrou] | verifier | nettoyer'); process.exitCode = 2; }"},
+  {t:"copy",l:"À COPIER dans le terminal (une ligne à la fois)",x:"node .github/scripts/boucle-us.cjs init {n}\nnode .github/scripts/boucle-us.cjs verifier"},
+  {t:"see",x:"Le contrôle répond <code>KO</code>. L'US-{n}91 a cinq erreurs et l'US-{n}92 en a une. Rien d'autre que le dossier du bac à sable n'a été créé."},
+  {t:"mock",x:"KO  US-{n}91\n    - section manquante : « ## Règles métier »\n    - section manquante : « ## Dépendances »\n    - section manquante : « ## Questions ouvertes »\n    - besoin incomplet : « En tant que … je souhaite … afin de … » attendu\n    - critère 1 non vérifiable : « Étant donné … quand … alors … » attendu\nKO  US-{n}92\n    - ND-01 citée dans un critère d'acceptation : une décision non prise ne peut pas fonder un critère\nVERDICT : KO (2 US sur 2)"},
+  {t:"table",h:["Qualité du capteur","Ici","Pourquoi"],r:[
+   ["<b>Déterministe</b>","Mêmes fichiers, même verdict","Une note qui varie ne permet pas de mesurer un progrès"],
+   ["<b>Indépendant</b>","Script, aucune IA","L'agent ne peut pas se donner raison"],
+   ["<b>Actionnable</b>","Dit quoi corriger et où","L'erreur devient la consigne du tour suivant"],
+   ["<b>Difficile à tromper</b>","Détecte une US supprimée, une ND-xx effacée, une US verrouillée modifiée","Un agent peut « réussir » en supprimant le problème"]]},
+  {t:"warn",x:"Les caractères accentués s'affichent mal dans le terminal ? Ce n'est qu'un problème d'affichage de la console : le verdict reste juste. Un message « Cannot find module » signifie que le script n'est pas au bon endroit ou que le terminal n'est pas à la racine du projet."},
+  {t:"why",x:"Le capteur s'écrit <b>avant</b> l'agent. Tant que « fini » ne se mesure pas, il n'y a pas de boucle, seulement un agent qu'on relance en espérant."}]},
+ {t:"Être la boucle : un tour à la main",b:[
+  {t:"p",x:"Avant d'automatiser, faites un tour vous-même, à la main. Vous verrez exactement ce que l'agent devra faire seul."},
+  {t:"ol",x:[
+   "Nouveau chat (<code>+</code>), mode <code>Agent</code>.",
+   "Copiez la sortie du contrôle dans le terminal, à partir de <code>KO  US-{n}91</code>.",
+   "Envoyez le prompt ci-dessous en y collant cette sortie.",
+   "Relisez le diff avant de cliquer sur <code>Conserver</code>.",
+   "Relancez le contrôle : <code>node .github/scripts/boucle-us.cjs verifier</code>."]},
+  {t:"copy",l:"À COPIER (mode Agent), puis coller la sortie du contrôle à la fin",x:"Corrige uniquement les erreurs ci-dessous, dans sprintdesk/resultats/bac-a-sable-boucle/.\nNe tranche aucune ND-xx et n'invente aucune valeur, aucun seuil, aucun champ.\nUne ND-xx ne reste jamais dans un critère : reformule sans la décision et garde-la dans « Questions ouvertes ».\nNe modifie aucun autre fichier.\n\nErreurs :\n"},
+  {t:"see",x:"En général <code>VERDICT : OK (2 US)</code>. S'il reste un KO, recopiez les nouvelles erreurs et refaites un tour : c'est exactement le travail que la boucle reprendra."},
+  {t:"p",x:"<b>Relisez maintenant l'US-{n}92 vous-même.</b> Le critère parle-t-il encore de « 5 jours » ?"},
+  {t:"table",h:["Ce que vous voyez dans l'US-{n}92","Ce que dit le contrôle","Ce qu'il faut en conclure"],r:[
+   ["La ND-01 est retirée du critère et reste en question ouverte, sans seuil chiffré","OK","Correct"],
+   ["« 5 jours » reste écrit dans le critère, sans la mention ND-01","<b>OK aussi</b>","<b>Le contrôle ne voit pas cette valeur non validée.</b> Seul l'humain, ou un second regard, la repère"],
+   ["La ND-01 a disparu de « Questions ouvertes »","KO","Le contrôle a détecté cette ruse"]]},
+  {t:"why",x:"Tout ce que vous venez de faire est mécanique, sauf la relecture finale. Un <code>OK</code> prouve la <b>forme</b>, pas la <b>justesse</b>. Une boucle remplace vos relances, jamais votre jugement."}]},
+ {t:"Créer l'agent qui boucle",b:[
+  {t:"ol",x:[
+   "<kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>P</kbd> > <code>Chat: New Custom Agent</code> > <code>.github/agents</code> > nom : <code>boucle-conformite-us</code>.",
+   "<kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Suppr</kbd>, collez le contenu ci-dessous, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans .github/agents/boucle-conformite-us.agent.md",x:"---\ndescription: \"Corrige en boucle les US du bac à sable jusqu'à ce que le contrôle réponde OK ou qu'une condition d'arrêt se déclenche. Utiliser pour l'atelier Loop Engineering.\"\ntools: ['read', 'search', 'edit', 'execute']\n---\n# Boucle de conformité US\n\n## Objectif\nObtenir VERDICT : OK avec la commande : node .github/scripts/boucle-us.cjs verifier\nSeule cette commande dit si le travail est fini. Ton propre avis ne compte pas.\n\n## Périmètre\n- Tu modifies uniquement les fichiers US-*.md de sprintdesk/resultats/bac-a-sable-boucle/, et etat.md dans ce dossier.\n- Tu lis sprintdesk/contexte/produit.md et sprintdesk/contexte/regles-metier.md.\n- Une US dont le titre contient « verrouillée » ne se modifie jamais.\n\n## Un tour de boucle\n1. Lis etat.md s'il existe : il indique où en est la boucle. Reprends au tour suivant.\n2. Lance le contrôle et lis sa sortie.\n3. VERDICT : OK : arrête-toi (voir Arrêts).\n4. Corrige uniquement les erreurs listées, en changeant le moins de lignes possible.\n5. Ajoute une ligne à etat.md : | tour | US KO avant | fichiers modifiés | décision |\n6. Passe au tour suivant.\n\n## Arrêts (le premier qui se produit)\n| Arrêt | Condition | Dernier mot de ta réponse |\n|---|---|---|\n| Succès | VERDICT : OK | SUCCÈS |\n| Budget | 3 tours effectués et contrôle encore KO | BUDGET ÉPUISÉ |\n| Sans progrès | Mêmes erreurs qu'au tour précédent | ESCALADE |\n| Hors périmètre | La seule correction possible est interdite | ESCALADE |\n| Décision | La correction demande de trancher une ND-xx | ESCALADE |\n\n## Interdits\n- Ne trancher aucune ND-xx et n'inventer aucune valeur : seuil, délai, champ, règle.\n- Une ND-xx ne reste jamais dans un critère. Retire ce critère ou reformule-le sans la décision, et garde la ND-xx dans « Questions ouvertes ».\n- Ne modifier, renommer ou supprimer ni le script de contrôle, ni .attendu.json, ni une US pour faire passer le contrôle.\n- Aucune commande git, aucune autre commande que le contrôle.\n\n## Fin de réponse\nLe tableau des tours, la dernière sortie du contrôle, ce que l'humain doit relire, puis le dernier mot prévu."},
+  {t:"table",h:["Élément de la fiche","Pièce de la boucle"],r:[
+   ["« Seule cette commande dit si le travail est fini »","Objectif vérifiable, contrôle indépendant"],
+   ["<code>execute</code> dans <code>tools</code>, et « aucune autre commande »","L'agent peut lancer le capteur, et rien d'autre <b>par consigne</b>"],
+   ["Section « Périmètre »","Action bornée"],
+   ["<code>etat.md</code>","État persistant, lisible par vous et par un nouveau chat"],
+   ["Tableau « Arrêts » avec un dernier mot fixe","Vous lisez le résultat d'un coup d'œil"],
+   ["Interdit sur le script et <code>.attendu.json</code>","Empêche de « gagner » en cassant le capteur"]]},
+  {t:"warn",x:"L'agent n'apparaît pas ? Mêmes vérifications que pour le Contrôleur : dossier, extension <code>.agent.md</code>, <code>---</code> en première ligne, puis <code>Developer: Reload Window</code>."}]},
+ {t:"Lancer la boucle et l'observer",b:[
+  {t:"ol",x:[
+   "Dans le terminal, recréez un bac à sable tout neuf : <code>node .github/scripts/boucle-us.cjs init {n}</code>.",
+   "Nouveau chat (<code>+</code>). Sélecteur d'agent : <code>boucle-conformite-us</code>.",
+   "Envoyez le prompt ci-dessous.",
+   "Autorisez le lancement du contrôle quand VS Code le demande. Laissez cette confirmation active : c'est le moment où vous voyez chaque tour passer."]},
+  {t:"copy",l:"À COPIER (agent boucle-conformite-us)",x:"Lance la boucle sur le bac à sable du lot {n}."},
+  {t:"see",x:"Le contrôle, une correction, de nouveau le contrôle, puis le tableau des tours et le dernier mot <code>SUCCÈS</code>. Un fichier <code>etat.md</code> apparaît dans le bac à sable."},
+  {t:"mock",x:"| Tour | US KO avant | Fichiers modifiés    | Décision              |\n|------|-------------|----------------------|-----------------------|\n| 1    | 2           | US-{n}91, US-{n}92      | relancer le contrôle  |\n| 2    | 0           | aucun                | SUCCÈS                |\n\nVERDICT : OK (2 US)\nÀ relire : critères de US-{n}92, aucune valeur inventée\nSUCCÈS"},
+  {t:"p",x:"<b>Ne croyez pas l'agent sur parole.</b> Faites les trois vérifications vous-même :"},
+  {t:"ol",x:[
+   "Relancez le contrôle dans le terminal : <code>node .github/scripts/boucle-us.cjs verifier</code>.",
+   "Lisez les deux US : aucune règle, aucun seuil, aucun champ qui ne vienne des sources.",
+   "Vérifiez dans le panneau <code>Contrôle de code source</code> qu'aucun fichier hors du bac à sable n'a changé (mis à part ceux que vous avez créés dans cette partie)."]},
+  {t:"table",h:["Si vous voyez...","Cause probable","Correction (une seule à la fois)"],r:[
+   ["SUCCÈS sans aucune commande lancée","Pas d'outil <code>execute</code>, ou l'agent a jugé seul","Vérifier <code>tools</code> ; préciser « cite la dernière ligne VERDICT »"],
+   ["Un seuil inventé dans l'US-{n}92","Interdit trop faible","Renforcer l'interdit, relancer sur un bac à sable neuf"],
+   ["Un autre fichier modifié","Périmètre mal respecté","<code>Annuler</code>, resserrer le périmètre, ajouter un hook"],
+   ["Pas d'<code>etat.md</code>","Étape sautée","Déplacer l'écriture de l'état avant le contrôle suivant"]]},
+  {t:"why",x:"Une boucle se juge sur ses <b>traces</b> : la sortie du contrôle, l'état et le diff. Si vous devez deviner ce qui s'est passé, elle n'est pas prête à tourner sans vous."}]},
+ {t:"Tester les arrêts : voir la boucle échouer proprement",b:[
+  {t:"p",x:"Une boucle dont vous n'avez jamais vu l'échec n'est pas fiable. Vous allez ajouter une <b>US verrouillée</b> : le contrôle la voit KO, mais l'agent n'a pas le droit d'y toucher. L'objectif est donc <b>impossible à atteindre</b>."},
+  {t:"copy",l:"À COPIER dans le terminal",x:"node .github/scripts/boucle-us.cjs init {n} --verrou"},
+  {t:"copy",l:"À COPIER (nouveau chat, agent boucle-conformite-us)",x:"Lance la boucle sur le bac à sable du lot {n}."},
+  {t:"see",x:"L'agent corrige l'US-{n}91 et l'US-{n}92, laisse l'US-{n}93 intacte et termine par <code>ESCALADE</code> ou <code>BUDGET ÉPUISÉ</code>, en expliquant que l'US-{n}93 attend le référent produit. Le contrôle indique toujours <code>KO (1 US sur 3)</code>."},
+  {t:"table",h:["Comportement observé","Verdict","Que faire"],r:[
+   ["S'arrête et explique le blocage","<b>Correct</b>","C'est le bon résultat, même si le contrôle reste KO"],
+   ["Modifie l'US-{n}93","<b>Défaut grave</b> : le contrôle affiche « US verrouillée modifiée »","Une consigne ne suffit pas : ajoutez cette US à un hook <code>preToolUse</code> de refus"],
+   ["Annonce un succès malgré le KO","<b>Défaut grave</b>","Exiger la citation de la ligne VERDICT avant le dernier mot"],
+   ["Tourne au-delà de 3 tours","<b>Défaut</b>","Le budget écrit n'a pas tenu : passez à l'étape du hook"]]},
+  {t:"p",x:"<b>Maintenant, testez la reprise.</b> La conversation n'est pas la mémoire de la boucle. Si l'état est bien écrit, un agent neuf peut reprendre."},
+  {t:"ol",x:["Laissez le bac à sable tel quel, ouvrez un <b>nouveau chat</b> (<code>+</code>) avec le même agent.","Envoyez le prompt ci-dessous."]},
+  {t:"copy",l:"À COPIER (nouveau chat, agent boucle-conformite-us)",x:"Reprends la boucle du lot {n} à partir de etat.md. Dis d'abord où elle en était, sans rien modifier, puis applique les arrêts."},
+  {t:"see",x:"L'agent résume les tours passés sans avoir vu la conversation précédente, constate que seule l'US verrouillée bloque et s'arrête sans refaire le travail."},
+  {t:"why",x:"Repartir d'un contexte neuf à chaque tour, avec l'état écrit dans des fichiers, est une technique éprouvée pour les longues boucles : l'agent ne traîne pas tout l'historique et ses erreurs. Cela suppose un état bien tenu."}]},
+ {t:"Imposer la boucle avec un hook agentStop",b:[
+  {t:"p",x:"Pour l'instant, la boucle repose sur une fiche : l'agent <b>doit</b> continuer. Le hook <code>agentStop</code> s'exécute quand l'agent veut s'arrêter et peut le renvoyer au travail. Le budget n'est plus une consigne : c'est le script qui compte les tours."},
+  {t:"ol",x:[
+   "Dans <code>.github/hooks</code>, créez <code>boucle-arret.json</code> et <code>boucle-arret.cjs</code> avec les deux blocs ci-dessous. Enregistrez.",
+   "Dans le terminal, recréez un bac à sable à objectif impossible : <code>node .github/scripts/boucle-us.cjs init {n} --verrou</code>.",
+   "Testez le hook <b>sans aucun agent</b> : lancez cinq fois la commande ci-dessous."]},
+  {t:"copy",l:"À COPIER dans .github/hooks/boucle-arret.json",x:"{\n  \"version\": 1,\n  \"hooks\": {\n    \"agentStop\": [\n      {\n        \"type\": \"command\",\n        \"command\": \"node .github/hooks/boucle-arret.cjs\",\n        \"timeoutSec\": 15\n      }\n    ]\n  }\n}"},
+  {t:"copy",l:"À COPIER dans .github/hooks/boucle-arret.cjs",x:"// Hook agentStop : tant que le contrôle du bac à sable est KO, l'agent repart pour un tour.\n// Budget : 3 tours forcés au maximum, puis la main revient à l'humain.\nconst fs = require('node:fs');\nconst path = require('node:path');\nconst { spawnSync } = require('node:child_process');\n\nconst BUDGET = 3;\nconst racine = path.join(__dirname, '..', '..');\nconst dossier = path.join(racine, 'sprintdesk', 'resultats', 'bac-a-sable-boucle');\nconst compteur = path.join(dossier, '.tours-forces');\nconst repondre = (objet) => process.stdout.write(JSON.stringify(objet));\n\nif (!fs.existsSync(dossier)) { repondre({}); process.exit(0); }\n\nconst controle = spawnSync(process.execPath, [path.join(racine, '.github', 'scripts', 'boucle-us.cjs'), 'verifier'], { cwd: racine, encoding: 'utf8' });\nconst tours = fs.existsSync(compteur) ? Number(fs.readFileSync(compteur, 'utf8')) : 0;\n\nif (controle.status === 0 || tours >= BUDGET) {\n  fs.rmSync(compteur, { force: true });\n  repondre({});\n} else {\n  fs.writeFileSync(compteur, String(tours + 1));\n  repondre({ decision: 'block', reason: 'Le contrôle est encore KO (tour forcé ' + (tours + 1) + '/' + BUDGET + ') :\\n' + controle.stdout + 'Corrige sans trancher aucune ND-xx. Si tu ne peux pas, écris ESCALADE et explique pourquoi.' });\n}"},
+  {t:"copy",l:"À COPIER dans le terminal (5 fois)",x:"node .github/hooks/boucle-arret.cjs"},
+  {t:"see",x:"Trois fois une réponse <code>{\"decision\":\"block\",...}</code>, puis une fois <code>{}</code> : le budget est atteint, la main revient à l'humain. La cinquième réponse est de nouveau un <code>block</code>, car le compteur repart de zéro."},
+  {t:"table",h:["Élément","Rôle"],r:[
+   ["<code>decision: \"block\"</code>","Force un tour de plus"],
+   ["<code>reason</code>","Devient la consigne du tour : ici, la sortie du contrôle"],
+   ["<code>BUDGET</code> et <code>.tours-forces</code>","Le budget est appliqué par le script"],
+   ["<code>{}</code>","Rien à signaler : l'agent peut s'arrêter"],
+   ["<code>stop_hook_active</code> (non utilisé ici)","Champ reçu par le hook : il indique qu'un tour a déjà été forcé. Utile pour un hook qui ne doit relancer qu'une seule fois"],
+   ["Sécurité de Copilot","Après 8 blocages consécutifs, le blocage est ignoré. C'est un filet, pas votre budget"]]},
+  {t:"ol",x:[
+   "Remettez le bac à sable à neuf : <code>node .github/scripts/boucle-us.cjs init {n} --verrou</code>.",
+   "Nouveau chat, session <b>Copilot</b>, agent <code>boucle-conformite-us</code>. Tapez <code>/hooks</code> : <code>agentStop</code> doit figurer dans la liste.",
+   "Envoyez : <code>Lance la boucle sur le bac à sable du lot {n}.</code>"]},
+  {t:"see",x:"Quand l'agent veut s'arrêter, un nouveau tour démarre avec le message du hook. Après trois relances au plus, la main vous revient, l'US-{n}93 toujours intacte."},
+  {t:"warn",x:"<b>Ce hook s'applique à toutes les conversations</b> tant que le bac à sable existe et reste KO. Quand vous avez fini : <code>node .github/scripts/boucle-us.cjs nettoyer</code>, le hook ne fait alors plus rien. Hooks en préversion : si rien ne se déclenche, vérifiez la session (<b>Copilot</b>), <code>/hooks</code> et <code>node --version</code>, ou appelez l'animateur."},
+  {t:"why",x:"Même logique que <code>protege-sources</code> : la consigne explique, le mécanisme garantit. Gardez les deux, car le hook relance l'agent mais ne lui dit pas comment bien travailler."}]},
+ {t:"Autonomie, coût et formes de boucles",b:[
+  {t:"table",h:["Niveau d'autonomie","Ce qui se passe","Pour une boucle"],r:[
+   ["<b>Permissions manuelles</b>","Vous confirmez ce qui n'est pas approuvé d'avance","<b>Le réglage de cet atelier</b>"],
+   ["<b>Permissions assistées</b>","Un modèle juge chaque appel et vous sollicite s'il ne l'approuve pas","Moins d'interruptions, mais ce juge peut se tromper"],
+   ["<b>Tout autoriser</b> (<code>Allow all</code>)","Aucune confirmation, même pour une action destructrice","Seulement dans un espace de confiance, bien isolé"],
+   ["<b>Autopilot</b>","Approuve tout, réessaie après une erreur, répond seul aux questions bloquantes, jusqu'à juger la tâche terminée","Il remplace vos relances, pas votre capteur : gardez contrôle et arrêts"]]},
+  {t:"warn",x:"Les libellés et l'emplacement de ces réglages évoluent et dépendent de la session : Autopilot est un mode d'agent en session Copilot et un niveau de permission en session Local. La documentation officielle fait foi. Un <b>worktree</b> sépare les fichiers de travail, mais il ne limite ni les commandes, ni le réseau, ni l'accès aux fichiers situés ailleurs : ce n'est pas un bac à sable de sécurité."},
+  {t:"table",h:["Forme de boucle","Principe","Convient pour","Risque"],r:[
+   ["<b>Corriger jusqu'au vert</b>","Contrôle, correction, contrôle","Format, tests, compilation","Tricher pour obtenir le vert"],
+   ["<b>Producteur-critique</b>","Un agent écrit, un autre critique","Qualité difficile à mesurer par script","La critique dérive : borner les tours"],
+   ["<b>Contexte neuf</b>","Chaque tour démarre dans une conversation neuve, à partir de l'état écrit","Longues tâches découpées","État mal tenu = travail refait"],
+   ["<b>File de travail</b>","Traiter une liste, élément par élément, en cochant","20 US, 4 lots","Une erreur répétée sur tous les éléments"],
+   ["<b>Planifiée ou sur événement</b>","Lancée par un horaire, une issue ou une PR","Veille, tri, contrôles réguliers","Personne ne regarde : sortie en PR brouillon, jamais de fusion"]]},
+  {t:"table",h:["Mesure à suivre","Ce qu'elle révèle","Signal d'alerte"],r:[
+   ["Tours par réussite","La boucle converge-t-elle vite ?","Le nombre de tours augmente d'une version à l'autre"],
+   ["Part des arrêts SUCCÈS / BUDGET / ESCALADE","Le capteur ou la tâche conviennent-ils ?","Beaucoup de BUDGET ÉPUISÉ"],
+   ["Défauts trouvés à la relecture après un OK","Les angles morts du capteur","Le contrôle est OK et la relecture trouve encore des défauts"],
+   ["Requêtes consommées par boucle","Le coût réel","Coût plus élevé que le travail manuel"]]},
+  {t:"p",x:"<b>Quand un défaut revient, améliorez le système, pas le résultat.</b> « 5 jours » a échappé au contrôle ? Corriger l'US ne règle que ce cas. Ajouter une vérification au capteur, ou un interdit à la fiche, règle tous les suivants. Appliquez la méthode vue plus tôt : <b>un défaut, une cause, une seule modification, puis on rejoue</b>."},
+  {t:"no",x:"Jamais d'action irréversible dans une boucle sans validation humaine : publication, <code>git push</code>, envoi à un service externe, suppression hors du bac à sable."}]},
+ {t:"Bilan de la boucle",b:[
+  {t:"table",h:["Question","Ma réponse"],r:[
+   ["Combien de tours pour atteindre OK ?",""],
+   ["Le contrôle a-t-il été lancé réellement à chaque tour ?",""],
+   ["Quel défaut le contrôle ne pouvait-il pas voir ?",""],
+   ["L'agent s'est-il arrêté sur l'objectif impossible ?",""],
+   ["Quelle seule modification ferais-je à ma boucle ?",""]]},
+  {t:"check",id:"c8",x:["Le script <code>boucle-us.cjs</code> répond KO puis OK, et je sais pourquoi","J'ai fait un tour de boucle à la main","Mon agent a atteint <code>SUCCÈS</code> et j'ai relancé le contrôle moi-même","Il n'a inventé aucune valeur, et je l'ai vérifié en lisant les US","Sur l'US verrouillée, il s'est arrêté sans la modifier","J'ai repris une boucle depuis <code>etat.md</code> dans un nouveau chat","Le hook <code>agentStop</code> s'arrête au bout du budget"]},
+  {t:"why",x:"Vous gardez le bac à sable et l'agent pour la partie suivante : elle réutilise le même contrôle, cette fois avec plusieurs agents."}]}
+ ]},
+/* ====================================================== Sous-agents et orchestration */
+{icon:"🕸️",title:"Sous-agents et orchestration",sub:"Déléguer, isoler, paralléliser",
+ goal:"Vous maîtrisez la délégation : ce qu'un sous-agent voit réellement, comment écrire sa consigne, comment en lancer plusieurs en parallèle, et comment combiner orchestration et boucle.",
+ steps:[
+ {t:"Ce qu'est vraiment un sous-agent",b:[
+  {t:"p",x:"Le Bonus vous a fait construire un orchestrateur. Ici, on ouvre le capot. Un <b>sous-agent</b> travaille dans <b>son propre contexte</b> et ne renvoie à l'agent principal qu'<b>un résultat concentré</b>."},
+  {t:"p",x:"<b>Analogie :</b> vous envoyez un collègue aux archives avec une note. Il ne sait que ce qui est écrit sur la note. Il lit 300 pages et revient avec une ligne. Votre bureau reste dégagé, mais si la note est floue, il ne peut pas vous rappeler pour demander des précisions."},
+  {t:"mock",x:"   CONVERSATION PRINCIPALE                  SOUS-AGENT (contexte neuf)\n   ┌─────────────────────────┐              ┌─────────────────────────┐\n   │ votre historique        │   consigne   │ sa fiche et ses outils  │\n   │ vos décisions           │ ───────────► │ la consigne, rien d'autre│\n   │ les fichiers déjà lus   │              │                         │\n   │                         │   résultat   │ lectures, essais, bruit │\n   │ + une courte réponse    │ ◄─────────── │ (tout cela reste ici)   │\n   └─────────────────────────┘              └─────────────────────────┘"},
+  {t:"table",h:["Propriété","Ce que cela implique pour vous"],r:[
+   ["<b>Contexte isolé</b>","Il ne voit ni votre conversation ni vos décisions, sauf si la consigne les recopie"],
+   ["<b>Sans état</b>","Pas de message de suivi au même sous-agent : un nouvel appel repart de zéro"],
+   ["<b>Résultat seul</b>","Seule sa réponse finale remonte. Tout ce qu'il n'y écrit pas est perdu pour l'agent principal"],
+   ["<b>Pas de questions</b> (en session Local)","Il ne peut pas vous demander de précisions : prévoyez la réponse à donner en cas de doute"],
+   ["<b>Ses propres requêtes au modèle</b>","Le contexte principal reste léger, mais le coût total n'est pas forcément plus bas"]]},
+  {t:"table",h:["Bonne raison de déléguer","Exemple","Mauvaise raison"],r:[
+   ["<b>Isoler le bruit</b>","Lire 20 US et ne garder qu'un tableau","« Ça fait plus professionnel »"],
+   ["<b>Regard neuf</b>","Un relecteur qui ne connaît pas les intentions de l'auteur","Une tâche de deux lignes"],
+   ["<b>Moindre privilège</b>","Un auditeur sans outil d'écriture","Des étapes qui dépendent fortement de la conversation"],
+   ["<b>Parallèle</b>","5 US indépendantes auditées en même temps","Plusieurs agents écrivant le même fichier"],
+   ["<b>Modèle adapté</b>","Une tâche simple sur un modèle moins coûteux","Masquer une fiche d'agent mal écrite"]]},
+  {t:"why",x:"Un sous-agent échange de la <b>place dans le contexte</b> contre un <b>effort de consigne</b>. Si la consigne coûte plus cher que la tâche, faites la tâche directement."}]},
+ {t:"Le voir : l'expérience du mot de code",b:[
+  {t:"p",x:"Vérifiez l'isolation par vous-même, sans créer aucun fichier."},
+  {t:"ol",x:["Nouveau chat (<code>+</code>), mode <code>Agent</code>.","Envoyez le prompt ci-dessous.","Quand l'appel du sous-agent apparaît dans le chat, cliquez dessus pour le déplier."]},
+  {t:"copy",l:"À COPIER (mode Agent)",x:"Le mot de code de cette conversation est MANGUE.\nLance un sous-agent et donne-lui exactement cette consigne, sans rien ajouter : « Quel est le mot de code de la conversation ? Si tu ne le connais pas, réponds JE NE SAIS PAS. »\nÉcris ensuite sa réponse mot pour mot, puis le mot de code que toi tu connais."},
+  {t:"see",x:"Le sous-agent répond <code>JE NE SAIS PAS</code>, alors que l'agent principal connaît <code>MANGUE</code>. En dépliant l'appel, vous voyez la consigne reçue, les outils utilisés et le résultat."},
+  {t:"warn",x:"Le sous-agent connaît le mot ? Dépliez l'appel : l'agent principal l'a sans doute ajouté à la consigne. Pas de sous-agent lancé ? Vérifiez que vous êtes en mode <code>Agent</code>, que l'outil de sous-agents est activé (<code>Configure Tools</code>) et, sinon, demandez à l'animateur."},
+  {t:"table",h:["À repérer en dépliant l'appel","Pourquoi le regarder"],r:[
+   ["La consigne réellement envoyée","C'est souvent là qu'on trouve la cause d'un mauvais résultat"],
+   ["Les outils appelés","Ont-ils respecté le périmètre ?"],
+   ["La réponse finale","C'est tout ce que l'agent principal a reçu"]]},
+  {t:"why",x:"Quand un sous-agent ignore une règle que vous aviez donnée, ne pensez pas d'abord « mauvais modèle » : demandez-vous si la règle <b>figurait dans sa consigne</b>."}]},
+ {t:"Écrire une consigne de délégation",b:[
+  {t:"table",h:["Bloc de la consigne","Question","Exemple"],r:[
+   ["<b>Objectif</b>","Que produire ?","Auditer une US"],
+   ["<b>Contexte</b>","Quelles décisions déjà prises ?","« Le groupe a choisi de découper l'US-{n}02 »"],
+   ["<b>Sources</b>","Quels fichiers lire ?","Chemin de l'US, <code>regles-metier.md</code>"],
+   ["<b>Périmètre</b>","Que peut-il faire ou modifier ?","Lecture seule"],
+   ["<b>Sortie</b>","Quel format de retour, quelle longueur ?","Une ligne de tableau, avec une citation"],
+   ["<b>En cas de doute</b>","Que faire, puisqu'il ne peut pas demander ?","Écrire une question ouverte, ne pas deviner"]]},
+  {t:"p",x:"<b>Faites la comparaison.</b> Dans un nouveau chat, mode <code>Agent</code>, envoyez le premier prompt. Dans un autre chat neuf, envoyez le second. Dépliez les sous-agents et comparez."},
+  {t:"copy",l:"Essai 1 — consigne floue",x:"Lance un sous-agent et dis-lui exactement : « Regarde les US du lot et dis-moi ce qui ne va pas. »"},
+  {t:"copy",l:"Essai 2 — consigne complète",x:"Lance un sous-agent et donne-lui exactement cette consigne :\n« Objectif : repérer les défauts de sprintdesk/backlog/entree/lot{n}/US-{n}01.md.\nSources : ce fichier et sprintdesk/contexte/regles-metier.md, rien d'autre.\nPérimètre : lecture seule.\nSortie : au plus 3 lignes, chacune au format | défaut | RM-xx ou ND-xx | citation de l'US |.\nEn cas de doute : écris QUESTION OUVERTE, ne devine pas. »"},
+  {t:"table",h:["À comparer","Essai 1 (flou)","Essai 2 (complet)"],r:[
+   ["Sait-il de quel lot il s'agit ?","",""],
+   ["Combien de fichiers a-t-il ouverts ?","",""],
+   ["Le résultat est-il exploitable tel quel ?","",""],
+   ["Pourriez-vous vérifier chaque affirmation ?","",""]]},
+  {t:"why",x:"Le format de sortie compte autant que la mission : c'est lui qui entre dans le contexte de l'agent principal. Un sous-agent qui renvoie trois pages annule le gain de l'isolation."}]},
+ {t:"Créer un sous-agent spécialisé et invisible",b:[
+  {t:"p",x:"La consigne donne la mission du moment. La <b>fiche</b> fixe ce qui ne change jamais : les outils, la méthode, le format. Celle-ci crée un auditeur qui n'apparaît pas dans votre menu, car il n'est conçu que pour être appelé par un autre agent."},
+  {t:"ol",x:["Créez <code>.github/agents/auditeur-us.agent.md</code> (commande <code>Chat: New Custom Agent</code> ou clic droit > <code>Nouveau fichier</code>).","Collez le contenu ci-dessous, <kbd>Ctrl</kbd>+<kbd>S</kbd>."]},
+  {t:"copy",l:"À COPIER dans .github/agents/auditeur-us.agent.md",x:"---\ndescription: \"Audite une seule user story SprintDesk par rapport aux règles métier et renvoie une ligne de verdict, sans rien modifier. Utilisé comme sous-agent.\"\ntools: ['read', 'search']\nuser-invocable: false\n---\n# Auditeur US\n\n## Entrée\nLe chemin d'une seule US, donné dans la consigne. Si le chemin manque ou si le fichier est introuvable, réponds uniquement : ENTRÉE INVALIDE.\n\n## Sources\n- L'US indiquée.\n- sprintdesk/contexte/regles-metier.md (RM-xx validées, ND-xx non décidées).\n\n## Méthode\nCherche dans cette US : besoin vague, plusieurs besoins en un, contradiction avec une RM-xx, valeur ou règle absente des sources, décision ND-xx présentée comme acquise.\n\n## Sortie (une seule ligne, rien d'autre)\n| US | CONFORME ou DÉFAUT | type de défaut | RM-xx ou ND-xx en cause | courte citation de l'US qui le prouve |\n\n## Interdits\n- Ne rien modifier, ne rien réécrire, ne rien proposer.\n- Sans citation de l'US, pas de défaut."},
+  {t:"table",h:["Propriété","Valeurs","Effet"],r:[
+   ["<code>tools</code>","<code>['read', 'search']</code>","Il ne peut pas écrire : c'est garanti par ses outils, pas par une promesse"],
+   ["<code>user-invocable</code>","<code>false</code> (défaut <code>true</code>)","Masqué du sélecteur, mais appelable par un autre agent"],
+   ["<code>disable-model-invocation</code>","<code>true</code> (défaut <code>false</code>)","Un agent ne peut l'appeler que s'il le nomme dans sa liste <code>agents</code>"],
+   ["<code>agents</code> (côté appelant)","<code>['auditeur-us']</code>, <code>['*']</code> ou <code>[]</code>","Liste fermée, tous les agents, ou aucune délégation. Nécessite l'outil <code>agent</code>. Noms sensibles à la casse"],
+   ["<code>model</code>","Un nom, ou une liste par ordre de préférence","Un modèle adapté à ce rôle. Comparez avant de choisir (partie Choix du modèle)"]]},
+  {t:"see",x:"<code>auditeur-us</code> n'apparaît <b>pas</b> dans le sélecteur d'agents. C'est normal : l'étape suivante l'utilise."},
+  {t:"why",x:"Le format de sortie sur une ligne rend les résultats faciles à assembler, et la règle « sans citation, pas de défaut » rend chaque ligne vérifiable. Sans cela, un audit à 5 sous-agents produirait 5 styles différents."}]},
+ {t:"Fan-out / fan-in : 5 audits en parallèle",b:[
+  {t:"p",x:"<b>Fan-out :</b> une tâche par élément indépendant. <b>Fan-in :</b> une seule étape rassemble les résultats. L'audit s'y prête parfaitement : chaque US se lit seule, et personne n'écrit dans le même fichier."},
+  {t:"mock",x:"                     chef-audit-lot\n                           │  fan-out\n     ┌──────────┬──────────┼──────────┬──────────┐\n     ▼          ▼          ▼          ▼          ▼\n auditeur   auditeur   auditeur   auditeur   auditeur\n  US-{n}01     US-{n}02     US-{n}03     US-{n}04     US-{n}05\n     │          │          │          │          │\n     └──────────┴──────────┼──────────┴──────────┘\n                           ▼  fan-in\n          sprintdesk/resultats/audit-lot{n}.md"},
+  {t:"ol",x:[
+   "Créez <code>.github/agents/chef-audit-lot.agent.md</code> avec le contenu ci-dessous.",
+   "Nouveau chat. Sélecteur d'agent : <code>chef-audit-lot</code>.",
+   "Envoyez le prompt, puis dépliez les appels de sous-agents."]},
+  {t:"copy",l:"À COPIER dans .github/agents/chef-audit-lot.agent.md",x:"---\ndescription: \"Audite les 5 US d'un lot en parallèle grâce au sous-agent auditeur-us, puis écrit une synthèse. Utiliser pour un audit de lot rapide, sans réécriture.\"\ntools: ['agent', 'read', 'search', 'edit']\nagents: ['auditeur-us']\n---\n# Chef d'audit\n\n## Déroulé\n1. Liste les fichiers US-*.md du dossier sprintdesk/backlog/entree/lot<N>/.\n2. Fan-out : lance un sous-agent auditeur-us par fichier, en parallèle si possible. Chaque consigne contient uniquement le chemin de cette US.\n3. Fan-in : rassemble les lignes rendues, sans les réécrire, dans sprintdesk/resultats/audit-lot<N>.md, avec le nombre d'US auditées et le nombre de défauts.\n4. Si un auditeur rend ENTRÉE INVALIDE ou aucune réponse, écris « NON AUDITÉE » pour cette US. Ne fais pas l'audit toi-même.\n\n## Interdits\n- Tu n'écris qu'un seul fichier : audit-lot<N>.md.\n- Ne juge aucune US toi-même. Ne corrige aucune US.\n\n## Fin de réponse\nNombre de sous-agents lancés, nombre de lignes reçues, chemin de la synthèse."},
+  {t:"copy",l:"À COPIER (agent chef-audit-lot)",x:"Audite le lot {n}."},
+  {t:"see",x:"Cinq appels à <code>auditeur-us</code>, puis le fichier <code>sprintdesk/resultats/audit-lot{n}.md</code> avec 5 lignes. L'US-{n}05 est <code>CONFORME</code> : c'est l'US correcte du lot, et votre point de repère."},
+  {t:"table",h:["Vérification","Si ce n'est pas le cas"],r:[
+   ["5 sous-agents lancés et 5 lignes reçues","Le chef a peut-être audité lui-même : renforcez l'interdit, vérifiez <code>'agent'</code> dans <code>tools</code>"],
+   ["L'US-{n}05 est conforme","Un auditeur trop sévère : ajoutez ce cas à votre jeu d'évaluation"],
+   ["Chaque défaut a une citation réelle","Ouvrez l'US et vérifiez : une citation inventée est un défaut grave"],
+   ["Aucune US d'entrée modifiée","<code>Annuler</code> : l'auditeur n'a pas d'outil d'écriture, cherchez qui a écrit"]]},
+  {t:"warn",x:"Les sous-agents peuvent s'exécuter l'un après l'autre : le parallèle dépend de l'environnement et de l'outil. Le résultat doit être le même dans les deux cas. Ce qui compte pour vous, c'est que l'ordre <b>n'ait pas d'importance</b>."},
+  {t:"why",x:"Le chef ne voit que 5 lignes, pas 5 US et leurs recherches. Sur 20 US, ou sur tout un dépôt, c'est ce qui évite de saturer la conversation principale."}]},
+ {t:"Écrire en parallèle sans conflit",b:[
+  {t:"p",x:"Lire en parallèle est sans danger. <b>Écrire</b> en parallèle demande de l'isolation. Deux sessions ouvertes dans le même dossier n'isolent <b>pas</b> leurs modifications."},
+  {t:"table",h:["Règle d'isolation","Mise en œuvre SprintDesk"],r:[
+   ["<b>Un périmètre de fichiers par agent</b>","Agent A : <code>sortie/lot1/</code> ; agent B : <code>sortie/lot2/</code>. Jamais deux agents sur un même lot"],
+   ["<b>Un fichier partagé = un seul écrivain</b>","Chaque agent écrit <code>synthese-lot&lt;N&gt;.md</code>. Une étape finale les fusionne dans <code>synthese-actions.md</code>"],
+   ["<b>Un espace de travail par agent</b>","Une session en <b>worktree</b> : une copie de travail et sa branche, partant de l'état validé (commit)"],
+   ["<b>Une fusion explicite</b>","Fan-in : contrôle global, puis une PR par lot, relue par un humain"]]},
+  {t:"table",h:["Conflit","Exemple","Prévention","Résolution"],r:[
+   ["<b>Chevauchement</b>","Deux agents réécrivent l'US-204","Périmètres disjoints dans le plan","Garder une version, rejouer l'autre sur la base à jour"],
+   ["<b>Travail en double</b>","Deux agents découpent la même US","Une étape = un propriétaire","Supprimer le doublon, noter dans le journal"],
+   ["<b>Contradiction</b>","Le relecteur dit « conforme », le contrôleur dit « KO »","Critères communs : même script de contrôle","<b>Escalade humaine</b> : aucun agent ne tranche"]]},
+  {t:"table",h:["Dossier ou worktree ?","Dossier (<code>Folder</code>)","Worktree"],r:[
+   ["Convient pour","Petite tâche suivie de près, modifications non validées","Tâches parallèles qui ne doivent pas toucher votre espace"],
+   ["Point de départ","L'état actuel, modifications comprises","Le dernier état <b>validé par un commit</b>"],
+   ["Intégration du résultat","Directe","À faire vous-même (fusion)"],
+   ["Attention","Plusieurs sessions se marchent dessus","Les permissions y sont larges et l'isolation ne couvre pas les commandes ni le réseau"]]},
+  {t:"p",x:"<b>Exercice sur papier (5 minutes).</b> Vous devez traiter les 4 lots en parallèle. Complétez le plan, puis comparez avec la réponse."},
+  {t:"table",h:["Question","Votre réponse"],r:[
+   ["Combien d'agents, et sur quels dossiers ?",""],
+   ["Qui écrit <code>synthese-actions.md</code> ?",""],
+   ["Quels fichiers tout le monde lit, et personne n'écrit ?",""],
+   ["Comment fusionner, et qui valide ?",""],
+   ["Que faire si deux lots dépendent de la même décision ND-xx ?",""]]},
+  {t:"ex",l:"Voir une réponse possible",x:"4 agents, un par lot : chacun écrit uniquement dans sortie/lot<N>/ et dans synthese-lot<N>.md.\nsynthese-actions.md : une seule étape finale, après les 4 agents.\nLecture seule pour tous : contexte/, entree/, PLAN.md.\nFusion : contrôle global, puis une PR par lot, relue par un humain.\nND-xx commune : elle reste une question ouverte dans les deux lots, et le référent produit tranche une seule fois. Aucun agent ne décide."},
+  {t:"no",x:"N'écrivez jamais en parallèle sans plan d'isolation. Pour un seul lot, restez en séquentiel : le gain de temps ne vaut pas le risque."}]},
+ {t:"Choisir le bon schéma d'orchestration",b:[
+  {t:"p",x:"Le Bonus a présenté quatre schémas de base. En voici la carte complète, classée du plus simple au plus complexe. <b>Prenez le premier qui répond au besoin.</b>"},
+  {t:"table",h:["Schéma","Principe","Quand","Risque principal"],r:[
+   ["<b>Un seul agent</b>","Pas de délégation","Par défaut","Saturer le contexte sur une grosse tâche"],
+   ["<b>Séquentiel</b>","A, puis B, puis C","Chaque étape dépend de la précédente","Erreur en cascade"],
+   ["<b>Routeur</b>","Un agent classe la demande et l'envoie au bon spécialiste","Types de demandes bien distincts","Mauvais aiguillage, invisible ensuite"],
+   ["<b>Parallèle</b>","Fan-out, puis fan-in","Parties indépendantes, gros volume","Conflits à la fusion"],
+   ["<b>Producteur-critique</b>","Un écrit, l'autre critique, on boucle","Qualité atteinte en plusieurs passes","Boucle sans fin : la borner"],
+   ["<b>Vote</b>","Plusieurs agents jugent le même cas","Décision sensible, avec un seul juge peu fiable","Coût multiplié, faux consensus avec les mêmes sources"],
+   ["<b>Superviseur</b>","Un agent choisit qui appeler selon les résultats","Déroulé variable","Le superviseur fait le travail lui-même"],
+   ["<b>Hiérarchique</b>","Des sous-agents qui ont leurs propres sous-agents","Très gros sujets, rarement utile","Délégation en boucle, débogage difficile"]]},
+  {t:"p",x:"<b>À vous.</b> Pour chaque besoin, choisissez un schéma, puis comparez."},
+  {t:"table",h:["Besoin","Votre choix"],r:[
+   ["A. Résumer une seule US",""],
+   ["B. Auditer les 20 US des 4 lots",""],
+   ["C. Diagnostiquer, faire valider, réécrire, contrôler un lot",""],
+   ["D. Réécrire une US jusqu'à ce que le contrôleur n'ait plus de remarque",""],
+   ["E. Orienter des demandes vers le bon spécialiste : technique, métier ou droits d'accès",""],
+   ["F. Décider seul si une ND-xx peut être considérée comme tranchée",""]]},
+  {t:"ex",l:"Voir les réponses",x:"A. Un seul agent : aucune raison de déléguer.\nB. Parallèle : les US sont indépendantes, et le mode lecture seule évite tout conflit.\nC. Séquentiel avec point de validation : l'ordre compte et l'humain valide le diagnostic.\nD. Producteur-critique, borné à 2 tours, puis escalade à l'humain.\nE. Routeur : les trois chemins sont bien distincts.\nF. Aucun : c'est un piège. Même un vote d'agents ne remplace pas la décision du référent produit."},
+  {t:"table",h:["Imbrication","À savoir"],r:[
+   ["Par défaut","En session Local, un sous-agent ne peut pas en lancer un autre"],
+   ["Pour l'autoriser","Réglage <code>chat.subagents.allowInvocationsFromSubagents</code> (désactivé par défaut), profondeur maximale de cinq"],
+   ["Agent récursif","Il se liste lui-même dans <code>agents</code> et a l'outil <code>agent</code> : prévoyez absolument une condition d'arrêt"]]},
+  {t:"why",x:"Chaque niveau d'orchestration ajoute du coût, des points de panne et de la difficulté de relecture. Une orchestration se justifie par un <b>besoin observé</b>, pas par l'envie de l'avoir."}]},
+ {t:"Tracer et encadrer les sous-agents avec un hook",b:[
+  {t:"p",x:"Le hook <code>subagentStart</code> se déclenche quand un sous-agent démarre. Il ne peut pas l'empêcher, mais il peut <b>ajouter du texte en tête de sa consigne</b>. C'est la réponse mécanique au contexte isolé : les interdits arrivent à chaque délégation, même si l'orchestrateur les oublie."},
+  {t:"ol",x:[
+   "Dans <code>.github/hooks</code>, créez <code>rappel-sous-agents.json</code> et <code>rappel-sous-agents.cjs</code> avec les blocs ci-dessous.",
+   "Ajoutez la ligne <code>.github/hooks/sous-agents.log</code> à <code>.gitignore</code>.",
+   "Nouveau chat, session <b>Copilot</b>, agent <code>chef-audit-lot</code>. Tapez <code>/hooks</code> : <code>subagentStart</code> doit figurer dans la liste.",
+   "Envoyez : <code>Audite le lot {n}.</code>",
+   "Ouvrez <code>.github/hooks/sous-agents.log</code>, puis dépliez un appel de sous-agent dans le chat."]},
+  {t:"copy",l:"À COPIER dans .github/hooks/rappel-sous-agents.json",x:"{\n  \"version\": 1,\n  \"hooks\": {\n    \"subagentStart\": [\n      {\n        \"type\": \"command\",\n        \"matcher\": \"auditeur-us|correcteur-us\",\n        \"command\": \"node .github/hooks/rappel-sous-agents.cjs\",\n        \"timeoutSec\": 10\n      }\n    ]\n  }\n}"},
+  {t:"copy",l:"À COPIER dans .github/hooks/rappel-sous-agents.cjs",x:"// Hook subagentStart : note chaque sous-agent lancé et ajoute les interdits en tête de sa consigne.\nconst fs = require('node:fs');\nconst path = require('node:path');\n\nlet evenement = {};\ntry { evenement = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { /* événement illisible : on continue */ }\nconst agent = evenement.agentName || evenement.agent_name || 'inconnu';\n\nfs.appendFileSync(path.join(__dirname, 'sous-agents.log'), new Date().toISOString() + ' | ' + agent + String.fromCharCode(10));\nprocess.stdout.write(JSON.stringify({\n  additionalContext: 'Rappel du projet pour ' + agent + ' : ne tranche aucune ND-xx ; ne modifie ni sprintdesk/backlog/entree/ ni sprintdesk/contexte/ ; termine en listant ce que tu as réellement fait.',\n}));"},
+  {t:"see",x:"Une ligne <code>date | auditeur-us</code> par sous-agent lancé. Selon l'affichage, le rappel apparaît aussi au début de la consigne du sous-agent."},
+  {t:"table",h:["Élément","À savoir"],r:[
+   ["<code>matcher</code>","Expression régulière qui doit correspondre au nom <b>entier</b> de l'agent. Une expression invalide désactive le hook"],
+   ["<code>additionalContext</code>","Le texte ajouté en tête du premier message du sous-agent"],
+   ["<code>subagentStop</code>","Autre événement, à la fin d'un sous-agent : peut forcer un tour de plus (<code>decision: \"block\"</code>) ou remplacer la réponse renvoyée (<code>modifiedResponse</code>)"],
+   ["Exception","Le sous-agent générique <code>general-purpose</code> ne déclenche ni <code>subagentStart</code> ni <code>subagentStop</code> : ne faites pas reposer un interdit sur ce seul hook"]]},
+  {t:"warn",x:"Le journal reste vide ? Vérifiez, dans l'ordre : session <b>Copilot</b>, liste <code>/hooks</code>, nom de l'agent couvert par le <code>matcher</code>, puis <code>node --version</code>. Hooks en préversion : les noms et les détails peuvent évoluer."},
+  {t:"why",x:"Sans trace, une orchestration est une boîte noire. Ce journal répond à la première question à poser en cas de doute : <b>qui a été lancé ?</b>"}]},
+ {t:"Combiner boucle et orchestration",b:[
+  {t:"p",x:"Dernier exercice : tout assembler. Le <b>pilote</b> lance le capteur de la partie précédente, délègue chaque correction à un sous-agent, fait relire le résultat par l'auditeur, puis s'arrête devant vous. Le capteur vérifie la forme, l'auditeur vérifie le fond, et vous décidez."},
+  {t:"mock",x:"                 VOUS : VALIDER | CORRIGER | ARRÊTER\n                              ▲\n                              │ point de validation\n                     pilote-conformite   (pas d'outil d'écriture)\n                    │         │         │\n     1. contrôle    │         │         │  3. audit (parallèle)\n                    ▼         ▼         ▼\n              boucle-us   correcteur   auditeur-us\n              verifier    -us (× US)   (× US)\n                    ▲         │\n                    └─────────┘\n                2. correction, 2 tours au maximum"},
+  {t:"ol",x:[
+   "Créez <code>.github/agents/correcteur-us.agent.md</code> et <code>.github/agents/pilote-conformite.agent.md</code> avec les blocs ci-dessous.",
+   "Terminal : <code>node .github/scripts/boucle-us.cjs init {n} --verrou</code>.",
+   "Nouveau chat. Sélecteur d'agent : <code>pilote-conformite</code>. Envoyez le prompt."]},
+  {t:"copy",l:"À COPIER dans .github/agents/correcteur-us.agent.md",x:"---\ndescription: \"Corrige une seule US du bac à sable à partir d'une liste d'erreurs, sans rien décider. Utilisé comme sous-agent.\"\ntools: ['read', 'search', 'edit']\nuser-invocable: false\n---\n# Correcteur US\n\n## Entrée\nLe chemin d'une seule US et la liste de ses erreurs, donnés dans la consigne. Si l'un des deux manque, réponds uniquement : ENTRÉE INVALIDE.\n\n## Méthode\n- Modifie uniquement ce fichier, et uniquement ce qui corrige les erreurs listées.\n- Ajoute « Aucune. » dans une section sans contenu.\n- Une ND-xx ne reste jamais dans un critère : reformule sans la décision et garde la ND-xx dans « Questions ouvertes ».\n\n## Interdits\n- Ne trancher aucune ND-xx et n'inventer aucune valeur, aucun champ, aucune règle. Sans information suffisante, écris une question ouverte.\n- Ne lancer aucune commande.\n\n## Sortie\nLe fichier modifié, les lignes changées, et ce que tu n'as pas pu corriger."},
+  {t:"copy",l:"À COPIER dans .github/agents/pilote-conformite.agent.md",x:"---\ndescription: \"Pilote une boucle de conformité avec des sous-agents : contrôle, délégation des corrections, audit en parallèle, validation humaine. Utiliser pour le bac à sable de l'atelier.\"\ntools: ['agent', 'read', 'search', 'execute']\nagents: ['correcteur-us', 'auditeur-us']\n---\n# Pilote de conformité\n\n## Rôle\nTu pilotes, tu ne corriges pas. Tu n'as d'ailleurs pas l'outil d'écriture.\n\n## Contrôle\nCommande unique autorisée : node .github/scripts/boucle-us.cjs verifier\n\n## Déroulé\n1. Lance le contrôle.\n2. Pour chaque US KO, sauf une US dont le titre contient « verrouillée » : lance un sous-agent correcteur-us, un par US. La consigne contient le chemin de l'US et ses erreurs, recopiées mot pour mot.\n3. Relance le contrôle. Deux tours de correction au maximum.\n4. Pour chaque US corrigée, lance un sous-agent auditeur-us, en parallèle si possible.\n5. Présente le POINT DE VALIDATION, puis attends la réponse de l'humain.\n\n## Arrêts\n- Une US verrouillée est KO : ne la délègue pas, signale ESCALADE au point de validation.\n- Deux tours effectués et contrôle encore KO : signale BUDGET ÉPUISÉ.\n- Mêmes erreurs d'un tour à l'autre : signale ESCALADE sans faire le tour suivant.\n\n## POINT DE VALIDATION (format fixe)\nTours : <n> · Sous-agents lancés : <liste>\nContrôle : <dernière ligne VERDICT>\nAudit : <lignes rendues par auditeur-us, sans les réécrire>\nEscalades : <liste ou aucune>\nÀ relire par vous : <fichiers>\nRépondez : VALIDER | CORRIGER : <précision> | ARRÊTER\n\n## Interdits\n- Ne déclare jamais un succès sans une ligne VERDICT : OK obtenue dans ce tour.\n- Ne tranche aucune ND-xx. Ne transmets aucune supposition à un sous-agent."},
+  {t:"copy",l:"À COPIER (agent pilote-conformite)",x:"Pilote la conformité du bac à sable du lot {n}."},
+  {t:"see",x:"Deux <code>correcteur-us</code> (US-{n}91 et US-{n}92), aucun pour l'US-{n}93, puis un audit et un <b>POINT DE VALIDATION</b> indiquant <code>ESCALADE</code> pour l'US verrouillée. Le pilote attend votre réponse."},
+  {t:"mock",x:"Tours : 1 · Sous-agents lancés : correcteur-us ×2, auditeur-us ×2\nContrôle : VERDICT : KO (1 US sur 3)\nAudit : | US-{n}91 | CONFORME | ... |\n        | US-{n}92 | CONFORME | ... |\nEscalades : US-{n}93 verrouillée, en attente du référent produit\nÀ relire par vous : US-{n}91.md, US-{n}92.md\nRépondez : VALIDER | CORRIGER : <précision> | ARRÊTER"},
+  {t:"table",h:["Qui attrape quoi ?","Capteur (script)","Auditeur (IA)","Vous"],r:[
+   ["Section manquante","<b>Oui</b>","Possible","Possible"],
+   ["ND-xx dans un critère","<b>Oui</b>","<b>Oui</b>","Oui"],
+   ["« 5 jours » resté dans un critère, sans mention de ND-01","Non","<b>Probable</b>, à vérifier","<b>Oui</b>"],
+   ["Besoin reformulé qui change le sens","Non","Possible","<b>Oui</b>"],
+   ["Décider si la boucle s'arrête là","Non","Non","<b>Vous seul</b>"]]},
+  {t:"p",x:"Répondez selon ce que vous lisez dans les US. <b>Testez aussi une correction :</b>"},
+  {t:"copy",l:"Exemple — si un seuil a été inventé",x:"CORRIGER : l'US-{n}92 contient une valeur absente des sources. Relance correcteur-us sur cette US, puis le contrôle et l'audit."},
+  {t:"why",x:"Les trois niveaux se complètent parce qu'ils échouent différemment : le script est sûr mais limité, l'IA est souple mais faillible, et l'humain est responsable mais lent. C'est l'ensemble qui crée la fiabilité."}]},
+ {t:"Diagnostiquer une orchestration, puis conclure",b:[
+  {t:"table",h:["Symptôme","Cause probable","Première vérification"],r:[
+   ["Aucun sous-agent lancé, l'agent fait tout seul","Outil <code>agent</code> absent ou interdit trop faible","<code>tools</code>, noms dans <code>agents</code> (casse comprise)"],
+   ["Le sous-agent ignore une décision","Absente de sa consigne","Déplier l'appel et lire la consigne reçue"],
+   ["Réponse trop longue, contexte saturé","Format de sortie non imposé","Limiter le nombre de lignes dans la fiche"],
+   ["Résultat qui varie d'une exécution à l'autre","Critères flous","Grille commune, ou script de contrôle"],
+   ["Un résultat manquant passe inaperçu","Fan-in sans comptage","Faire annoncer « 5 lancés, 5 reçus »"],
+   ["Deux agents modifient le même fichier","Périmètres non disjoints","Un fichier, un seul écrivain"],
+   ["Délégations sans fin","Récursivité sans arrêt","Désactiver l'imbrication, ajouter un budget"],
+   ["Facture plus élevée que prévu","Sous-agents inutiles","Compter les sous-agents, supprimer ceux qui n'apportent rien"]]},
+  {t:"p",x:"Pour toute panne : <b>un défaut, une cause</b> (orchestrateur, consigne, fiche du sous-agent, skill ou outil), <b>une seule modification</b>, puis on rejoue."},
+  {t:"p",x:"<b>Pour finir, faites du ménage.</b> Lancez la commande ci-dessous pour supprimer le bac à sable : le hook d'arrêt ne fera plus rien. Supprimez aussi <code>audit-lot{n}.md</code> si vous ne souhaitez pas le garder."},
+  {t:"copy",l:"À COPIER dans le terminal",x:"node .github/scripts/boucle-us.cjs nettoyer"},
+  {t:"check",id:"c9",x:["L'expérience du mot de code a confirmé l'isolation du sous-agent","Je sais écrire une consigne en 6 blocs","<code>auditeur-us</code> est invisible dans le menu et n'a pas d'outil d'écriture","L'audit parallèle a rendu 5 lignes pour 5 US, et l'US-{n}05 est conforme","Je sais expliquer quand un worktree est utile, et ce qu'il ne protège pas","<code>sous-agents.log</code> montre les sous-agents lancés","Le pilote a corrigé par délégation, respecté l'US verrouillée et attendu ma validation","Le bac à sable est supprimé"]},
+  {t:"why",x:"Vous savez maintenant quoi déléguer, à qui, avec quelle consigne, dans quel schéma, sous quelle boucle, et où reste la décision humaine. Commencez toujours par moins d'agents que vous n'en imaginez : on ajoute un agent quand un défaut mesuré le justifie."}]}
+ ]},
 /* ====================================================== Récap */
 {icon:"🏁",title:"Récap et ouverture",sub:"Tout ce que vous avez vu, et la suite",
  goal:"Faire le point sur tout le parcours, retenir les règles d'or, et savoir où continuer à apprendre.",
@@ -1139,6 +1496,8 @@ const STAGES = [
    ["🚀 Gestion du contexte","Compacter, repartir à zéro, tenir un journal","<code>journal-decisions-lot{n}.md</code>","Une décision absente du journal est à revérifier"],
    ["🚀 Choix du modèle","Équilibrer qualité, vitesse et coût","Une règle de choix fondée sur une comparaison","Le modèle le moins coûteux qui réussit tous les critères"],
    ["🚀 Jeu d'évaluation","Mesurer une modification : mêmes cas, même grille, v1 contre v2","<code>jeu-evaluation.md</code>","Une seule modification à la fois"]]},
+   ["🔁 Loop Engineering","Concevoir un cycle objectif, action, contrôle, état, arrêt, et tester ses échecs","<code>boucle-us.cjs</code>, agent <code>boucle-conformite-us</code>, hook <code>boucle-arret</code>","Pas de capteur, pas de boucle ; un OK prouve la forme, pas la justesse"],
+   ["🕸️ Sous-agents et orchestration","Contexte isolé, consigne en 6 blocs, parallèle, choix du schéma, traces","Agents <code>auditeur-us</code>, <code>chef-audit-lot</code>, <code>correcteur-us</code>, <code>pilote-conformite</code> ; hook <code>rappel-sous-agents</code>","Ce qui n'est pas dans la consigne n'existe pas pour le sous-agent"],
   {t:"mock",x:"formation-harness/\n├── .github/\n│   ├── copilot-instructions.md   règles permanentes\n│   ├── prompts/*.prompt.md       commandes /\n│   ├── agents/*.agent.md         rôles (qui)\n│   ├── skills/*/SKILL.md         méthodes (comment)\n│   └── hooks/                    garde-fous appliqués\n├── PLAN.md                       contrat validé\n└── sprintdesk/\n    ├── backlog/sortie/lot{n}/    US réécrites\n    └── resultats/                revue, journal, évaluation, compte rendu"},
   {t:"why",x:"Aucune brique ne suffit seule. Les instructions disent <b>quoi respecter</b>, le plan <b>quoi faire</b>, les agents <b>qui le fait</b>, les skills <b>comment</b>, les hooks <b>ce qui est impossible</b>, et l'évaluation <b>si c'est mieux</b>."}]},
  {t:"Les notions clés en une phrase",b:[
@@ -1153,7 +1512,12 @@ const STAGES = [
    ["Agent","Rôle défini par une mission, des outils et des interdits","Atelier 2"],
    ["Moindre privilège","Ne donner à un agent que les outils nécessaires","Atelier 2, Bonus"],
    ["Skill","Procédure chargée à la demande selon sa description","Atelier 3"],
-   ["Sous-agent","Agent appelé par un autre, dans un contexte isolé","Bonus"],
+   ["Sous-agent","Agent appelé par un autre, dans un contexte isolé","Bonus, Sous-agents et orchestration"],
+   ["Fan-out / fan-in","Répartir une tâche entre plusieurs agents, puis rassembler leurs résultats","Sous-agents et orchestration"],
+   ["Worktree","Copie de travail Git séparée, qui isole les fichiers mais ne limite ni les commandes ni le réseau","Sous-agents et orchestration"],
+   ["Loop Engineering","Concevoir le cycle qui relance un agent jusqu'à une preuve de fin ou un arrêt","Loop Engineering"],
+   ["Capteur (contrôle)","Vérification indépendante de l'agent, idéalement un script, qui dit OK ou KO","Loop Engineering"],
+   ["Condition d'arrêt","Règle qui met fin à une boucle : succès, budget, sans progrès, escalade","Loop Engineering"],
    ["Human in the loop","L'IA propose, l'humain valide","Tout le parcours"],
    ["Hook","Commande lancée à un événement, qui peut refuser une action","Pour aller bien plus loin"],
    ["Fenêtre de contexte","Mémoire de travail limitée d'une conversation","Pour aller bien plus loin"],
@@ -1296,7 +1660,12 @@ const L={
  oaiAgents:["OpenAI : A practical guide to building agents","https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/"],
  oaiPrompt:["OpenAI : guide de prompt engineering","https://developers.openai.com/api/docs/guides/prompt-engineering"],
  oaiCookbook:["OpenAI Cookbook (exemples commentés)","https://developers.openai.com/cookbook"],
- oaiAcademy:["OpenAI Academy (parcours de formation)","https://academy.openai.com/"]
+ oaiAcademy:["OpenAI Academy (parcours de formation)","https://academy.openai.com/"],
+ approvals:["Approbations et permissions dans VS Code","https://code.visualstudio.com/docs/agents/run/approvals"],
+ agentsWindow:["Fenêtre Agents, dossier ou worktree","https://code.visualstudio.com/docs/agents/run/agents-window"],
+ agentsConcept:["Comprendre les agents dans VS Code","https://code.visualstudio.com/docs/agents/concepts/agents"],
+ loopDef:["PuppyGraph : What is loop engineering?","https://www.puppygraph.com/learn/loop-engineering"],
+ loopGuide:["Data Science Dojo : de ReAct au loop engineering","https://datasciencedojo.com/blog/agentic-loops-explained-from-react-to-loop-engineering-2026-guide/"]
 };
 const EXTRA={
 "Les techniques de prompt les plus connues":{o:"Connaître les 5 techniques de prompt les plus courantes et ce que chacune apporte à SprintDesk.",c:"Les techniques (few-shot, chain-of-thought, rôle, questions inversées, auto-vérification) se <b>combinent</b>. Aucune ne remplace des sources fiables et des interdits clairs.",l:[L.pe,L.best]},
@@ -1375,6 +1744,26 @@ const EXTRA={
 "Jeu d'évaluation : mesurer au lieu de supposer":{o:"Comprendre ce qu'est un jeu d'évaluation et pourquoi les 20 US des lots en forment déjà un.",c:"Un jeu d'évaluation est un ensemble fixe de cas à réponse connue. Critères figés avant le test, même prompt, une seule modification à la fois, et vérification que l'US correcte reste inchangée.",l:[L.best,L.tips]},
 "Jeu d'évaluation en pratique : noter, modifier, rejouer":{o:"Noter une version, faire une modification, rejouer et interpréter l'écart.",c:"Chaque défaut observé conduit à une cause, puis à une seule modification. Comparez les totaux de v1 et v2, cherchez les régressions, et rejouez en cas de doute.",l:[L.best,L.tips]},
 "Bilan et pistes suivantes":{o:"Relier les quatre mécanismes au reste du harness et cocher la checklist finale.",c:"Règles écrites, garde-fous appliqués, mémoire maîtrisée, modèle choisi par la mesure et banc d'essai forment un système complet. La décision métier reste humaine.",l:[L.hooks,L.models,L.sessions]},
+"Comprendre : ne plus être celui qui relance l'agent":{o:"Situer le Loop Engineering par rapport au prompt, au contexte et au harness.",c:"Une boucle de travail est un programme de contrôle autour de l'agent : lire l'objectif, agir, vérifier, écrire l'état, continuer ou s'arrêter. Le terme vient des praticiens et ne correspond à aucune norme.",l:[L.loopDef,L.loopGuide,L.antAgents]},
+"Les 6 pièces d'une boucle fiable":{o:"Reconnaître les 6 pièces d'une boucle et savoir quand ne pas en faire une.",c:"Une boucle a besoin d'une fin de réussite <b>et</b> d'une fin d'échec. Sans arrêt d'échec, une boucle en difficulté continue de consommer sans progresser.",l:[L.loopDef,L.antAgents,L.oaiAgents]},
+"Créer le bac à sable et le contrôle":{o:"Disposer d'une commande sans IA qui répond OK ou KO.",c:"Le capteur est la pièce la plus importante d'une boucle. Plus il est déterministe et difficile à tromper, plus vous pouvez laisser tourner la boucle sans surveillance.",l:[L.best,L.antTools]},
+"Être la boucle : un tour à la main":{o:"Faire un tour de boucle soi-même et repérer ce que le contrôle ne voit pas.",c:"Automatiser une boucle qu'on n'a jamais faite à la main revient à automatiser une hypothèse. Le tour manuel révèle aussi les angles morts du capteur.",l:[L.edits,L.best]},
+"Créer l'agent qui boucle":{o:"Traduire les 6 pièces de la boucle dans une fiche d'agent.",c:"La fiche contient le contrat de la boucle. Une consigne reste une demande : l'outil <code>execute</code> permet de lancer des commandes, et seul un hook ou un bac à sable peut réellement les limiter.",l:[L.agents,L.agentref,L.security]},
+"Lancer la boucle et l'observer":{o:"Lancer la boucle, puis vérifier soi-même le résultat annoncé par l'agent.",c:"Un agent peut annoncer un succès qu'il n'a pas obtenu. La sortie réelle du contrôle, l'état écrit et le diff sont les seules preuves à retenir.",l:[L.agentmode,L.edits]},
+"Tester les arrêts : voir la boucle échouer proprement":{o:"Vérifier que la boucle s'arrête sur un objectif impossible et qu'elle reprend depuis son état.",c:"Tester les échecs, c'est tester ce qui protège le coût et les données. L'état écrit dans des fichiers permet de reprendre dans un contexte neuf.",l:[L.sessions,L.antContext]},
+"Imposer la boucle avec un hook agentStop":{o:"Faire appliquer la relance et le budget par un mécanisme, et non par une consigne.",c:"<code>agentStop</code> reçoit la demande d'arrêt de l'agent. Avec <code>decision: \"block\"</code>, <code>reason</code> devient la consigne du tour suivant. Après 8 blocages consécutifs, Copilot passe outre.",l:[L.hooks,L.hooksref]},
+"Autonomie, coût et formes de boucles":{o:"Choisir un niveau d'autonomie et une forme de boucle adaptés au risque.",c:"Plus l'autonomie augmente, plus le capteur, l'isolation et les arrêts doivent être solides. Autopilot supprime les confirmations, pas le besoin de vérifier.",l:[L.approvals,L.security,L.optimize]},
+"Bilan de la boucle":{o:"Faire le point sur votre boucle et décider d'une seule amélioration.",c:"Une boucle s'améliore comme un agent : on observe un défaut, on en cherche la cause, on modifie une seule chose, on rejoue.",l:[L.best,L.antAgents]},
+"Ce qu'est vraiment un sous-agent":{o:"Comprendre ce qu'un sous-agent voit, ce qu'il renvoie et quand il est utile de déléguer.",c:"Un sous-agent Local n'hérite pas de l'historique, est sans état et ne peut pas poser de questions de clarification. Il fait ses propres requêtes au modèle : un contexte principal réduit ne signifie pas un coût total réduit.",l:[L.subagents,L.agentsConcept]},
+"Le voir : l'expérience du mot de code":{o:"Constater l'isolation du contexte et apprendre à inspecter un appel de sous-agent.",c:"En session Local, le sous-agent apparaît comme un appel d'outil repliable montrant le prompt, les outils et le résultat. L'affichage dépend de l'environnement.",l:[L.subagents]},
+"Écrire une consigne de délégation":{o:"Écrire une consigne autonome en 6 blocs, puis mesurer l'écart avec une consigne floue.",c:"Une consigne de délégation précise l'objectif, le contexte, les sources, le périmètre, le format de sortie et la conduite à tenir en cas de doute.",l:[L.subagents,L.antContext]},
+"Créer un sous-agent spécialisé et invisible":{o:"Maîtriser <code>tools</code>, <code>user-invocable</code>, <code>disable-model-invocation</code>, <code>agents</code> et <code>model</code>.",c:"Nommer un agent dans la liste <code>agents</code> outrepasse son <code>disable-model-invocation: true</code>. L'ancienne propriété <code>infer</code> est dépréciée.",l:[L.agentref,L.subagents]},
+"Fan-out / fan-in : 5 audits en parallèle":{o:"Lancer un sous-agent par US et rassembler leurs résultats dans une seule synthèse.",c:"Le parallèle convient aux tâches indépendantes, surtout en lecture seule. Le fan-in doit compter les résultats reçus pour ne pas masquer un sous-agent en échec.",l:[L.subagents,L.antAgents]},
+"Écrire en parallèle sans conflit":{o:"Préparer un plan d'isolation pour plusieurs agents qui écrivent.",c:"Séparer les conversations ne sépare pas les fichiers. Un worktree part de l'état validé et doit être fusionné ensuite. Il n'est pas une frontière de sécurité.",l:[L.agentsWindow,L.sessions,L.security]},
+"Choisir le bon schéma d'orchestration":{o:"Choisir le schéma le plus simple qui répond à un besoin donné.",c:"Commencez par un seul agent. Ajoutez un schéma lorsqu'un défaut observé le justifie : c'est le conseil commun aux guides d'Anthropic et d'OpenAI.",l:[L.antAgents,L.oaiAgents,L.subagents]},
+"Tracer et encadrer les sous-agents avec un hook":{o:"Noter chaque sous-agent lancé et lui transmettre les interdits du projet.",c:"<code>subagentStart</code> ne peut pas bloquer le lancement. <code>additionalContext</code> est ajouté en tête du premier message. Le sous-agent <code>general-purpose</code> n'émet pas ces événements.",l:[L.hooks,L.hooksref]},
+"Combiner boucle et orchestration":{o:"Assembler capteur, sous-agents, audit et validation humaine dans un seul pilote.",c:"Retirer l'outil d'écriture au pilote l'oblige à déléguer. Le capteur vérifie la forme, l'auditeur vérifie le fond, et l'humain garde la décision.",l:[L.subagents,L.antAgents,L.oaiAgents]},
+"Diagnostiquer une orchestration, puis conclure":{o:"Retrouver la cause d'une panne d'orchestration et faire le ménage.",c:"La plupart des pannes viennent de la consigne, de la liste d'outils ou de périmètres mal séparés. Le modèle n'est que rarement la première cause.",l:[L.subagents,L.best]},
 "Récap : tout le parcours en un tableau":{o:"Revoir en un coup d'œil chaque partie, ce qu'elle vous a appris et ce que vous avez produit.",c:"Un harness se construit <b>par couches</b> : chaque brique répond à une question différente, et aucune ne remplace les autres.",l:[L.vsCustom,L.over]},
 "Les notions clés en une phrase":{o:"Pouvoir définir chaque notion de la formation en une phrase.",c:"Savoir expliquer une notion simplement est le meilleur test de compréhension. Si une définition vous échappe, rouvrez la partie indiquée.",l:[L.vsCustom,L.best]},
 "Conclusion : les règles d'or à garder":{o:"Retenir les sept règles qui rendent le travail avec Copilot fiable.",c:"Ces règles ne dépendent ni de l'outil ni du modèle. Elles valent pour Copilot comme pour tout assistant d'IA.",l:[L.best,L.oaiAgents]},
@@ -1396,6 +1785,8 @@ if(!st.v){shiftStages(6,7);st.v=4;save();}
 if(st.v<5){shiftStages(7,8);st.v=5;save();}
 /* v6 : « Récap et ouverture » est insérée avant l'Aide (8 -> 9). */
 if(st.v<6){shiftStages(8,9);st.v=6;save();}
+/* v7 : « Loop Engineering » et « Sous-agents et orchestration » sont insérées avant le Récap (Récap 8 -> 10, Aide 9 -> 11). */
+if(st.v<7){shiftStages(9,11);shiftStages(8,10);st.v=7;save();}
 const $=s=>document.querySelector(s);
 const fill=s=>s.replaceAll('{n}',st.lot).replace(/\{L:(\w+)\}/g,(m,k)=>L[k]?'<a href="'+L[k][1]+'" target="_blank" rel="noopener noreferrer">'+L[k][0]+' ↗</a>':m);
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
